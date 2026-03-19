@@ -1,0 +1,48 @@
+📱 PRODUCT BRIEF: ScoreSlayer
+Tagline: "Slay the Game. Own the Stats."
+The Problem
+Game nights are chaotic. Players lose the paper scorepad, argue over forgotten official rules, struggle with end-of-round math (especially in complex games like Phase 10 or Scrabble), and have no way to track long-term rivalries. Traditional scorekeeping apps are either too generic (just a blank tally counter) or limited to a single specific game.
+The Solution
+ScoreSlayer is a premium, universal game engine and scorekeeper. Wrapped in a dark, high-energy, esports-inspired UI, it doesn't just track numbers—it provides game-specific calculators, built-in rulebooks, dynamic House Rule overrides, and highly visual, shareable post-game analytics.
+
+🚀 CORE FEATURES BREAKDOWN
+1. The Universal Game Hub
+ScoreSlayer comes pre-loaded with logic for over 20+ popular tabletop games, categorized for quick access:
+Card Games: Uno, Phase 10, Poker, Gin Rummy, Cribbage, Canasta, Dutch Blitz.
+Board Games: Scrabble, Monopoly.
+Dice & Target: Farkle, Darts (Cricket/301).
+Tile Games: Dominoes, Mahjong.
+Trick-Taking: Spades, Hearts, Euchre, Pinochle, Wizard, Oh Hell, Skull King.
+Smart Setup: Automatically configures the win condition (Highest vs. Lowest score) and target score based on the selected game.
+2. Smart Scorekeeping & Calculators
+Say goodbye to mental math. ScoreSlayer features game-aware calculators:
+Contextual Calculators: Instead of typing "50", users tap what cards they have left (e.g., "2 Action Cards, 1 Wild Card"), and the app calculates the exact penalty.
+Phase 10 Engine: Automatically tracks which Phase a player is on, advancing them only if they complete the phase requirements.
+Quick Penalties: One-tap buttons to apply common penalties.
+Dealer & Turn Tracking: Tracks the current dealer, play direction (Clockwise/Counter-Clockwise), and includes a "Pick Random Dealer" tool.
+3. The "House Rules" Engine
+End the table arguments. ScoreSlayer acts as the ultimate referee:
+Official Rulebooks: Every game includes a beautifully formatted, built-in official rulebook (Objective, Setup, Gameplay, Scoring).
+Dynamic House Rules: Users can override official scoring (e.g., changing an Uno Wild Card from 50 to 100 points) or type in custom table rules. The app automatically activates these overrides and applies them to the calculators.
+4. "Nerd Card" Analytics & Social Sharing
+When the game ends, the trash talk begins.
+Interactive Charts: Visualizes the score progression of all players round-by-round using interactive line graphs.
+Player History: Tap any player to see their specific performance breakdown.
+The "Nerd Card": A highly stylized, auto-generated summary card showing the Winner, Total Score, Best Round, and Game Duration.
+One-Tap Export: Users can download the Nerd Card as a high-quality PNG to instantly share to Instagram, WhatsApp, or X.
+5. Frictionless "App" Experience (PWA)
+No App Store required.
+Instant Onboarding: The "Get App" feature displays a QR code. Users scan it, tap "Add to Home Screen," and ScoreSlayer installs instantly on iOS or Android.
+Native Feel: Runs in full-screen mode without browser UI, utilizing safe-area padding for modern edge-to-edge phone screens.
+Auto-Save: All active sessions and game history are saved locally. You can close the app mid-game and resume exactly where you left off weeks later.
+
+🎯 TARGET AUDIENCE
+Casual Gamers: Families and friends who play weekly game nights and want to eliminate math and rule arguments.
+Competitive Players: Groups who take their gaming seriously and want to track stats, win rates, and share their victories online.
+Board Game Cafe Patrons: A perfect companion app to use while at a local tabletop cafe.
+🔮 FUTURE EXPANSION (V2 Roadmap)
+ScoreSlayer Forge (JSON Engine): A custom game builder allowing users to invent their own games, define custom scoring rules, and generate a bespoke calculator instantly.
+Multiplayer Cloud Sync: Real-time WebSocket integration so multiple players at the table can input scores from their own phones simultaneously.
+Camera Vision (AI): Snap a photo of your remaining Uno cards or Scrabble board, and let AI automatically calculate the score. (Currently in prototype phase).
+
+Summary: ScoreSlayer isn't just a utility; it's a lifestyle product for tabletop gaming. It takes the friction out of game night and replaces it with data, design, and bragging rights.
