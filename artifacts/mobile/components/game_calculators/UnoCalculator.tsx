@@ -15,6 +15,8 @@ interface UnoCalculatorProps {
 
 export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalculatorProps) {
   const [logs, setLogs] = useState<number[]>(initialLogs || []);
+  const [cardLabels, setCardLabels] = useState<string[]>([]); // Track names like "Skip", "Wild +4", etc.
+  const [caughtWithUno, setCaughtWithUno] = useState(false);
 
   const unoVariant = useMemo(() => UNO_VARIANTS.find(v => v.id === game.id), [game.id]);
   
@@ -32,7 +34,8 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
       g.cards.map(c => ({
         label: c.name,
         value: c.points,
-        icon: c.isWild ? "star-circle" : c.isDark ? "moon-waning-crescent" : "flash"
+        icon: c.isWild ? "star-circle" : c.isDark ? "moon-waning-crescent" : "flash",
+        type: c.isWild ? "wild" : "action"
       }))
     );
   }, [unoVariant]);
@@ -40,33 +43,61 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
   const total = useMemo(() => logs.reduce((a, b) => a + b, 0), [logs]);
 
   useEffect(() => {
-    onUpdate(total, logs);
-  }, [total, logs, onUpdate]);
+    // Analysis
+    const actionCount = cardLabels.filter(l => 
+      actionCards.some(ac => ac.label === l && ac.type === "action")
+    ).length;
+    const wildCount = cardLabels.filter(l => 
+      actionCards.some(ac => ac.label === l && ac.type === "wild")
+    ).length;
+    const numberCount = logs.length - actionCount - wildCount;
 
-  const addValue = (val: number) => {
+    onUpdate(total, logs, { 
+      cardLabels, 
+      counts: { action: actionCount, wild: wildCount, number: numberCount },
+      caughtWithUno 
+    });
+  }, [total, logs, cardLabels, caughtWithUno, onUpdate]);
+
+  const addValue = (val: number, label?: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLogs(prev => [...prev, val]);
+    setCardLabels(prev => [...prev, label || val.toString()]);
   };
 
   const removeLast = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLogs(prev => prev.slice(0, -1));
+    setCardLabels(prev => prev.slice(0, -1));
   };
 
   const handleUno = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setLogs([]); // Sets total to 0
+    setLogs([]); 
+    setCardLabels([]);
+    setCaughtWithUno(false);
   };
 
   return (
     <View style={styles.container}>
-      <View style={{ marginBottom: 16 }}>
+      <View style={styles.topActions}>
         <Pressable 
           onPress={handleUno}
           style={[styles.unoBtn, total === 0 && logs.length === 0 && styles.unoActive]}
         >
           <MaterialCommunityIcons name="cards-playing-outline" size={20} color="#00F5A0" />
           <Text style={styles.unoText}>DECLARE UNO / 0 PTS</Text>
+        </Pressable>
+
+        <Pressable 
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setCaughtWithUno(!caughtWithUno);
+          }}
+          style={[styles.catchBtn, caughtWithUno && styles.catchActive]}
+        >
+          <MaterialCommunityIcons name="alert-decagram" size={20} color="#FF4757" />
+          <Text style={styles.catchText}>{caughtWithUno ? "CAUGHT!" : "CAUGHT WITH UNO?"}</Text>
         </Pressable>
       </View>
 
@@ -75,6 +106,23 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
           <Text style={[styles.displayTotal, { color: player.color }]}>{total}</Text>
           <Text style={styles.displayPts}>pts</Text>
         </View>
+
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statVal}>{logs.length - cardLabels.filter(l => actionCards.some(ac => ac.label === l)).length}</Text>
+            <Text style={styles.statLabel}>Nums</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statVal}>{cardLabels.filter(l => actionCards.find(ac => ac.label === l)?.type === "action").length}</Text>
+            <Text style={styles.statLabel}>Actions</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statVal}>{cardLabels.filter(l => actionCards.find(ac => ac.label === l)?.type === "wild").length}</Text>
+            <Text style={styles.statLabel}>Wilds</Text>
+          </View>
+        </View>
         
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.logStrip}>
           {logs.length === 0 ? (
@@ -82,7 +130,9 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
           ) : (
             logs.map((val, i) => (
               <View key={i} style={[styles.logChip, { backgroundColor: player.color + "22" }]}>
-                <Text style={[styles.logChipText, { color: player.color }]}>+{val}</Text>
+                <Text style={[styles.logChipText, { color: player.color }]}>
+                  {cardLabels[i] ? `${cardLabels[i]} (+${val})` : `+${val}`}
+                </Text>
               </View>
             ))
           )}
@@ -112,7 +162,7 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
           {actionCards.map((card, i) => (
             <Pressable
               key={i}
-              onPress={() => addValue(card.value)}
+              onPress={() => addValue(card.value, card.label)}
               style={styles.actionKey}
             >
               <MaterialCommunityIcons name={card.icon as any} size={24} color={player.color} />
@@ -131,10 +181,19 @@ const styles = StyleSheet.create({
   unoBtn: { backgroundColor: "rgba(0, 245, 160, 0.05)", borderRadius: 18, padding: 14, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(0, 245, 160, 0.1)", borderStyle: "dashed" },
   unoActive: { backgroundColor: "rgba(0, 245, 160, 0.15)", borderColor: "#00F5A0", borderStyle: "solid" },
   unoText: { fontFamily: "Inter_900Black", fontSize: 13, color: "#00F5A0" },
+  topActions: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  catchBtn: { flex: 1, backgroundColor: "rgba(255, 71, 87, 0.05)", borderRadius: 18, padding: 14, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255, 71, 87, 0.1)", borderStyle: "dashed" },
+  catchActive: { backgroundColor: "rgba(255, 71, 87, 0.15)", borderColor: "#FF4757", borderStyle: "solid" },
+  catchText: { fontFamily: "Inter_900Black", fontSize: 11, color: "#FF4757" },
   displayArea: { marginBottom: 16, position: "relative" },
-  displayTextRow: { flexDirection: "row", alignItems: "baseline", gap: 4, marginBottom: 8 },
+  displayTextRow: { flexDirection: "row", alignItems: "baseline", gap: 4, marginBottom: 12 },
   displayTotal: { fontFamily: "Inter_900Black", fontSize: 42 },
   displayPts: { fontFamily: "Inter_700Bold", fontSize: 14, color: "rgba(255,255,255,0.3)" },
+  statsRow: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 8, marginBottom: 16 },
+  statItem: { flex: 1, alignItems: "center" },
+  statVal: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFF" },
+  statLabel: { fontFamily: "Inter_700Bold", fontSize: 9, color: "rgba(255,255,255,0.3)", textTransform: "uppercase" },
+  statDivider: { width: 1, backgroundColor: "rgba(255,255,255,0.05)" },
   logStrip: { flexDirection: "row" },
   logChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginRight: 6 },
   logChipText: { fontFamily: "Inter_800ExtraBold", fontSize: 12 },

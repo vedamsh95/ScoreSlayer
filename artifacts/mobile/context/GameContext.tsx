@@ -23,6 +23,8 @@ export interface Player {
   totalScore: number;
   totalBags?: number;
   isEliminated?: boolean;
+  roundRoasts: Record<number, string[]>; // Round index -> list of roast messages
+  roundMetadata: Record<number, any>; // Round index -> full metadata from calculator
 }
 
 export interface GameSession {
@@ -120,7 +122,8 @@ interface GameContextType {
     logs: Record<string, number[]>,
     cleared?: Record<string, boolean>,
     bids?: Record<string, number>,
-    tricksWon?: Record<string, number>
+    tricksWon?: Record<string, number>,
+    metadata?: Record<string, any>
   ) => void;
   updateRoundScores: (
     sessionId: string,
@@ -129,7 +132,8 @@ interface GameContextType {
     logs: Record<string, number[]>,
     cleared?: Record<string, boolean>,
     bids?: Record<string, number>,
-    tricksWon?: Record<string, number>
+    tricksWon?: Record<string, number>,
+    metadata?: Record<string, any>
   ) => void;
   deleteRound: (sessionId: string, roundIndex: number) => void;
   endSession: (sessionId: string) => void;
@@ -197,6 +201,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           totalScore: 0,
           totalBags: 0,
           isEliminated: false,
+          roundRoasts: {},
+          roundMetadata: {},
         })),
         currentRound: 1,
         dealerIndex: 0,
@@ -230,7 +236,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       logs: Record<string, number[]>,
       cleared?: Record<string, boolean>,
       bids?: Record<string, number>,
-      tricksWon?: Record<string, number>
+      tricksWon?: Record<string, number>,
+      metadata?: Record<string, any>
     ) => {
       const session = state.sessions.find((s) => s.id === sessionId);
       if (!session) return;
@@ -298,6 +305,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           bagsHistory: newBagsHistory,
           totalBags,
           totalScore: p.totalScore + roundScore,
+          roundRoasts: { ...p.roundRoasts, [session.currentRound - 1]: metadata?.[p.id]?.roasts ?? [] },
+          roundMetadata: { ...p.roundMetadata, [session.currentRound - 1]: metadata?.[p.id] ?? {} },
         };
       });
 
@@ -320,7 +329,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       logs: Record<string, number[]>,
       cleared?: Record<string, boolean>,
       bids?: Record<string, number>,
-      tricksWon?: Record<string, number>
+      tricksWon?: Record<string, number>,
+      metadata?: Record<string, any>
     ) => {
       const session = state.sessions.find((s) => s.id === sessionId);
       if (!session) return;
@@ -397,6 +407,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           currentPhaseCleared: newClearedHistory[newClearedHistory.length - 1],
           totalBags: newBagsHistory.reduce((sum, b) => sum + b, 0),
           totalScore: newScores.reduce((sum, s) => sum + s, 0),
+          roundRoasts: { 
+            ...p.roundRoasts, 
+            [roundIndex]: metadata?.[p.id]?.roasts ?? p.roundRoasts[roundIndex] ?? [] 
+          },
+          roundMetadata: {
+            ...p.roundMetadata,
+            [roundIndex]: metadata?.[p.id] ?? p.roundMetadata[roundIndex] ?? {}
+          },
         };
       });
 

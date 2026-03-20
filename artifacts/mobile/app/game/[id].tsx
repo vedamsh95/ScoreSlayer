@@ -20,6 +20,7 @@ import { PolymerButton } from "@/components/PolymerButton";
 import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 import { Player } from "@/context/GameContext";
 import { GameToolsModal } from "@/components/GameToolsModal";
+import { AnalysisModal } from "@/components/AnalysisModal";
 
 function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] {
   if (!game) return players;
@@ -38,6 +39,7 @@ export default function GameScreen() {
 
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [showToolsModal, setShowToolsModal] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [showHistory, setShowHistory] = useState(true); // Default to true
   const [editingRoundIndex, setEditingRoundIndex] = useState<number | null>(null);
 
@@ -56,13 +58,20 @@ export default function GameScreen() {
   );
 
   const handleSubmitScores = useCallback(
-    (scores: Record<string, number>, logs: Record<string, number[]>, cleared: Record<string, boolean>, bids?: Record<string, number>, tricksWon?: Record<string, number>) => {
+    (
+      scores: Record<string, number>,
+      logs: Record<string, number[]>,
+      cleared: Record<string, boolean>,
+      bids?: Record<string, number>,
+      tricksWon?: Record<string, number>,
+      metadata?: Record<string, any>
+    ) => {
       if (!id) return;
       if (editingRoundIndex !== null) {
-        updateRoundScores(id, editingRoundIndex, scores, logs, cleared, bids, tricksWon);
+        updateRoundScores(id, editingRoundIndex, scores, logs, cleared, bids, tricksWon, metadata);
         setEditingRoundIndex(null);
       } else {
-        addRoundScores(id, scores, logs, cleared, bids, tricksWon);
+        addRoundScores(id, scores, logs, cleared, bids, tricksWon, metadata);
       }
       setShowScoreModal(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -176,6 +185,12 @@ export default function GameScreen() {
           <NeuIconWell color="#150428" size={40} borderRadius={13} style={{ marginLeft: 10 }}>
             <Pressable onPress={() => { setShowToolsModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.iconBtnPressable}>
               <MaterialCommunityIcons name="dice-5-outline" size={24} color="#00F5A0" />
+            </Pressable>
+          </NeuIconWell>
+
+          <NeuIconWell color="#150428" size={40} borderRadius={13} style={{ marginLeft: 10 }}>
+            <Pressable onPress={() => { setShowAnalysisModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }} style={styles.iconBtnPressable}>
+              <MaterialCommunityIcons name="fire" size={20} color="#FF4757" />
             </Pressable>
           </NeuIconWell>
 
@@ -390,6 +405,12 @@ export default function GameScreen() {
         players={session.players}
         onShuffle={handleShuffleSeating}
         onClose={() => setShowToolsModal(false)}
+      />
+
+      <AnalysisModal 
+        visible={showAnalysisModal}
+        session={session}
+        onClose={() => setShowAnalysisModal(false)}
       />
     </View>
   );

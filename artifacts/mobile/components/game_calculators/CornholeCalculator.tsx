@@ -19,7 +19,14 @@ export function CornholeCalculator({ player, initialStats, onUpdate }: CornholeC
   const totalRaw = useMemo(() => stats.holes * 3 + stats.board, [stats]);
 
   useEffect(() => {
-    onUpdate(totalRaw, [stats.holes, stats.board], stats);
+    const roasts: string[] = [];
+    if (totalRaw === 0) {
+      roasts.push("Did you even throw the bags? 🤡");
+    } else if (stats.holes >= 4) {
+      roasts.push("Literal machine. 4/4 holes?! 🎯");
+    }
+    
+    onUpdate(totalRaw, [stats.holes, stats.board], { ...stats, roasts });
   }, [totalRaw, stats, onUpdate]);
 
   const increment = (type: "holes" | "board") => {

@@ -34,6 +34,12 @@ import { SevenWondersCalculator } from "./game_calculators/SevenWondersCalculato
 import { RummyCalculator } from "./game_calculators/RummyCalculator";
 import { GinRummyCalculator } from "./game_calculators/GinRummyCalculator";
 import { GolfCalculator } from "./game_calculators/GolfCalculator";
+import { CatanCalculator } from "./game_calculators/CatanCalculator";
+import { CarcassonneCalculator } from "./game_calculators/CarcassonneCalculator";
+import { BilliardsCalculator } from "./game_calculators/BilliardsCalculator";
+import { HandAndFootCalculator } from "./game_calculators/HandAndFootCalculator";
+import { SkipBoCalculator } from "./game_calculators/SkipBoCalculator";
+import { DutchBlitzCalculator } from "./game_calculators/DutchBlitzCalculator";
 
 interface ScoreInputModalProps {
   visible: boolean;
@@ -45,11 +51,12 @@ interface ScoreInputModalProps {
   initialBids?: Record<string, number>;
   initialTricksWon?: Record<string, number>;
   onSubmit: (
-    scores: Record<string, number>, 
-    logs: Record<string, any[]>, 
+    scores: Record<string, number>,
+    logs: Record<string, number[]>,
     cleared: Record<string, boolean>,
     bids?: Record<string, number>,
-    tricksWon?: Record<string, number>
+    tricksWon?: Record<string, number>,
+    metadata?: Record<string, any>
   ) => void;
   onClose: () => void;
   isEditing?: boolean;
@@ -130,9 +137,9 @@ export function ScoreInputModal({
   }, [activePlayer.id]);
 
   const handleSubmit = useCallback(() => {
-    onSubmit(allScores, allLogs, allCleared, allBids, allTricksWon);
+    onSubmit(allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata);
     onClose();
-  }, [allScores, allLogs, allCleared, allBids, allTricksWon, onSubmit, onClose]);
+  }, [allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata, onSubmit, onClose]);
 
   const handleReset = useCallback(() => {
     Alert.alert(
@@ -196,6 +203,24 @@ export function ScoreInputModal({
     }
     if (game.id === "seven_wonders") {
       return <SevenWondersCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} initialScience={allMetadata[activePlayer.id]?.science} />;
+    }
+    if (game.id === "catan") {
+      return <CatanCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} />;
+    }
+    if (game.id === "carcassonne") {
+      return <CarcassonneCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} />;
+    }
+    if (game.id === "billiards") {
+      return <BilliardsCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+    }
+    if (game.id === "hand_and_foot") {
+      return <HandAndFootCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} />;
+    }
+    if (game.id === "skip_bo") {
+      return <SkipBoCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} />;
+    }
+    if (game.id === "dutch_blitz") {
+      return <DutchBlitzCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} />;
     }
     if (game.parentId === "rummy" || game.id.includes("rummy")) {
       if (game.id === "rummy_gin") {

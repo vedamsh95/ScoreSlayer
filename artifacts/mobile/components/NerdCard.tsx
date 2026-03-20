@@ -1,10 +1,18 @@
-import React, { useRef } from "react";
+import React, { memo, useMemo } from "react";
 import {
   StyleSheet,
   Text,
   View,
+  Platform,
+  Dimensions,
 } from "react-native";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import Animated, { FadeInDown, SlideInRight } from "react-native-reanimated";
 import { GameSession, Player } from "@/context/GameContext";
+import { useSessionAnalysis } from "@/hooks/useSessionAnalysis";
+import { PolymerCard } from "./PolymerCard";
+
+const { width } = Dimensions.get("window");
 
 interface NerdCardProps {
   session: GameSession;
@@ -39,7 +47,7 @@ function getBestRound(player: Player): { round: number; score: number } | null {
   return { round: bestRound, score: best };
 }
 
-export const NerdCard = React.forwardRef<View, NerdCardProps>(
+export const NerdCard = memo(React.forwardRef<View, NerdCardProps>(
   ({ session, gameColor }, ref) => {
     const rankings = getPlayerRankings(session);
     const winner = rankings[0];
@@ -48,6 +56,8 @@ export const NerdCard = React.forwardRef<View, NerdCardProps>(
       : "—";
 
     const winnerBest = winner ? getBestRound(winner) : null;
+
+    const { roasts: allRoasts } = useSessionAnalysis(session);
 
     const rankColors = [gameColor, "#C0C0C0", "#CD7F32"];
     const rankLabels = ["1ST", "2ND", "3RD"];
@@ -114,13 +124,28 @@ export const NerdCard = React.forwardRef<View, NerdCardProps>(
           </View>
         </View>
 
+        {allRoasts.length > 0 && (
+          <View style={styles.roastSection}>
+            <View style={styles.roastHeader}>
+              <Ionicons name="flame" size={14} color="#FF2D78" />
+              <Text style={styles.roastTitle}>GAME ROASTS</Text>
+            </View>
+            {allRoasts.slice(0, 3).map((r, i) => (
+              <View key={i} style={styles.roastItem}>
+                <Ionicons name="chatbubble-ellipses-outline" size={12} color="rgba(255,255,255,0.4)" />
+                <Text style={styles.roastText}>{r}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         <View style={styles.footer}>
           <Text style={styles.footerText}>ScoreSlayer • Slay the Game. Own the Stats.</Text>
         </View>
       </View>
     );
   }
-);
+));
 
 NerdCard.displayName = "NerdCard";
 
@@ -262,9 +287,38 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 11,
-    color: "rgba(255,255,255,0.3)",
-    letterSpacing: 0.5,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 9,
+    color: "rgba(255,255,255,0.25)",
+  },
+  roastSection: {
+    padding: 16,
+    backgroundColor: "rgba(255,45,120,0.05)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+  },
+  roastHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+  },
+  roastTitle: {
+    fontFamily: "Inter_900Black",
+    fontSize: 10,
+    color: "#FF2D78",
+    letterSpacing: 1,
+  },
+  roastItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  roastText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.7)",
+    fontStyle: "italic",
   },
 });
