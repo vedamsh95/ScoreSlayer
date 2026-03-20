@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo, useEffect } from "react";
 import {
   Modal,
   Pressable,
@@ -11,6 +11,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  runOnJS,
+} from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
 import { PolymerButton } from "./PolymerButton";
@@ -64,6 +71,33 @@ export function ScoreInputModal({
   const insets = useSafeAreaInsets();
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   
+  // Gesture State
+  const translateY = useSharedValue(0);
+
+  const gesture = Gesture.Pan()
+    .onUpdate((event) => {
+      translateY.value = Math.max(0, event.translationY);
+    })
+    .onEnd((event) => {
+      if (event.translationY > 150 || event.velocityY > 500) {
+        translateY.value = withSpring(1000, { damping: 50, stiffness: 100 });
+        runOnJS(onClose)();
+      } else {
+        translateY.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  // Reset translateY when modal opens
+  useEffect(() => {
+    if (visible) {
+      translateY.value = 0;
+    }
+  }, [visible]);
+
   // Unified Session State for the Modal
   const [allLogs, setAllLogs] = useState<Record<string, any[]>>(initialLogs || {});
   const [allCleared, setAllCleared] = useState<Record<string, boolean>>(initialCleared || {});
@@ -71,7 +105,7 @@ export function ScoreInputModal({
     const scores: Record<string, number> = {};
     if (initialLogs) {
       Object.keys(initialLogs).forEach(pid => {
-        scores[pid] = (initialLogs[pid] || []).reduce((a, b) => a + b, 0);
+        scores[pid] = (initialLogs[pid] || []).reduce((a, b: number) => a + b, 0);
       });
     }
     return scores;
@@ -177,69 +211,74 @@ export function ScoreInputModal({
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <View style={styles.sheetHeader}>
-            <View>
-              <Text style={styles.title}>{isEditing ? "Edit Round" : `Round ${round}`}</Text>
-              <Text style={styles.subtitle}>Enter cards for {activePlayer.name}</Text>
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[styles.sheet, animatedStyle]}>
+            <View style={styles.grabBarContainer}>
+              <View style={styles.grabBar} />
             </View>
-            <View style={styles.headerActions}>
-              <Pressable onPress={handleReset} style={styles.resetPressable}>
-                <NeuIconWell color="#150428" size={38} borderRadius={12}>
-                  <Ionicons name="trash-outline" size={18} color="#FF4757" />
-                </NeuIconWell>
-              </Pressable>
-              <Pressable onPress={onClose} style={styles.closePressable}>
-                <NeuIconWell color="#150428" size={38} borderRadius={12}>
-                  <Ionicons name="close" size={20} color="rgba(255,255,255,0.6)" />
-                </NeuIconWell>
-              </Pressable>
+            <View style={styles.sheetHeader}>
+              <View>
+                <Text style={styles.title}>{isEditing ? "Edit Round" : `Round ${round}`}</Text>
+                <Text style={styles.subtitle}>Enter cards for {activePlayer.name}</Text>
+              </View>
+              <View style={styles.headerActions}>
+                <Pressable onPress={handleReset} style={styles.resetPressable}>
+                  <NeuIconWell color="#150428" size={38} borderRadius={12}>
+                    <Ionicons name="trash-outline" size={18} color="#FF4757" />
+                  </NeuIconWell>
+                </Pressable>
+                <Pressable onPress={onClose} style={styles.closePressable}>
+                  <NeuIconWell color="#150428" size={38} borderRadius={12}>
+                    <Ionicons name="close" size={20} color="rgba(255,255,255,0.6)" />
+                  </NeuIconWell>
+                </Pressable>
+              </View>
             </View>
-          </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.playerStrip}>
-            {players.map((p, i) => (
-              <Pressable
-                key={p.id}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.playerStrip}>
+              {players.map((p, i) => (
+                <Pressable
+                  key={p.id}
+                  onPress={() => {
+                    setActivePlayerIndex(i);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  style={[
+                    styles.playerTab,
+                    activePlayerIndex === i && { backgroundColor: p.color + "33", borderColor: p.color }
+                  ]}
+                >
+                  <View style={[styles.tabDot, { backgroundColor: p.color }]} />
+                  <Text style={[styles.tabText, activePlayerIndex === i && { color: "#FFF" }]}>{p.name}</Text>
+                  {allScores[p.id] !== undefined && (
+                    <Text style={[styles.tabScore, { color: p.color }]}>{allScores[p.id]}</Text>
+                  )}
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <View style={styles.calcArea}>
+              {renderCalculator()}
+            </View>
+
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
+              <PolymerButton
+                label={activePlayerIndex < players.length - 1 ? "Next Player" : (isEditing ? "Save Changes" : "Submit All Scores")}
                 onPress={() => {
-                  setActivePlayerIndex(i);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  if (activePlayerIndex < players.length - 1) {
+                    setActivePlayerIndex(idx => idx + 1);
+                  } else {
+                    handleSubmit();
+                  }
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 }}
-                style={[
-                  styles.playerTab,
-                  activePlayerIndex === i && { backgroundColor: p.color + "33", borderColor: p.color }
-                ]}
-              >
-                <View style={[styles.tabDot, { backgroundColor: p.color }]} />
-                <Text style={[styles.tabText, activePlayerIndex === i && { color: "#FFF" }]}>{p.name}</Text>
-                {allScores[p.id] !== undefined && (
-                   <Text style={[styles.tabScore, { color: p.color }]}>{allScores[p.id]}</Text>
-                )}
-              </Pressable>
-            ))}
-          </ScrollView>
-
-          <View style={styles.calcArea}>
-             {renderCalculator()}
-          </View>
-
-          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
-            <PolymerButton
-              label={activePlayerIndex < players.length - 1 ? "Next Player" : (isEditing ? "Save Changes" : "Submit All Scores")}
-              onPress={() => {
-                if (activePlayerIndex < players.length - 1) {
-                  setActivePlayerIndex(idx => idx + 1);
-                } else {
-                  handleSubmit();
-                }
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              }}
-              color={activePlayerIndex < players.length - 1 ? "rgba(255,255,255,0.1)" : "#00F5A0"}
-              textColor={activePlayerIndex < players.length - 1 ? "#FFF" : "#1A0533"}
-              size="lg"
-            />
-          </View>
-        </View>
+                color={activePlayerIndex < players.length - 1 ? "rgba(255,255,255,0.1)" : "#00F5A0"}
+                textColor={activePlayerIndex < players.length - 1 ? "#FFF" : "#1A0533"}
+                size="lg"
+              />
+            </View>
+          </Animated.View>
+        </GestureDetector>
       </View>
     </Modal>
   );
@@ -247,7 +286,9 @@ export function ScoreInputModal({
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#1A0533", borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingTop: 24, flex: 1, maxHeight: "94%" },
+  sheet: { backgroundColor: "#1A0533", borderTopLeftRadius: 32, borderTopRightRadius: 32, flex: 1, maxHeight: "94%" },
+  grabBarContainer: { width: "100%", height: 24, alignItems: "center", justifyContent: "center" },
+  grabBar: { width: 40, height: 5, borderRadius: 2.5, backgroundColor: "rgba(255,255,255,0.15)" },
   sheetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: 24, marginBottom: 16 },
   title: { fontFamily: "Inter_900Black", fontSize: 22, color: "#FFFFFF" },
   subtitle: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: "rgba(255,255,255,0.4)" },
