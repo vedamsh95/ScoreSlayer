@@ -54,6 +54,7 @@ type GameAction =
   | { type: "CREATE_SESSION"; session: GameSession }
   | { type: "UPDATE_SESSION"; session: GameSession }
   | { type: "DELETE_SESSION"; sessionId: string }
+  | { type: "CLEAR_SESSIONS" }
   | { type: "SET_ACTIVE"; sessionId: string | null }
   | { type: "END_SESSION"; sessionId: string; winnerName: string };
 
@@ -84,6 +85,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           state.activeSessionId === action.sessionId
             ? null
             : state.activeSessionId,
+      };
+    case "CLEAR_SESSIONS":
+      return {
+        ...state,
+        sessions: [],
+        activeSessionId: null,
       };
     case "SET_ACTIVE":
       return { ...state, activeSessionId: action.sessionId };
@@ -136,6 +143,7 @@ interface GameContextType {
     metadata?: Record<string, any>
   ) => void;
   deleteRound: (sessionId: string, roundIndex: number) => void;
+  deleteAllSessions: () => void;
   endSession: (sessionId: string) => void;
   getActiveSession: () => GameSession | null;
   getSession: (sessionId: string) => GameSession | null;
@@ -223,6 +231,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const deleteSession = useCallback((sessionId: string) => {
     dispatch({ type: "DELETE_SESSION", sessionId });
+  }, []);
+
+  const deleteAllSessions = useCallback(() => {
+    dispatch({ type: "CLEAR_SESSIONS" });
   }, []);
 
   const setActiveSession = useCallback((sessionId: string | null) => {
@@ -514,6 +526,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         addRoundScores,
         updateRoundScores,
         deleteRound,
+        deleteAllSessions,
         endSession,
         getActiveSession,
         getSession,

@@ -23,7 +23,7 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
-import { PolymerCard, NeuTrench, NeuButton, NeuIconWell } from "./PolymerCard";
+import { PolymerCard, NeuTrench, NeuButton, BrandButton, NeuIconWell } from "./PolymerCard";
 
 // Game Calculators
 import { SkyjoCalculator } from "./game_calculators/SkyjoCalculator";
@@ -383,8 +383,7 @@ export function ScoreInputModal({
               </View>
 
               <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
-                <NeuButton
-                  borderRadius={20}
+                <BrandButton
                   onPress={() => {
                     if (activePlayerIndex < players.length - 1) {
                       setActivePlayerIndex(idx => idx + 1);
@@ -393,23 +392,19 @@ export function ScoreInputModal({
                     }
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   }}
-                  color={activePlayerIndex < players.length - 1 ? "rgba(255,255,255,0.08)" : "#00F5A0"}
-                  style={{ flex: 1, height: 60 }}
+                  style={{ height: 62, width: "100%" }}
                 >
                   <View style={styles.footerBtnInner}>
-                    <Text style={[
-                      styles.footerBtnText, 
-                      { color: activePlayerIndex < players.length - 1 ? "#FFF" : "#1A0533" }
-                    ]}>
+                    <Text style={styles.brandBtnText}>
                       {activePlayerIndex < players.length - 1 ? "NEXT PLAYER" : (isEditing ? "SAVE CHANGES" : "SUBMIT ALL")}
                     </Text>
                     <Ionicons 
                       name={activePlayerIndex < players.length - 1 ? "arrow-forward" : "checkmark-circle"} 
                       size={20} 
-                      color={activePlayerIndex < players.length - 1 ? "rgba(255,255,255,0.5)" : "#1A0533"} 
+                      color="rgba(255,255,255,0.9)" 
                     />
                   </View>
-                </NeuButton>
+                </BrandButton>
             </View>
           </PolymerCard>
         </Animated.View>
@@ -520,7 +515,9 @@ const styles = StyleSheet.create({
   },
   footer: { 
     paddingHorizontal: 20, 
-    paddingTop: 16 
+    paddingTop: 16,
+    flexShrink: 0,
+    width: "100%",
   },
   footerBtnInner: {
     flexDirection: "row",
@@ -528,9 +525,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
   },
-  footerBtnText: {
+  brandBtnText: {
     fontFamily: "Inter_900Black",
-    fontSize: 14,
+    fontSize: 15,
     letterSpacing: 1.5,
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0,0,0,0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });

@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { useGame } from "@/context/GameContext";
 import { getGameById, GameDefinition } from "@/constants/games";
 import { NerdCard } from "@/components/NerdCard";
-import { PolymerButton } from "@/components/PolymerButton";
+import { PolymerCard, NeuTrench, NeuButton, BrandButton, NeuIconWell } from "@/components/PolymerCard";
 import { Player } from "@/context/GameContext";
 
 function formatDuration(ms: number): string {
@@ -102,18 +102,27 @@ export default function ResultsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.topRow}>
-        <Pressable style={styles.backBtn} onPress={() => router.replace("/(tabs)")}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-        </Pressable>
+        <NeuIconWell color="#1A0533" size={42} borderRadius={14}>
+          <Pressable onPress={() => router.replace("/(tabs)")} style={styles.backPressable}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </Pressable>
+        </NeuIconWell>
+        
         <Text style={styles.headerTitle}>Game Over</Text>
-        <Pressable style={styles.shareBtn} onPress={handleShare}>
-          <Feather name="share-2" size={18} color="#00F5A0" />
-        </Pressable>
+
+        <NeuIconWell color="#1A0533" size={42} borderRadius={14}>
+          <Pressable onPress={handleShare} style={styles.backPressable}>
+            <Feather name="share-2" size={18} color="#00F5A0" />
+          </Pressable>
+        </NeuIconWell>
       </View>
 
-      <View style={styles.winnerBanner}>
-        <View style={[styles.crownCircle, { backgroundColor: session.gameColor + "33" }]}>
-          <Text style={styles.crownText}>👑</Text>
+      <PolymerCard color={session.gameColor + "44"} borderRadius={32} padding={28} style={styles.winnerBanner}>
+        <View style={[styles.crownCircleShadow, { borderRadius: 40 }]}>
+          <View style={[styles.crownCircleBody, { backgroundColor: session.gameColor, borderRadius: 40 }]}>
+            <View style={styles.crownGloss} pointerEvents="none" />
+            <Text style={styles.crownEmoji}>👑</Text>
+          </View>
         </View>
         <Text style={[styles.winnerLabel, { color: session.gameColor }]}>WINNER</Text>
         <Text style={styles.winnerName}>{winner?.name}</Text>
@@ -121,42 +130,44 @@ export default function ResultsScreen() {
           {winner?.totalScore.toLocaleString()} points
         </Text>
         <Text style={styles.gameMeta}>
-          {session.gameName} · {session.currentRound - 1} rounds · {duration}
+          {session.currentRound - 1} rounds · {duration}
         </Text>
-      </View>
+      </PolymerCard>
 
-      <View style={styles.scoreChart}>
+      <PolymerCard color="rgba(255,255,255,0.03)" borderRadius={24} padding={20} style={styles.scoreChart}>
         <Text style={styles.chartTitle}>Final Standings</Text>
-        {sortedPlayers.map((player, i) => {
-          const barWidth = Math.abs(player.totalScore) / maxScore;
-          return (
-            <View key={player.id} style={styles.chartRow}>
-              <Text style={styles.chartRank}>{i + 1}</Text>
-              <View style={styles.chartNameCol}>
-                <View style={styles.chartNameRow}>
-                  <View style={[styles.chartDot, { backgroundColor: player.color }]} />
-                  <Text style={styles.chartName}>{player.name}</Text>
+        <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={20} padding={12} style={styles.chartTrench}>
+          {sortedPlayers.map((player, i) => {
+            const barWidth = Math.abs(player.totalScore) / maxScore;
+            return (
+              <View key={player.id} style={[styles.chartRow, i < sortedPlayers.length - 1 && styles.chartRowBorder]}>
+                <Text style={styles.chartRank}>#{i + 1}</Text>
+                <View style={styles.chartNameCol}>
+                  <View style={styles.chartNameRow}>
+                    <View style={[styles.chartDot, { backgroundColor: player.color }]} />
+                    <Text style={styles.chartName}>{player.name}</Text>
+                  </View>
+                  <View style={styles.barTrack}>
+                    <View
+                      style={[
+                        styles.barFill,
+                        {
+                          width: `${barWidth * 100}%` as any,
+                          backgroundColor: player.color,
+                          opacity: i === 0 ? 1 : 0.6,
+                        },
+                      ]}
+                    />
+                  </View>
                 </View>
-                <View style={styles.barTrack}>
-                  <View
-                    style={[
-                      styles.barFill,
-                      {
-                        width: `${barWidth * 100}%` as any,
-                        backgroundColor: player.color,
-                        opacity: i === 0 ? 1 : 0.6,
-                      },
-                    ]}
-                  />
-                </View>
+                <Text style={[styles.chartScore, i === 0 && { color: player.color }]}>
+                  {player.totalScore.toLocaleString()}
+                </Text>
               </View>
-              <Text style={[styles.chartScore, i === 0 && { color: player.color }]}>
-                {player.totalScore.toLocaleString()}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
+            );
+          })}
+        </NeuTrench>
+      </PolymerCard>
 
       <View style={styles.nerdCardWrap}>
         <Text style={styles.nerdCardHeading}>Your Nerd Card</Text>
@@ -168,29 +179,31 @@ export default function ResultsScreen() {
       </View>
 
       <View style={styles.actionRow}>
-        <PolymerButton
-          label="Share Results"
+        <NeuButton
           onPress={handleShare}
-          color="#00F5A0"
-          textColor="#1A0533"
-          size="md"
-          style={{ flex: 1 }}
-          icon={<Feather name="share-2" size={14} color="#1A0533" />}
-        />
-        <PolymerButton
-          label="Play Again"
+          color="#34495E"
+          borderRadius={20}
+          style={{ flex: 1, height: 58 }}
+        >
+          <View style={styles.btnInner}>
+            <Feather name="share-2" size={16} color="#FFFFFF" />
+            <Text style={styles.btnText}>SHARE</Text>
+          </View>
+        </NeuButton>
+        <BrandButton
           onPress={() => {
             router.replace({
               pathname: "/setup/[gameId]",
               params: { gameId: session.gameId },
             });
           }}
-          color="#FF2D78"
-          textColor="#FFFFFF"
-          size="md"
-          style={{ flex: 1 }}
-          icon={<Feather name="refresh-cw" size={14} color="#FFFFFF" />}
-        />
+          style={{ flex: 1, height: 58 }}
+        >
+          <View style={styles.btnInner}>
+            <Feather name="refresh-cw" size={16} color="#FFFFFF" />
+            <Text style={styles.brandBtnText}>PLAY AGAIN</Text>
+          </View>
+        </BrandButton>
       </View>
 
       <Pressable
@@ -235,157 +248,195 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 24,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 13,
+  backPressable: {
+    width: 42,
+    height: 42,
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitle: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_900Black",
     fontSize: 18,
     color: "#FFFFFF",
-  },
-  shareBtn: {
-    width: 40,
-    height: 40,
-    backgroundColor: "rgba(0,245,160,0.1)",
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,245,160,0.25)",
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
   winnerBanner: {
     alignItems: "center",
     marginBottom: 28,
   },
-  crownCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  crownCircleShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 12,
+    marginBottom: 12,
+  },
+  crownCircleBody: {
+    width: 80,
+    height: 80,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
+    overflow: "hidden",
+    position: "relative",
   },
-  crownText: {
-    fontSize: 36,
+  crownGloss: {
+    position: "absolute",
+    top: 4,
+    left: 10,
+    width: "45%",
+    height: "50%",
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderBottomRightRadius: 30,
+  },
+  crownEmoji: {
+    fontSize: 40,
+    zIndex: 2,
   },
   winnerLabel: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 11,
-    letterSpacing: 3,
-    marginBottom: 6,
+    fontFamily: "Inter_900Black",
+    fontSize: 12,
+    letterSpacing: 4,
+    marginBottom: 8,
     textTransform: "uppercase",
+    opacity: 0.9,
   },
   winnerName: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 36,
+    fontFamily: "Inter_900Black",
+    fontSize: 42,
     color: "#FFFFFF",
     marginBottom: 4,
+    textAlign: "center",
   },
   winnerScore: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 18,
-    color: "rgba(255,255,255,0.7)",
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 20,
+    color: "rgba(255,255,255,0.8)",
     marginBottom: 6,
   },
   gameMeta: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.4)",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: "rgba(255,255,255,0.45)",
   },
   scoreChart: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 20,
-    padding: 18,
     marginBottom: 28,
-    gap: 14,
   },
   chartTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 15,
+    fontFamily: "Inter_900Black",
+    fontSize: 14,
     color: "#FFFFFF",
-    marginBottom: 4,
+    marginBottom: 12,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.5,
+  },
+  chartTrench: {
+    gap: 4,
   },
   chartRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  chartRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.05)",
   },
   chartRank: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.3)",
-    width: 16,
-    textAlign: "center",
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 14,
+    color: "rgba(255,255,255,0.25)",
+    width: 28,
   },
   chartNameCol: {
     flex: 1,
-    gap: 4,
+    gap: 6,
   },
   chartNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   chartDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   chartName: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.8)",
+    fontFamily: "Inter_700Bold",
+    fontSize: 15,
+    color: "#FFFFFF",
   },
   barTrack: {
-    height: 5,
+    height: 8,
     backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 3,
+    borderRadius: 4,
     overflow: "hidden",
   },
   barFill: {
-    height: 5,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
   },
   chartScore: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 16,
-    color: "rgba(255,255,255,0.6)",
-    minWidth: 52,
+    fontFamily: "Inter_900Black",
+    fontSize: 18,
+    color: "#FFFFFF",
+    minWidth: 60,
     textAlign: "right",
   },
   nerdCardWrap: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   nerdCardHeading: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_900Black",
     fontSize: 16,
     color: "#FFFFFF",
-    marginBottom: 14,
+    marginBottom: 16,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   actionRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
+    gap: 16,
+    marginBottom: 24,
+  },
+  btnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  btnText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 14,
+    color: "#FFFFFF",
+    letterSpacing: 1,
+  },
+  brandBtnText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 14,
+    color: "#FFFFFF",
+    letterSpacing: 1.5,
+    textShadowColor: "rgba(0,0,0,0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   homeBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 14,
+    gap: 8,
+    paddingVertical: 16,
+    opacity: 0.5,
   },
   homeBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_700Bold",
     fontSize: 14,
-    color: "rgba(255,255,255,0.4)",
+    color: "#FFFFFF",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
 });

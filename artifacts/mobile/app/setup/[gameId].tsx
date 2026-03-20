@@ -15,8 +15,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { getGameById, HouseRuleOverride } from "@/constants/games";
 import { useGame } from "@/context/GameContext";
-import { PolymerButton } from "@/components/PolymerButton";
-import { PolymerCard, NeuTrench, NeuIconWell } from "@/components/PolymerCard";
+import { PolymerCard, NeuTrench, NeuIconWell, BrandButton } from "@/components/PolymerCard";
 
 const PLAYER_COLORS = [
   "#FF2D78", "#00F5A0", "#FFB800", "#00BFFF",
@@ -98,7 +97,7 @@ export default function SetupScreen() {
         {/* Top navigation row */}
         <View style={styles.topRow}>
           {/* Neumorphic back button */}
-          <NeuIconWell color="#150428" size={42} borderRadius={14}>
+          <NeuIconWell color="rgba(0,0,0,0.2)" size={42} borderRadius={14}>
             <Pressable onPress={() => router.back()} style={styles.backPressable}>
               <Ionicons name="arrow-back" size={20} color="rgba(255,255,255,0.85)" />
             </Pressable>
@@ -118,7 +117,7 @@ export default function SetupScreen() {
         <Text style={styles.subheading}>{game.description}</Text>
 
         {/* Objective — neumorphic trench */}
-        <NeuTrench color="#150428" borderRadius={16} padding={14} style={styles.objectiveCard}>
+        <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={16} padding={14} style={styles.objectiveCard}>
           <View style={styles.objectiveRow}>
             <Ionicons name="flag-outline" size={15} color="#FFB800" />
             <Text style={styles.objectiveText}>{game.objective}</Text>
@@ -142,7 +141,7 @@ export default function SetupScreen() {
               </View>
 
               {/* Neumorphic text input trench */}
-              <NeuTrench color="#150428" borderRadius={15} padding={0} style={styles.inputTrench}>
+              <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={15} padding={0} style={styles.inputTrench}>
                 <TextInput
                   style={styles.playerInput}
                   value={name}
@@ -155,7 +154,7 @@ export default function SetupScreen() {
 
               {playerNames.length > game.minPlayers && (
                 <Pressable onPress={() => removePlayer(idx)} style={styles.removeBtn}>
-                  <NeuIconWell color="#150428" size={34} borderRadius={10}>
+                  <NeuIconWell color="rgba(0,0,0,0.2)" size={34} borderRadius={10}>
                     <Ionicons name="close" size={14} color="rgba(255,80,80,0.8)" />
                   </NeuIconWell>
                 </Pressable>
@@ -165,7 +164,7 @@ export default function SetupScreen() {
 
           {playerNames.length < game.maxPlayers && (
             <Pressable style={styles.addPlayerRow} onPress={addPlayer}>
-              <NeuIconWell color="#150428" size={34} borderRadius={10}>
+              <NeuIconWell color="rgba(0,0,0,0.2)" size={34} borderRadius={10}>
                 <Ionicons name="add" size={16} color="#00F5A0" />
               </NeuIconWell>
               <Text style={styles.addPlayerText}>Add Player</Text>
@@ -201,7 +200,7 @@ export default function SetupScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setDealerMethod(method);
                 }}>
-                  <NeuTrench color="#150428" borderRadius={18} padding={12} style={styles.dealerOptionNeu}>
+                  <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={18} padding={12} style={styles.dealerOptionNeu}>
                     <Ionicons name={method === "random" ? "shuffle" : "person"} size={15} color="rgba(255,255,255,0.4)" />
                     <Text style={styles.dealerTextInactive}>{method === "random" ? "Random" : "First Player"}</Text>
                   </NeuTrench>
@@ -219,7 +218,7 @@ export default function SetupScreen() {
                 <Text style={styles.sectionLabel}>House Rules</Text>
                 <Text style={styles.sectionHint}>Customize scoring</Text>
               </View>
-              <NeuIconWell color="#150428" size={32} borderRadius={10}>
+              <NeuIconWell color="rgba(0,0,0,0.2)" size={32} borderRadius={10}>
                 <Ionicons name={showRules ? "chevron-up" : "chevron-down"} size={14} color="rgba(255,255,255,0.5)" />
               </NeuIconWell>
             </Pressable>
@@ -227,7 +226,7 @@ export default function SetupScreen() {
             {showRules && houseRules.map((rule) => (
               <View key={rule.ruleId} style={styles.ruleRow}>
                 <Text style={styles.ruleLabel}>{rule.label}</Text>
-                <NeuTrench color="#150428" borderRadius={12} padding={0} style={styles.ruleInputTrench}>
+                <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={12} padding={0} style={styles.ruleInputTrench}>
                   <TextInput
                     style={styles.ruleInput}
                     value={String(rule.currentValue)}
@@ -241,16 +240,15 @@ export default function SetupScreen() {
           </View>
         )}
 
-        <PolymerButton
-          label="Start Game"
+        <BrandButton
           onPress={startGame}
-          color="#00F5A0"
-          textColor="#1A0533"
-          size="lg"
-          disabled={!canStart}
-          style={styles.startBtn}
-          icon={<Feather name="play" size={16} color="#1A0533" />}
-        />
+          style={[styles.startBtn, { height: 64, width: "100%" }]}
+        >
+          <View style={styles.startBtnContent}>
+            <Feather name="play" size={18} color="#FFFFFF" />
+            <Text style={styles.brandBtnText}>START GAME</Text>
+          </View>
+        </BrandButton>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -337,4 +335,18 @@ const styles = StyleSheet.create({
     textAlign: "center", paddingHorizontal: 12, height: 40,
   },
   startBtn: { marginTop: 10 },
+  startBtnContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  brandBtnText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 16,
+    color: "#FFFFFF",
+    letterSpacing: 1.5,
+    textShadowColor: "rgba(0,0,0,0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
 });

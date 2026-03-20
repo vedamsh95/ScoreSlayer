@@ -27,20 +27,22 @@ export function PlayerScoreRow({
 
   return (
     <PolymerCard 
-      color={player.color + "22"} 
+      color={player.color + "88"} 
       borderRadius={24} 
       padding={12} 
-      style={[styles.cardContainer, { borderColor: player.color + "44", borderWidth: 2 }]}
+      style={[styles.cardContainer, { borderColor: player.color, borderWidth: 2 }]}
     >
       <View style={styles.rowInner}>
         {/* Neumorphic rank well */}
         <NeuTrench
-          color="#150428"
+          color="rgba(0,0,0,0.25)"
           borderRadius={14}
           padding={0}
           style={styles.rankWell}
         >
-          <Text style={[styles.rankText, { color: player.color }]}>#{rank}</Text>
+          <Text style={[styles.rankText, { color: rank === 1 ? "#FFB800" : "rgba(255,255,255,0.6)" }]}>
+            #{rank}
+          </Text>
         </NeuTrench>
 
         <View style={styles.nameSection}>
@@ -62,20 +64,20 @@ export function PlayerScoreRow({
 
         <View style={styles.scoreArea}>
           {showRoundScore && roundScore !== undefined && (
-            <NeuTrench color="#150428" borderRadius={10} padding={6} style={styles.deltaChip}>
-              <Text style={[styles.deltaText, { color: player.color }]}>
-                {roundScore >= 0 ? "+" : ""}{roundScore}
-              </Text>
-            </NeuTrench>
+            <NeuTrench color="rgba(0,0,0,0.25)" borderRadius={10} padding={6} style={styles.deltaChip}>
+            <Text style={[styles.deltaText, { color: roundScore > 0 ? "#00F5A0" : roundScore < 0 ? "#FF2D78" : "#FFFFFF" }]}>
+              {roundScore >= 0 ? "+" : ""}{roundScore}
+            </Text>
+          </NeuTrench>
           )}
 
           <NeuTrench
-            color="#150428"
+            color="rgba(0,0,0,0.25)"
             borderRadius={16}
             padding={0}
             style={styles.scoreWell}
           >
-            <Text style={[styles.totalScore, isLeader && { color: player.color }]}>
+            <Text style={[styles.totalScore, { color: "#FFFFFF" }]}>
               {player.totalScore.toLocaleString()}
             </Text>
           </NeuTrench>

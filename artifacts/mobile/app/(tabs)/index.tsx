@@ -13,7 +13,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useGame } from "@/context/GameContext";
 import { MAIN_GAMES, GAME_CATEGORIES, GameCategory, GameDefinition, UNO_VARIANTS, PHASE10_VARIANTS, RUMMY_VARIANTS } from "@/constants/games";
-import { PolymerCard, NeuIconWell, NeuTrench } from "@/components/PolymerCard";
+import { PolymerCard, NeuIconWell, NeuTrench, BrandButton } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
 import Animated, {
   useAnimatedStyle,
@@ -49,43 +49,40 @@ function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void
           scale.value = withSpring(1, { damping: 14, stiffness: 380 });
         }}
       >
-        {/* Clay outer card */}
-        <View style={[styles.gameCardShadow, { borderRadius: 22 }]}>
-          <View
-            style={[
-              styles.gameCardBody,
-              { backgroundColor: game.color, borderRadius: 22 },
-            ]}
+        <PolymerCard 
+          color={game.color} 
+          borderRadius={22} 
+          padding={18} 
+          style={styles.gameCard}
+        >
+          {/* Neumorphic icon well carved into the clay */}
+          <NeuIconWell
+            color="rgba(0,0,0,0.25)"
+            size={48}
+            borderRadius={16}
+            style={styles.iconWell}
           >
-            {/* Neumorphic icon well carved into the clay */}
-            <NeuIconWell
-              color="rgba(0,0,0,0.2)"
-              size={46}
-              borderRadius={14}
-              style={styles.iconWell}
-            >
-              <Feather name={game.icon as any} size={20} color={game.color} />
-            </NeuIconWell>
+            <Feather name={game.icon as any} size={22} color="#FFFFFF" />
+          </NeuIconWell>
 
-            <Text style={styles.gameName} numberOfLines={2}>{game.name}</Text>
-            {game.hasVariants ? (
-              <NeuTrench
-                color="rgba(0,0,0,0.2)"
-                borderRadius={8}
-                padding={4}
-                style={{ alignSelf: "flex-start" }}
-              >
-                <Text style={{ fontFamily: "Inter_700Bold", fontSize: 8, color: game.color, letterSpacing: 0.8 }}>
-                  {game.id === "uno" ? UNO_VARIANTS.length : 
-                   game.id === "phase10" ? PHASE10_VARIANTS.length : 
-                   game.id === "rummy" ? RUMMY_VARIANTS.length : 0} VARIANTS
-                </Text>
-              </NeuTrench>
-            ) : (
-              <Text style={styles.gamePlayerCount}>{game.minPlayers}–{game.maxPlayers}p</Text>
-            )}
-          </View>
-        </View>
+          <Text style={styles.gameName} numberOfLines={2}>{game.name}</Text>
+          {game.hasVariants ? (
+            <NeuTrench
+              color="rgba(0,0,0,0.2)"
+              borderRadius={8}
+              padding={4}
+              style={{ alignSelf: "flex-start" }}
+            >
+              <Text style={{ fontFamily: "Inter_700Bold", fontSize: 8, color: "rgba(255,255,255,0.9)", letterSpacing: 0.8 }}>
+                {game.id === "uno" ? UNO_VARIANTS.length : 
+                 game.id === "phase10" ? PHASE10_VARIANTS.length : 
+                 game.id === "rummy" ? RUMMY_VARIANTS.length : 0} VARIANTS
+              </Text>
+            </NeuTrench>
+          ) : (
+            <Text style={styles.gamePlayerCount}>{game.minPlayers}–{game.maxPlayers}p</Text>
+          )}
+        </PolymerCard>
       </Pressable>
     </Animated.View>
   );
@@ -123,9 +120,17 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>GAME NIGHT</Text>
           <Text style={styles.appName}>ScoreSlayer</Text>
         </View>
-        <Pressable style={styles.historyBtn} onPress={() => router.push("/history")}>
+        <BrandButton 
+          style={{ width: 44, height: 44 }}
+          borderRadius={14} 
+          color="#150428"
+          highlight="rgba(255,255,255,0.1)"
+          shadow="rgba(0,0,0,0.5)"
+          glowColor="rgba(0,0,0,0.3)"
+          onPress={() => router.push("/history")}
+        >
           <Ionicons name="time-outline" size={22} color="rgba(255,255,255,0.8)" />
-        </Pressable>
+        </BrandButton>
       </View>
 
       {/* Active game banner — clay card */}
@@ -137,7 +142,12 @@ export default function HomeScreen() {
           }}
           style={{ marginBottom: 30 }}
         >
-          <PolymerCard color={activeSession.gameColor} style={{ padding: 20 }}>
+        <PolymerCard 
+          color={activeSession.gameColor + "CC"} 
+          borderRadius={32} 
+          padding={20} 
+          style={[styles.activeCard, { borderColor: activeSession.gameColor }]}
+        >
             <View style={styles.activeBadgeRow}>
               <View style={styles.liveDot} />
               <Text style={styles.liveText}>LIVE GAME</Text>
@@ -153,14 +163,14 @@ export default function HomeScreen() {
               {activeSession.players.slice(0, 3).map((p) => (
                 <NeuTrench
                   key={p.id}
-                  color="rgba(0,0,0,0.2)"
+                  color="rgba(0,0,0,0.3)"
                   borderRadius={12}
                   padding={8}
                   style={styles.scoreChip}
                 >
                   <View style={[styles.chipDotInline, { backgroundColor: p.color }]} />
                   <Text style={styles.chipName}>{p.name}</Text>
-                  <Text style={[styles.chipScore, { color: p.color }]}>{p.totalScore}</Text>
+                  <Text style={[styles.chipScore, { color: "#FFFFFF" }]}>{p.totalScore}</Text>
                 </NeuTrench>
               ))}
             </View>
@@ -182,7 +192,7 @@ export default function HomeScreen() {
           <View key={cat.id} style={styles.categorySection}>
             <View style={styles.catHeader}>
               {/* Small neumorphic badge for category icon */}
-              <NeuIconWell color="#150428" size={28} borderRadius={9} style={styles.catIconBadge}>
+              <NeuIconWell color="rgba(0,0,0,0.2)" size={28} borderRadius={9} style={styles.catIconBadge}>
                 <Feather name={cat.icon as any} size={13} color={CATEGORY_COLORS[cat.id]} />
               </NeuIconWell>
               <Text style={[styles.catLabel, { color: CATEGORY_COLORS[cat.id] }]}>
@@ -228,7 +238,7 @@ export default function HomeScreen() {
               onPress={() => router.push({ pathname: "/results/[id]", params: { id: s.id } })}
             >
               <NeuTrench
-                color="#150428"
+                color="rgba(0,0,0,0.2)"
                 borderRadius={16}
                 padding={14}
                 style={styles.recentRow}
@@ -289,6 +299,10 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.4)",
   },
   // Active game card internals
+  activeCard: {
+    marginBottom: 0,
+    borderWidth: 2,
+  },
   activeBadgeRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -302,10 +316,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#00F5A0",
   },
   liveText: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_900Black",
     fontSize: 10,
-    color: "#00F5A0",
+    color: "#FFFFFF",
     letterSpacing: 2,
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   activeGameName: {
     fontFamily: "Inter_700Bold",
@@ -375,34 +392,26 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   // Clay game card
-  gameCardShadow: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.55,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  gameCardBody: {
+  gameCard: {
     width: 130,
     height: 148,
-    padding: 18,
-    justifyContent: "space-between",
-    overflow: "hidden",
-    position: "relative",
   },
   iconWell: { marginBottom: 10, zIndex: 2 },
   gameName: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_900Black",
     fontSize: 13,
     color: "#FFFFFF",
     marginBottom: 3,
     lineHeight: 17,
     zIndex: 2,
+    textShadowColor: "rgba(0,0,0,0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   gamePlayerCount: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Inter_700Bold",
     fontSize: 11,
-    color: "rgba(255,255,255,0.55)",
+    color: "rgba(255,255,255,0.7)",
     zIndex: 2,
   },
   // Recent games
