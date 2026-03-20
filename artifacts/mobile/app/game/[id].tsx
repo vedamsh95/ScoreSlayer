@@ -32,10 +32,11 @@ function sortPlayers(players: Player[], gameId: string): Player[] {
 export default function GameScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { getSession, addRoundScores, endSession, updateSession } = useGame();
+  const { getSession, addRoundScores, updateRoundScores, deleteRound, endSession, updateSession } = useGame();
 
   const [showScoreModal, setShowScoreModal] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true); // Default to true
+  const [editingRoundIndex, setEditingRoundIndex] = useState<number | null>(null);
 
   const session = getSession(id ?? "");
 
@@ -50,14 +51,25 @@ export default function GameScreen() {
   );
 
   const handleSubmitScores = useCallback(
-    (scores: Record<string, number>) => {
+    (scores: Record<string, number>, logs: Record<string, number[]>, cleared: Record<string, boolean>) => {
       if (!id) return;
-      addRoundScores(id, scores);
+      if (editingRoundIndex !== null) {
+        updateRoundScores(id, editingRoundIndex, scores, logs, cleared);
+        setEditingRoundIndex(null);
+      } else {
+        addRoundScores(id, scores, logs, cleared);
+      }
       setShowScoreModal(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    [id, addRoundScores]
+    [id, addRoundScores, updateRoundScores, editingRoundIndex]
   );
+
+  const handleEditRound = (roundIndex: number) => {
+    setEditingRoundIndex(roundIndex);
+    setShowScoreModal(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
 
   const handleEndGame = useCallback(() => {
     Alert.alert(
@@ -214,25 +226,43 @@ export default function GameScreen() {
 
         {showHistory && session.currentRound > 1 && (
           <NeuTrench color="#150428" borderRadius={16} padding={0} style={styles.historyTable}>
-            <View style={styles.historyHeader}>
-              <Text style={styles.historyHeaderText}>Player</Text>
-              {Array.from({ length: session.currentRound - 1 }).map((_, r) => (
-                <Text key={r} style={styles.historyHeaderRound}>R{r + 1}</Text>
-              ))}
-            </View>
-            {session.players.map((p) => (
-              <View key={p.id} style={styles.historyRow}>
-                <View style={styles.historyNameCell}>
-                  <View style={[styles.historyDot, { backgroundColor: p.color }]} />
-                  <Text style={styles.historyName} numberOfLines={1}>{p.name}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View>
+                <View style={styles.historyHeader}>
+                  <Text style={[styles.historyHeaderText, { width: 100 }]}>Player</Text>
+                  {Array.from({ length: session.currentRound - 1 }).map((_, r) => (
+                    <Pressable key={r} onPress={() => handleEditRound(r)} style={styles.historyHeaderRoundBtn}>
+                      <Text style={styles.historyHeaderRound}>R{r + 1}</Text>
+                      <Feather name="edit-2" size={8} color="rgba(255,255,255,0.3)" />
+                    </Pressable>
+                  ))}
                 </View>
-                {p.scores.map((s, i) => (
-                  <Text key={i} style={[styles.historyScore, { color: p.color }]}>
-                    {s >= 0 ? "+" : ""}{s}
-                  </Text>
+                {session.players.map((p) => (
+                  <View key={p.id} style={styles.historyRow}>
+                    <View style={[styles.historyNameCell, { width: 100 }]}>
+                      <View style={[styles.historyDot, { backgroundColor: p.color }]} />
+                      <Text style={styles.historyName} numberOfLines={1}>{p.name}</Text>
+                    </View>
+                    {Array.from({ length: session.currentRound - 1 }).map((_, r) => {
+                      const score = p.scores[r];
+                      const log = p.roundLogs[r] || [];
+                      return (
+                        <View key={r} style={styles.historyDetailCell}>
+                          <Text style={[styles.historyScore, { color: p.color }]}>
+                            {score >= 0 ? "+" : ""}{score}
+                          </Text>
+                          {log.length > 0 && (
+                            <Text style={styles.historyLogText}>
+                              ({log.join(",")})
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
                 ))}
               </View>
-            ))}
+            </ScrollView>
           </NeuTrench>
         )}
       </ScrollView>
@@ -258,9 +288,19 @@ export default function GameScreen() {
         visible={showScoreModal}
         players={session.players}
         game={game}
-        round={session.currentRound}
+        round={editingRoundIndex !== null ? editingRoundIndex + 1 : session.currentRound}
+        isEditing={editingRoundIndex !== null}
+        initialLogs={editingRoundIndex !== null ? 
+          session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.roundLogs[editingRoundIndex] || [] }), {}) : 
+          undefined}
+        initialCleared={editingRoundIndex !== null ?
+          session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.currentPhaseCleared && editingRoundIndex === session.currentRound - 2 }), {}) :
+          undefined}
         onSubmit={handleSubmitScores}
-        onClose={() => setShowScoreModal(false)}
+        onClose={() => {
+          setShowScoreModal(false);
+          setEditingRoundIndex(null);
+        }}
       />
     </View>
   );
@@ -420,12 +460,16 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
+  historyHeaderRoundBtn: {
+    width: 60,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
   historyHeaderRound: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 11,
     color: "rgba(255,255,255,0.5)",
-    width: 36,
-    textAlign: "center",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -455,7 +499,17 @@ const styles = StyleSheet.create({
   historyScore: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    width: 36,
+    textAlign: "center",
+  },
+  historyDetailCell: {
+    width: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  historyLogText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 8,
+    color: "rgba(255,255,255,0.3)",
     textAlign: "center",
   },
   bottomBar: {
