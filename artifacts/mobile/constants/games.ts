@@ -62,6 +62,21 @@ export interface UnoVariantDef {
   notes?: string[];
 }
 
+// ─── Phase 10 Variant ───────────────────────────────────────────────────────
+export interface Phase10VariantDef {
+  id: string;
+  name: string;
+  tagline: string;
+  badge?: string;
+  color: string;
+  icon: string;
+  description: string;
+  phases: Phase[];
+  scoring?: ScoreRule[];
+  notes?: string[];
+  common_special_phases?: string[];
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  8 UNO VARIANTS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -471,10 +486,6 @@ export const UNO_VARIANTS: UnoVariantDef[] = [
   },
 ];
 
-export function getUnoVariantById(id: string): UnoVariantDef | undefined {
-  return UNO_VARIANTS.find((v) => v.id === id);
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 //  GAME DEFINITION
 // ═══════════════════════════════════════════════════════════════════════════
@@ -498,6 +509,122 @@ export interface GameDefinition {
   hasVariants?: boolean;
   parentId?: string;
 }
+
+export function getUnoVariantById(id: string): UnoVariantDef | undefined {
+  return UNO_VARIANTS.find((v) => v.id === id);
+}
+
+export function getPhase10VariantById(id: string): Phase10VariantDef | undefined {
+  return PHASE10_VARIANTS.find((v) => v.id === id);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  5 PHASE 10 VARIANTS
+// ═══════════════════════════════════════════════════════════════════════════
+export const PHASE10_VARIANTS: Phase10VariantDef[] = [
+  {
+    id: "phase10_standard",
+    name: "Standard",
+    tagline: "The classic sequential game.",
+    badge: "CLASSIC",
+    color: "#00BFFF",
+    icon: "layers",
+    description: "The original Rummy-type game with 10 sequential phases. Complete each phase to move to the next.",
+    phases: [
+      { number: 1, description: "2 sets of 3" },
+      { number: 2, description: "1 set of 3 + 1 run of 4" },
+      { number: 3, description: "1 set of 4 + 1 run of 4" },
+      { number: 4, description: "1 run of 7" },
+      { number: 5, description: "1 run of 8" },
+      { number: 6, description: "1 run of 9" },
+      { number: 7, description: "2 sets of 4" },
+      { number: 8, description: "7 cards of one color" },
+      { number: 9, description: "1 set of 5 + 1 set of 2" },
+      { number: 10, description: "1 set of 5 + 1 set of 3" },
+    ],
+    notes: ["Complete phases in order", "Lowest score wins overall"],
+  },
+  {
+    id: "phase10_express",
+    name: "Express",
+    tagline: "Shortened requirements for faster play.",
+    badge: "FAST",
+    color: "#00F5A0",
+    icon: "zap",
+    description: "A faster version of Phase 10 with easier requirements, perfect for 2-4 players.",
+    phases: [
+      { number: 1, description: "2 sets of 3" },
+      { number: 2, description: "1 set of 3 + 1 run of 3" },
+      { number: 3, description: "1 set of 4" },
+      { number: 4, description: "1 run of 5" },
+      { number: 5, description: "1 run of 6" },
+      { number: 6, description: "1 run of 7" },
+      { number: 7, description: "1 set of 4 + 1 set of 3" },
+      { number: 8, description: "5 cards of one color" },
+      { number: 9, description: "1 set of 5 + 1 set of 2" },
+      { number: 10, description: "1 set of 6" },
+    ],
+    notes: ["Reduced counts for faster rounds", "Score cards 1-9: 5pts, 10-12: 10pts"],
+  },
+  {
+    id: "phase10_even_odd",
+    name: "Even/Odd",
+    tagline: "Numerical parity strategy.",
+    badge: "STRATEGY",
+    color: "#FFB800",
+    icon: "hash",
+    description: "Features phases based on numerical parity (Even vs Odd). From the 'Cocoa Canyon' and 'Disco Fever' stages.",
+    phases: [
+      { number: 1, description: "8 cards of all even numbers" },
+      { number: 2, description: "8 cards of all odd numbers" },
+      { number: 3, description: "1 set of 4 even + 1 set of 4 odd" },
+      { number: 4, description: "1 run of 4 even + 1 run of 4 odd" },
+      { number: 5, description: "7 cards of even or odd (any color)" },
+      { number: 6, description: "8 cards of even or odd (same color)" },
+    ],
+    notes: ["Numerical parity focus", "Strategy beyond basic runs and sets"],
+  },
+  {
+    id: "phase10_masters",
+    name: "Masters",
+    tagline: "Non-linear phase completion.",
+    badge: "ADVANCED",
+    color: "#9B59B6",
+    icon: "award",
+    description: "Players pick any phase in any order and can save one card in a 'Save Pile' for later rounds.",
+    phases: [
+      { number: 1, description: "2 sets of 3" },
+      { number: 2, description: "1 set of 3 + 1 run of 4" },
+      { number: 3, description: "1 set of 4 + 1 run of 4" },
+      { number: 4, description: "1 run of 7" },
+      { number: 5, description: "1 run of 8" },
+      { number: 6, description: "1 run of 9" },
+      { number: 7, description: "2 sets of 4" },
+      { number: 8, description: "7 cards of one color" },
+      { number: 9, description: "1 set of 5 + 1 set of 2" },
+      { number: 10, description: "1 set of 5 + 1 set of 3" },
+    ],
+    notes: ["Complete in any order", "Save Pile: store 1 card per round"],
+  },
+  {
+    id: "phase10_junior",
+    name: "Junior",
+    tagline: "Animals and colors for kids.",
+    badge: "KIDS",
+    color: "#FF4757",
+    icon: "github",
+    description: "A simplified version using animals and colors instead of numbers. Ideal for early learners.",
+    phases: [
+      { number: 1, description: "4 cards of the same animal" },
+      { number: 2, description: "4 cards of the same color" },
+      { number: 3, description: "1 set of 4 and 1 set of 2" },
+    ],
+    scoring: [
+      { label: "Round Winner (Token)", points: 1 },
+    ],
+    notes: ["No points (use tokens)", "Uses animals instead of numbers"],
+  },
+];
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  GAMES LIST
@@ -545,7 +672,7 @@ export const GAMES: GameDefinition[] = [
     quickPenalties: v.quickPenalties,
   })),
 
-  // PHASE 10
+  // PHASE 10 hub entry
   {
     id: "phase10",
     name: "Phase 10",
@@ -555,26 +682,32 @@ export const GAMES: GameDefinition[] = [
     winCondition: "lowest",
     minPlayers: 2,
     maxPlayers: 6,
-    description: "Rummy-type game with 10 phases to complete",
-    objective: "Complete all 10 phases with the lowest score",
-    scoreRules: [
+    description: "5 variants — Standard, Express, Even/Odd, Masters & Junior",
+    objective: "Complete all phases with the lowest score",
+    hasVariants: true,
+    houseRules: [],
+    hasCalculator: false,
+  },
+  // Phase 10 variant game entries
+  ...PHASE10_VARIANTS.map((v) => ({
+    id: v.id,
+    name: v.name,
+    category: "card" as GameCategory,
+    icon: v.icon,
+    color: v.color,
+    winCondition: "lowest" as WinCondition,
+    minPlayers: 2,
+    maxPlayers: 6,
+    description: v.description,
+    objective: "Complete all phases with the lowest score",
+    parentId: "phase10",
+    scoreRules: v.scoring || [
       { label: "Cards 1–9 (low numbers)", points: 5 },
       { label: "Cards 10–12 (high numbers)", points: 10 },
       { label: "Skip Card", points: 15 },
       { label: "Wild Card", points: 25 },
     ],
-    phases: [
-      { number: 1, description: "2 sets of 3" },
-      { number: 2, description: "1 set of 3 + 1 run of 4" },
-      { number: 3, description: "1 set of 4 + 1 run of 4" },
-      { number: 4, description: "1 run of 7" },
-      { number: 5, description: "1 run of 8" },
-      { number: 6, description: "1 run of 9" },
-      { number: 7, description: "2 sets of 4" },
-      { number: 8, description: "7 cards of one color" },
-      { number: 9, description: "1 set of 5 + 1 set of 2" },
-      { number: 10, description: "1 set of 5 + 1 set of 3" },
-    ],
+    phases: v.phases,
     houseRules: [
       { ruleId: "low_card_value", label: "Low Card (1–9) Value", defaultValue: 5, currentValue: 5 },
       { ruleId: "high_card_value", label: "High Card (10–12) Value", defaultValue: 10, currentValue: 10 },
@@ -582,13 +715,7 @@ export const GAMES: GameDefinition[] = [
       { ruleId: "wild_value", label: "Wild Card Value", defaultValue: 25, currentValue: 25 },
     ],
     hasCalculator: true,
-    quickPenalties: [
-      { label: "+5 (Cards 1–9)", points: 5 },
-      { label: "+10 (Cards 10–12)", points: 10 },
-      { label: "+15 (Skip)", points: 15 },
-      { label: "+25 (Wild)", points: 25 },
-    ],
-  },
+  })),
   { id: "scrabble", name: "Scrabble", category: "board", icon: "grid", color: "#FFB800", winCondition: "highest", minPlayers: 2, maxPlayers: 4, description: "Classic word game on a 15×15 grid", objective: "Score the most points by placing tiles", houseRules: [{ ruleId: "bingo_bonus", label: "Bingo Bonus (7 tiles)", defaultValue: 50, currentValue: 50 }], hasCalculator: false, quickPenalties: [{ label: "+50 Bingo!", points: 50 }] },
   { id: "spades", name: "Spades", category: "trick", icon: "triangle", color: "#6B21E8", winCondition: "highest", targetScore: 500, minPlayers: 4, maxPlayers: 4, description: "Classic trick-taking partnership card game", objective: "First partnership to 500 points", houseRules: [{ ruleId: "bag_penalty", label: "Bag Penalty (per 10 bags)", defaultValue: 100, currentValue: 100 }, { ruleId: "nil_bonus", label: "Nil Bid Bonus", defaultValue: 100, currentValue: 100 }], hasCalculator: true, quickPenalties: [{ label: "Set (miss bid)", points: -10 }, { label: "Bags penalty", points: -100 }] },
   { id: "hearts", name: "Hearts", category: "trick", icon: "heart", color: "#FF4757", winCondition: "lowest", targetScore: 100, minPlayers: 4, maxPlayers: 4, description: "Trick-avoidance card game", objective: "Avoid taking hearts and the Queen of Spades", scoreRules: [{ label: "Each Heart", points: 1 }, { label: "Queen of Spades", points: 13 }], houseRules: [{ ruleId: "moon_bonus", label: "Shoot the Moon Effect", defaultValue: -26, currentValue: -26 }], hasCalculator: true, quickPenalties: [{ label: "+1 (Heart)", points: 1 }, { label: "+13 (Queen)", points: 13 }] },

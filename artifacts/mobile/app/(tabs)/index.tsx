@@ -213,7 +213,7 @@ export default function HomeScreen() {
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     if (game.hasVariants) {
-                      router.push("/uno");
+                      router.push(`/${game.id}` as any);
                     } else {
                       router.push({ pathname: "/setup/[gameId]", params: { gameId: game.id } });
                     }
