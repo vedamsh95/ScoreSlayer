@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Platform,
   Pressable,
@@ -9,35 +9,70 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { PHASE10_VARIANTS, Phase10VariantDef } from "@/constants/games";
+import { PHASE10_VARIANTS } from "@/constants/games";
 import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
 
 function darken(hex: string, factor: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
+  const hexVal = hex.startsWith("#") ? hex.slice(1) : hex;
+  const rr = parseInt(hexVal.slice(0, 2), 16);
+  const gg = parseInt(hexVal.slice(2, 4), 16);
+  const bb = parseInt(hexVal.slice(4, 6), 16);
   const d = 1 - factor;
-  return `rgb(${Math.floor(r * d)},${Math.floor(g * d)},${Math.floor(b * d)})`;
+  return `rgb(${Math.floor(rr * d)},${Math.floor(gg * d)},${Math.floor(bb * d)})`;
 }
 
-// ─── Phase Row Component ─────────────────────────────────────────────────────
-function PhaseRow({ number, description, color }: { number: number; description: string; color: string }) {
+// ─── Phase Card Component ─────────────────────────────────────────────────────
+function PhaseCard({ number, description, color }: { number: number; description: string; color: string }) {
+  const [expanded, setExpanded] = useState(false);
+  
   return (
-    <NeuTrench color={darken(color, 0.4)} borderRadius={14} padding={12} style={styles.phaseRow}>
-      <View style={[styles.phaseNumberBadge, { backgroundColor: color }]}>
-        <Text style={styles.phaseNumberText}>{number}</Text>
+    <Pressable onPress={() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setExpanded(!expanded);
+    }}>
+      <NeuTrench color={darken(color, 0.42)} borderRadius={16} padding={12} style={styles.phaseCard}>
+        <View style={styles.phaseRow}>
+          <View style={[styles.phaseNumberBadge, { backgroundColor: color }]}>
+            <Text style={styles.phaseNumberText}>{number}</Text>
+          </View>
+          <Text style={styles.phaseDescription} numberOfLines={expanded ? undefined : 1}>
+            {description}
+          </Text>
+          <Ionicons 
+            name={expanded ? "chevron-up" : "chevron-down"} 
+            size={14} 
+            color="rgba(255,255,255,0.3)" 
+          />
+        </View>
+      </NeuTrench>
+    </Pressable>
+  );
+}
+
+// ─── Scoring Rule Component ──────────────────────────────────────────────────
+function ScoringRuleRow({ label, points, color }: { label: string; points: number; color: string }) {
+  return (
+    <NeuTrench color="#150428" borderRadius={14} padding={12} style={styles.scoreRow}>
+      <View style={styles.scoreRowLeft}>
+        <View style={[styles.scoreDot, { backgroundColor: color }]} />
+        <Text style={styles.scoreLabel}>{label}</Text>
       </View>
-      <Text style={styles.phaseDescription}>{description}</Text>
+      {/* Point value — clay pill */}
+      <View style={[styles.pointsShadow, { borderRadius: 10, shadowColor: color }]}>
+        <View style={[styles.pointsBody, { backgroundColor: color, borderRadius: 10 }]}>
+          <Text style={styles.pointsText}>+{points}</Text>
+        </View>
+      </View>
     </NeuTrench>
   );
 }
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function Phase10VariantDetailScreen() {
-  const { variantId } = useLocalSearchParams<{ variantId: string }>();
+  const { variantId, readOnly } = useLocalSearchParams<{ variantId: string; readOnly?: string }>();
+  const isReadOnly = readOnly === "true";
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
@@ -51,21 +86,26 @@ export default function Phase10VariantDetailScreen() {
     );
   }
 
+  const defaultScoring = [
+    { label: "Cards 1–9", points: 5 },
+    { label: "Cards 10–12", points: 10 },
+    { label: "Skip Card", points: 15 },
+    { label: "Wild Card", points: 25 },
+  ];
+
   return (
     <View style={{ flex: 1, backgroundColor: "#0A1229" }}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: topPadding + 16, paddingBottom: insets.bottom + 110 },
+          { paddingTop: topPadding + 16, paddingBottom: insets.bottom + (isReadOnly ? 40 : 110) },
         ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Clay hero header */}
         <View style={[styles.heroShadow, { borderRadius: 28, shadowColor: variant.color }]}>
           <View style={[styles.heroBody, { backgroundColor: variant.color, borderRadius: 28 }]}>
-            <View style={styles.heroGloss} pointerEvents="none" />
-            <View style={styles.heroInnerShadow} pointerEvents="none" />
 
             {/* Nav row */}
             <View style={styles.heroNav}>
@@ -118,37 +158,28 @@ export default function Phase10VariantDetailScreen() {
 
         {/* ── PHASES ────────────────────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Phases</Text>
+          <Text style={styles.sectionTitle}>Game Phases</Text>
           <View style={styles.phaseList}>
             {variant.phases.map((p, idx) => (
-              <PhaseRow key={idx} number={p.number} description={p.description} color={variant.color} />
+              <PhaseCard key={idx} number={p.number} description={p.description} color={variant.color} />
             ))}
           </View>
         </View>
 
         {/* ── SCORING ───────────────────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Card Values</Text>
-          <NeuTrench color="#150428" borderRadius={18} padding={16} style={styles.scoringCard}>
-            {(variant.scoring || [
-              { label: "Cards 1–9", points: 5 },
-              { label: "Cards 10–12", points: 10 },
-              { label: "Skip Card", points: 15 },
-              { label: "Wild Card", points: 25 },
-            ]).map((rule, i) => (
-              <View key={i} style={styles.scoreRow}>
-                <Text style={styles.scoreLabel}>{rule.label}</Text>
-                <View style={styles.scoreDivider} />
-                <Text style={styles.scorePoints}>+{rule.points}</Text>
-              </View>
+          <Text style={styles.sectionTitle}>Card Point Values</Text>
+          <View style={styles.scoreList}>
+            {(variant.scoring || defaultScoring).map((rule, i) => (
+              <ScoringRuleRow key={i} label={rule.label} points={rule.points} color={variant.color} />
             ))}
-          </NeuTrench>
+          </View>
         </View>
 
         {/* ── NOTES ────────────────────────────────────────────────────────── */}
         {variant.notes && variant.notes.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Rules & Notes</Text>
+            <Text style={styles.sectionTitle}><MaterialCommunityIcons name="book-open-variant" size={16} color="#FFF" /> Rules & Notes</Text>
             <NeuTrench color="#150428" borderRadius={18} padding={16} style={styles.notesCard}>
               {variant.notes.map((note, i) => (
                 <View key={i} style={styles.noteRow}>
@@ -162,20 +193,22 @@ export default function Phase10VariantDetailScreen() {
       </ScrollView>
 
       {/* Sticky Play button */}
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
-        <PolymerButton
-          label={`Start ${variant.name}`}
-          onPress={() => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
-          }}
-          color={variant.color}
-          textColor="#FFFFFF"
-          size="lg"
-          style={{ flex: 1 }}
-          icon={<Feather name="play" size={16} color="#FFFFFF" />}
-        />
-      </View>
+      {!isReadOnly && (
+        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+          <PolymerButton
+            label={`Start ${variant.name}`}
+            onPress={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
+            }}
+            color={variant.color}
+            textColor="#FFFFFF"
+            size="lg"
+            style={{ flex: 1 }}
+            icon={<Feather name="play" size={16} color="#FFFFFF" />}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -192,14 +225,6 @@ const styles = StyleSheet.create({
     shadowRadius: 22, elevation: 16, marginBottom: 16,
   },
   heroBody: { padding: 20, overflow: "hidden", position: "relative" },
-  heroGloss: {
-    position: "absolute", top: 8, left: 12, width: "50%", height: "38%",
-    backgroundColor: "rgba(255,255,255,0.22)", borderBottomRightRadius: 50, zIndex: 1,
-  },
-  heroInnerShadow: {
-    position: "absolute", bottom: 0, right: 0, width: "45%", height: "35%",
-    backgroundColor: "rgba(0,0,0,0.22)", borderTopLeftRadius: 50, zIndex: 1,
-  },
   heroNav: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18, zIndex: 2 },
   backPress: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   heroBadge: { paddingHorizontal: 10, paddingVertical: 5 },
@@ -213,7 +238,7 @@ const styles = StyleSheet.create({
   heroStatLabel: { fontFamily: "Inter_400Regular", fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 2 },
 
   // Description
-  descCard: { marginBottom: 24 },
+  descCard: { marginBottom: 24, backgroundColor: "rgba(10,18,41,0.5)" },
   descText: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 20 },
 
   // Section
@@ -222,22 +247,34 @@ const styles = StyleSheet.create({
 
   // Phase List
   phaseList: { gap: 10 },
+  phaseCard: { marginBottom: 4 },
   phaseRow: { flexDirection: "row", alignItems: "center", gap: 14 },
-  phaseNumberBadge: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  phaseNumberText: { fontFamily: "Inter_700Bold", fontSize: 14, color: "#FFFFFF" },
-  phaseDescription: { fontFamily: "Inter_500Medium", fontSize: 14, color: "rgba(255,255,255,0.9)", flex: 1 },
+  phaseNumberBadge: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 },
+  phaseNumberText: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFFFFF" },
+  phaseDescription: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: "rgba(255,255,255,0.9)", flex: 1 },
 
-  // Scoring
-  scoringCard: {},
-  scoreRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  scoreLabel: { fontFamily: "Inter_500Medium", fontSize: 14, color: "rgba(255,255,255,0.7)" },
-  scoreDivider: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.06)", mx: 10 },
-  scorePoints: { fontFamily: "Inter_700Bold", fontSize: 14, color: "#FFFFFF" },
+  // Scoring Rule
+  scoreList: { gap: 10 },
+  scoreRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14 },
+  scoreRowLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  scoreDot: { width: 8, height: 8, borderRadius: 4 },
+  scoreLabel: { fontFamily: "Inter_600SemiBold", fontSize: 14, color: "#FFFFFF" },
+
+  // Points pill (clay)
+  pointsShadow: {
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5,
+    shadowRadius: 6, elevation: 5,
+  },
+  pointsBody: {
+    paddingHorizontal: 12, paddingVertical: 6,
+    overflow: "hidden", position: "relative",
+  },
+  pointsText: { fontFamily: "Inter_900Black", fontSize: 13, color: "#1A0533", zIndex: 2 },
 
   // Notes
-  notesCard: {},
-  noteRow: { flexDirection: "row", gap: 10, alignItems: "flex-start", marginBottom: 10 },
-  noteText: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.65)", flex: 1, lineHeight: 19 },
+  notesCard: { backgroundColor: "rgba(10,18,41,0.5)" },
+  noteRow: { flexDirection: "row", gap: 12, alignItems: "flex-start", marginBottom: 12 },
+  noteText: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.65)", flex: 1, lineHeight: 20 },
 
   // Bottom bar
   bottomBar: {

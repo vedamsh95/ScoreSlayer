@@ -10,20 +10,22 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useGame } from "@/context/GameContext";
-import { getGameById } from "@/constants/games";
+import { getGameById, GameDefinition } from "@/constants/games";
 import { PlayerScoreRow } from "@/components/PlayerScoreRow";
 import { ScoreInputModal } from "@/components/ScoreInputModal";
 import { PolymerButton } from "@/components/PolymerButton";
 import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 import { Player } from "@/context/GameContext";
+import { GameToolsModal } from "@/components/GameToolsModal";
 
-function sortPlayers(players: Player[], gameId: string): Player[] {
-  const lowestWins = ["hearts", "uno", "phase10", "dominoes", "darts_301"];
+function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] {
+  if (!game) return players;
+  const isLowestWins = game.winCondition === "lowest";
   return [...players].sort((a, b) =>
-    lowestWins.includes(gameId)
+    isLowestWins
       ? a.totalScore - b.totalScore
       : b.totalScore - a.totalScore
   );
@@ -35,8 +37,11 @@ export default function GameScreen() {
   const { getSession, addRoundScores, updateRoundScores, deleteRound, endSession, updateSession } = useGame();
 
   const [showScoreModal, setShowScoreModal] = useState(false);
+  const [showToolsModal, setShowToolsModal] = useState(false);
   const [showHistory, setShowHistory] = useState(true); // Default to true
   const [editingRoundIndex, setEditingRoundIndex] = useState<number | null>(null);
+
+  const FIVE_CROWNS_WILDS = ["3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
   const session = getSession(id ?? "");
 
@@ -46,18 +51,18 @@ export default function GameScreen() {
   );
 
   const sortedPlayers = useMemo(
-    () => (session ? sortPlayers(session.players, session.gameId) : []),
-    [session]
+    () => (session ? sortPlayers(session.players, game) : []),
+    [session, game]
   );
 
   const handleSubmitScores = useCallback(
-    (scores: Record<string, number>, logs: Record<string, number[]>, cleared: Record<string, boolean>) => {
+    (scores: Record<string, number>, logs: Record<string, number[]>, cleared: Record<string, boolean>, bids?: Record<string, number>, tricksWon?: Record<string, number>) => {
       if (!id) return;
       if (editingRoundIndex !== null) {
-        updateRoundScores(id, editingRoundIndex, scores, logs, cleared);
+        updateRoundScores(id, editingRoundIndex, scores, logs, cleared, bids, tricksWon);
         setEditingRoundIndex(null);
       } else {
-        addRoundScores(id, scores, logs, cleared);
+        addRoundScores(id, scores, logs, cleared, bids, tricksWon);
       }
       setShowScoreModal(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -91,6 +96,26 @@ export default function GameScreen() {
     );
   }, [id, endSession]);
 
+  const handleViewRules = useCallback(() => {
+    if (!game) return;
+    const isPhase10 = game.parentId === "phase10" || game.id.includes("phase10");
+    const route = isPhase10 ? "/phase10/[variantId]" : "/uno/[variantId]";
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({ 
+      pathname: route as any, 
+      params: { variantId: game.id, readOnly: "true" } 
+    });
+  }, [game]);
+
+  const handleShuffleSeating = useCallback((shuffledPlayers: Player[]) => {
+    if (!session) return;
+    updateSession({
+      ...session,
+      players: shuffledPlayers,
+    });
+  }, [session, updateSession]);
+
   const toggleDirection = useCallback(() => {
     if (!session) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -112,7 +137,7 @@ export default function GameScreen() {
   }
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const dealer = session.players[session.dealerIndex];
+  const dealer = session.dealerIndex >= 0 ? session.players[session.dealerIndex] : null;
 
   const recentRoundScores: Record<string, number> = {};
   session.players.forEach((p) => {
@@ -142,15 +167,33 @@ export default function GameScreen() {
             </Pressable>
           </NeuIconWell>
 
+          <NeuIconWell color="#150428" size={40} borderRadius={13} style={{ marginLeft: 10 }}>
+            <Pressable onPress={handleViewRules} style={styles.iconBtnPressable}>
+              <Ionicons name="book-outline" size={20} color={session.gameColor} />
+            </Pressable>
+          </NeuIconWell>
+
+          <NeuIconWell color="#150428" size={40} borderRadius={13} style={{ marginLeft: 10 }}>
+            <Pressable onPress={() => { setShowToolsModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.iconBtnPressable}>
+              <MaterialCommunityIcons name="dice-5-outline" size={24} color="#00F5A0" />
+            </Pressable>
+          </NeuIconWell>
+
           <View style={styles.headerCenter}>
             <Text style={styles.headerGame}>{game.name}</Text>
-            <Text style={styles.headerRound}>Round {session.currentRound}</Text>
+            {session.gameId === "five_crowns" ? (
+              <View style={styles.fiveCrownsBadge}>
+                <Ionicons name="flash" size={10} color="#FFB800" />
+                <Text style={styles.wildText}>Wilds: {FIVE_CROWNS_WILDS[Math.min(session.currentRound - 1, 10)]}</Text>
+              </View>
+            ) : (
+              <Text style={styles.headerRound}>Round {session.currentRound}</Text>
+            )}
           </View>
 
           {/* Clay End button — danger pink */}
-          <View style={[styles.endBtnShadow, { borderRadius: 14 }]}>
-            <Pressable onPress={handleEndGame} style={[styles.endBtnClay, { borderRadius: 14 }]}>
-              <View style={styles.endBtnGloss} pointerEvents="none" />
+          <View style={[styles.endBtnShadow, { borderRadius: 14, shadowColor: session.gameColor }]}>
+            <Pressable onPress={handleEndGame} style={[styles.endBtnClay, { borderRadius: 14, backgroundColor: session.gameColor }]}>
               <Text style={styles.endBtnText}>End</Text>
             </Pressable>
           </View>
@@ -196,6 +239,26 @@ export default function GameScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {session.gameId === "golf" && session.currentRound > 1 && (
+          <View style={styles.golfHoleBar}>
+            <Text style={styles.golfHoleTitle}>9-Hole Trend</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.golfHoleStrip}>
+                {Array.from({ length: Math.max(9, session.currentRound - 1) }).map((_, r) => (
+                  <View key={r} style={styles.golfHoleColumn}>
+                    <Text style={styles.golfHoleLabel}>H{r + 1}</Text>
+                    <NeuTrench color="#150428" borderRadius={8} padding={4} style={styles.golfHoleChip}>
+                      <Text style={[styles.golfHoleScore, { color: (leader?.scores[r] ?? 0) > 0 ? "#FF2D78" : "#00F5A0" }]}>
+                        {leader?.scores[r] !== undefined ? leader.scores[r] : "—"}
+                      </Text>
+                    </NeuTrench>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        )}
+
         <View style={styles.playersSection}>
           {sortedPlayers.map((player, i) => (
             <PlayerScoreRow
@@ -205,6 +268,9 @@ export default function GameScreen() {
               isDealer={player.id === dealer?.id}
               roundScore={recentRoundScores[player.id]}
               showRoundScore={session.currentRound > 1}
+              isLeader={i === 0}
+              isPhase10={game.parentId === "phase10" || game.id.includes("phase10")}
+              showBags={game.id.startsWith("spades")}
             />
           ))}
         </View>
@@ -246,12 +312,21 @@ export default function GameScreen() {
                     {Array.from({ length: session.currentRound - 1 }).map((_, r) => {
                       const score = p.scores[r];
                       const log = p.roundLogs[r] || [];
+                      const bid = p.bids?.[r];
+                      const won = p.tricksWon?.[r];
+                      const isSpades = session.gameId.startsWith("spades");
+
                       return (
                         <View key={r} style={styles.historyDetailCell}>
                           <Text style={[styles.historyScore, { color: p.color }]}>
                             {score >= 0 ? "+" : ""}{score}
                           </Text>
-                          {log.length > 0 && (
+                          {isSpades && bid !== undefined && won !== undefined && (
+                            <Text style={styles.historyLogText}>
+                              {bid} / {won}
+                            </Text>
+                          )}
+                          {!isSpades && log.length > 0 && (
                             <Text style={styles.historyLogText}>
                               ({log.join(",")})
                             </Text>
@@ -270,21 +345,22 @@ export default function GameScreen() {
       <View
         style={[
           styles.bottomBar,
-          { paddingBottom: insets.bottom + 12 },
+          { paddingBottom: Math.max(insets.bottom, 36) + 12 },
         ]}
       >
         <PolymerButton
-          label={`Enter Round ${session.currentRound} Scores`}
+          label={editingRoundIndex !== null ? "Apply Changes" : `Enter Round ${session.currentRound} Scores`}
           onPress={() => setShowScoreModal(true)}
           color="#00F5A0"
           textColor="#1A0533"
           size="lg"
           style={{ flex: 1 }}
-          icon={<Feather name="plus" size={16} color="#1A0533" />}
+          icon={<Feather name={editingRoundIndex !== null ? "check" : "plus"} size={16} color="#1A0533" />}
         />
       </View>
 
       <ScoreInputModal
+        key={`modal_${id}_${editingRoundIndex !== null ? `edit_${editingRoundIndex}` : session.currentRound}`}
         visible={showScoreModal}
         players={session.players}
         game={game}
@@ -294,13 +370,26 @@ export default function GameScreen() {
           session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.roundLogs[editingRoundIndex] || [] }), {}) : 
           undefined}
         initialCleared={editingRoundIndex !== null ?
-          session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.currentPhaseCleared && editingRoundIndex === session.currentRound - 2 }), {}) :
+          session.players.reduce((acc, p) => ({ ...acc, [p.id]: !!p.clearedHistory[editingRoundIndex] }), {}) :
+          undefined}
+        initialBids={editingRoundIndex !== null ?
+          session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.bids[editingRoundIndex] ?? 0 }), {}) :
+          undefined}
+        initialTricksWon={editingRoundIndex !== null ?
+          session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.tricksWon[editingRoundIndex] ?? 0 }), {}) :
           undefined}
         onSubmit={handleSubmitScores}
         onClose={() => {
           setShowScoreModal(false);
           setEditingRoundIndex(null);
         }}
+      />
+
+      <GameToolsModal
+        visible={showToolsModal}
+        players={session.players}
+        onShuffle={handleShuffleSeating}
+        onClose={() => setShowToolsModal(false)}
       />
     </View>
   );
@@ -513,10 +602,75 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 20,
-    paddingTop: 12,
-    backgroundColor: "rgba(26,5,51,0.95)",
+    paddingTop: 14,
+    backgroundColor: "rgba(26,5,51,0.98)",
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.06)",
+    borderTopColor: "rgba(255,255,255,0.08)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 20,
+    minHeight: 110,
+  },
+  fiveCrownsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,184,0,0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  wildText: {
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 10,
+    color: "#FFB800",
+    textTransform: "uppercase",
+  },
+  golfHoleBar: {
+    marginBottom: 20,
+    backgroundColor: "rgba(255,255,255,0.02)",
+    padding: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+  },
+  golfHoleTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    color: "rgba(255,255,255,0.3)",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  golfHoleStrip: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  golfHoleColumn: {
+    alignItems: "center",
+    gap: 4,
+  },
+  golfHoleLabel: {
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 9,
+    color: "rgba(255,255,255,0.2)",
+  },
+  golfHoleChip: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  golfHoleScore: {
+    fontFamily: "Inter_900Black",
+    fontSize: 14,
   },
 });

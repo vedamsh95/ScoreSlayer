@@ -71,11 +71,6 @@ function VariantCard({ variant }: { variant: UnoVariantDef }) {
         onPressOut={handlePressOut}
         style={[styles.cardBody, { backgroundColor: variant.color, borderRadius: 26 }]}
       >
-        {/* Top-left gloss */}
-        <View style={styles.cardGloss} pointerEvents="none" />
-        {/* Bottom-right inner shadow */}
-        <View style={styles.cardInnerShadow} pointerEvents="none" />
-
         {/* Top row: icon well + badge */}
         <View style={styles.cardTop}>
           <NeuIconWell color={darken(variant.color, 0.45)} size={44} borderRadius={14}>
@@ -270,14 +265,6 @@ const styles = StyleSheet.create({
     padding: 18,
     overflow: "hidden",
     position: "relative",
-  },
-  cardGloss: {
-    position: "absolute", top: 6, left: 10, width: "50%", height: "35%",
-    backgroundColor: "rgba(255,255,255,0.2)", borderBottomRightRadius: 40, zIndex: 1,
-  },
-  cardInnerShadow: {
-    position: "absolute", bottom: 0, right: 0, width: "45%", height: "35%",
-    backgroundColor: "rgba(0,0,0,0.2)", borderTopLeftRadius: 40, zIndex: 1,
   },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, zIndex: 2 },
   badge: { paddingHorizontal: 8, paddingVertical: 4 },

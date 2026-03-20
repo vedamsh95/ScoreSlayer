@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useGame } from "@/context/GameContext";
-import { MAIN_GAMES, GAME_CATEGORIES, GameCategory, GameDefinition } from "@/constants/games";
+import { MAIN_GAMES, GAME_CATEGORIES, GameCategory, GameDefinition, UNO_VARIANTS, PHASE10_VARIANTS, RUMMY_VARIANTS } from "@/constants/games";
 import { PolymerCard, NeuIconWell, NeuTrench } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
 import Animated, {
@@ -57,14 +57,9 @@ function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void
               { backgroundColor: game.color, borderRadius: 22 },
             ]}
           >
-            {/* Top-left gloss */}
-            <View style={styles.gameCardGloss} pointerEvents="none" />
-            {/* Bottom-right inner shadow */}
-            <View style={styles.gameCardInnerShadow} pointerEvents="none" />
-
             {/* Neumorphic icon well carved into the clay */}
             <NeuIconWell
-              color={darken(game.color, 0.45)}
+              color="rgba(0,0,0,0.2)"
               size={46}
               borderRadius={14}
               style={styles.iconWell}
@@ -75,13 +70,15 @@ function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void
             <Text style={styles.gameName} numberOfLines={2}>{game.name}</Text>
             {game.hasVariants ? (
               <NeuTrench
-                color={darken(game.color, 0.45)}
+                color="rgba(0,0,0,0.2)"
                 borderRadius={8}
                 padding={4}
                 style={{ alignSelf: "flex-start" }}
               >
                 <Text style={{ fontFamily: "Inter_700Bold", fontSize: 8, color: game.color, letterSpacing: 0.8 }}>
-                  8 VARIANTS
+                  {game.id === "uno" ? UNO_VARIANTS.length : 
+                   game.id === "phase10" ? PHASE10_VARIANTS.length : 
+                   game.id === "rummy" ? RUMMY_VARIANTS.length : 0} VARIANTS
                 </Text>
               </NeuTrench>
             ) : (
@@ -94,14 +91,6 @@ function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void
   );
 }
 
-// Darken a hex color by a factor (0-1)
-function darken(hex: string, factor: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const d = 1 - factor;
-  return `rgb(${Math.floor(r * d)},${Math.floor(g * d)},${Math.floor(b * d)})`;
-}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -148,7 +137,7 @@ export default function HomeScreen() {
           }}
           style={{ marginBottom: 30 }}
         >
-          <PolymerCard color={activeSession.gameColor} size="lg">
+          <PolymerCard color={activeSession.gameColor} style={{ padding: 20 }}>
             <View style={styles.activeBadgeRow}>
               <View style={styles.liveDot} />
               <Text style={styles.liveText}>LIVE GAME</Text>
@@ -164,7 +153,7 @@ export default function HomeScreen() {
               {activeSession.players.slice(0, 3).map((p) => (
                 <NeuTrench
                   key={p.id}
-                  color={darken(activeSession.gameColor, 0.4)}
+                  color="rgba(0,0,0,0.2)"
                   borderRadius={12}
                   padding={8}
                   style={styles.scoreChip}
@@ -320,7 +309,7 @@ const styles = StyleSheet.create({
   },
   activeGameName: {
     fontFamily: "Inter_700Bold",
-    fontSize: 26,
+    fontSize: 22,
     color: "#FFFFFF",
     marginBottom: 3,
   },
@@ -394,30 +383,12 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   gameCardBody: {
-    width: 112,
-    padding: 14,
+    width: 130,
+    height: 148,
+    padding: 18,
+    justifyContent: "space-between",
     overflow: "hidden",
     position: "relative",
-  },
-  gameCardGloss: {
-    position: "absolute",
-    top: 5,
-    left: 6,
-    width: "55%",
-    height: "40%",
-    backgroundColor: "rgba(255,255,255,0.22)",
-    borderBottomRightRadius: 36,
-    zIndex: 1,
-  },
-  gameCardInnerShadow: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: "50%",
-    height: "40%",
-    backgroundColor: "rgba(0,0,0,0.2)",
-    borderTopLeftRadius: 36,
-    zIndex: 1,
   },
   iconWell: { marginBottom: 10, zIndex: 2 },
   gameName: {

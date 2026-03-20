@@ -1,5 +1,5 @@
 export type WinCondition = "highest" | "lowest";
-export type GameCategory = "card" | "board" | "dice" | "tile" | "trick" | "uno";
+export type GameCategory = "card" | "board" | "dice" | "tile" | "trick" | "uno" | "outdoor" | "billiards";
 
 export interface ScoreRule {
   label: string;
@@ -75,6 +75,48 @@ export interface Phase10VariantDef {
   scoring?: ScoreRule[];
   notes?: string[];
   common_special_phases?: string[];
+}
+
+// ─── Trick-Taking Variant ──────────────────────────────────────────────────
+export interface TrickVariantDef {
+  id: string;
+  name: string;
+  tagline: string;
+  badge?: string;
+  color: string;
+  icon: string;
+  description: string;
+  targetScore: number;
+  hasBidding: boolean;
+  isPartnership: boolean;
+  scoringRules: ScoreRule[];
+  notes?: string[];
+}
+
+// ─── Skyjo Definition ───────────────────────────────────────────────────────
+export interface SkyjoDef {
+  id: string;
+  name: string;
+  gridSize: { rows: number; cols: number }; // 3x4
+  targetScore: number;                      // 100
+  scoringRange: { min: number; max: number }; // -2 to 12
+}
+
+// ─── Rummy Variant ──────────────────────────────────────────────────────────
+export interface RummyVariantDef {
+  id: string;
+  name: string;
+  tagline: string;
+  badge?: string;
+  color: string;
+  icon: string;
+  description: string;
+  targetScore: number;
+  maxPenalty: number;
+  dropPenalties: { [key: string]: number };
+  cardValues: { [key: string]: number | string };
+  bonuses?: { [key: string]: number };
+  notes?: string[];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -518,6 +560,113 @@ export function getPhase10VariantById(id: string): Phase10VariantDef | undefined
   return PHASE10_VARIANTS.find((v) => v.id === id);
 }
 
+export function getTrickVariantById(id: string): TrickVariantDef | undefined {
+  return SPADES_VARIANTS.find((v) => v.id === id) || HEARTS_VARIANTS.find((v) => v.id === id);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SPADES VARIANTS
+// ═══════════════════════════════════════════════════════════════════════════
+export const SPADES_VARIANTS: TrickVariantDef[] = [
+  {
+    id: "spades_standard",
+    name: "Standard Spades",
+    tagline: "The classic partnership bidding game.",
+    badge: "CLASSIC",
+    color: "#6B21E8",
+    icon: "layers",
+    description: "The traditional version. Partners bid their expected tricks. Bids of 'Nil' offer high rewards but huge risks.",
+    targetScore: 500,
+    hasBidding: true,
+    isPartnership: true,
+    scoringRules: [
+      { label: "Tricks matching Bid", points: 10 },
+      { label: "Over-tricks (Bags)", points: 1 },
+      { label: "10 Bags Penalty", points: -100 },
+      { label: "Nil Bid (Success)", points: 100 },
+      { label: "Nil Bid (Fail)", points: -100 },
+    ],
+    notes: ["Spades are always trump", "Bid total tricks with your partner", "Accumulating 10 bags resets them and subtracts 100 pts"],
+  },
+  {
+    id: "spades_suicide",
+    name: "Suicide Spades",
+    tagline: "One partner MUST bid Nil.",
+    badge: "BRUTAL",
+    color: "#E74C3C",
+    icon: "alert-triangle",
+    description: "In every hand, one partner in each pair must bid Nil, while the other bids at least one trick. Extremely aggressive.",
+    targetScore: 500,
+    hasBidding: true,
+    isPartnership: true,
+    scoringRules: [
+      { label: "Nil Requirement", points: 0 },
+      { label: "Normal Scoring", points: 10 },
+    ],
+    notes: ["One Nil bid required per team", "High volatility — games end quickly"],
+  },
+  {
+    id: "spades_mirror",
+    name: "Mirror Spades",
+    tagline: "You bid exactly how many spades you have.",
+    badge: "NUMEROLOGY",
+    color: "#00BFFF",
+    icon: "hash",
+    description: "The choice is taken away: your bid is the exact number of spade cards in your hand. If you have 0 spades, you must bid Nil.",
+    targetScore: 500,
+    hasBidding: true,
+    isPartnership: true,
+    scoringRules: [
+      { label: "Automatic Bid", points: 0 },
+      { label: "1 pt per bag", points: 1 },
+    ],
+    notes: ["Bid = Number of Spades held", "No choosing bids allowed"],
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  HEARTS VARIANTS
+// ═══════════════════════════════════════════════════════════════════════════
+export const HEARTS_VARIANTS: TrickVariantDef[] = [
+  {
+    id: "hearts_standard",
+    name: "Standard Hearts",
+    tagline: "Avoid the Queen of Spades at all costs.",
+    badge: "CLASSIC",
+    color: "#FF4757",
+    icon: "heart",
+    description: "Classic trick-avoidance. Don't take hearts or the Queen of Spades. Try to 'Shoot the Moon' to give everyone else 26 points.",
+    targetScore: 100,
+    hasBidding: false,
+    isPartnership: false,
+    scoringRules: [
+      { label: "Each Heart", points: 1 },
+      { label: "Queen of Spades", points: 13 },
+      { label: "Shoot the Moon", points: -26 },
+    ],
+    notes: ["Passing 3 cards every round", "First to 100 points ends the game", "Lowest score wins"],
+  },
+  {
+    id: "hearts_omnibus",
+    name: "Omnibus Hearts",
+    tagline: "The Jack of Diamonds is now a bonus.",
+    badge: "BONUS",
+    color: "#FFB800",
+    icon: "diamond",
+    description: "Adds the Jack of Diamonds as a 'special' card. If you take it in a trick, you subtract 10 points from your score.",
+    targetScore: 100,
+    hasBidding: false,
+    isPartnership: false,
+    scoringRules: [
+      { label: "Each Heart", points: 1 },
+      { label: "Queen of Spades", points: 13 },
+      { label: "Jack of Diamonds", points: -10 },
+      { label: "Shoot the Moon", points: -26 },
+    ],
+    notes: ["Jack of Diamonds is -10 points", "Adds a tactical 'good' card to the deck"],
+  },
+];
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  5 PHASE 10 VARIANTS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -627,6 +776,61 @@ export const PHASE10_VARIANTS: Phase10VariantDef[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
+//  RUMMY VARIANTS
+// ═══════════════════════════════════════════════════════════════════════════
+export const RUMMY_VARIANTS: RummyVariantDef[] = [
+  {
+    id: "rummy_indian",
+    name: "Indian Rummy",
+    tagline: "13 cards. Mandatory pure sequence.",
+    badge: "13 CARDS",
+    color: "#E67E22",
+    icon: "grid",
+    description: "The classic 13-card variant. Requires a First Life (Pure Sequence) and a Second Life to finish.",
+    targetScore: 300,
+    maxPenalty: 80,
+    dropPenalties: { first: 20, middle: 40 },
+    cardValues: {
+      high: 10,
+      numbers: "face",
+      jokers: 0
+    },
+    notes: [
+      "No Pure Sequence = 80 pts (The Zombie)",
+      "Maximum round penalty is 80 points",
+      "Dropped games are 20 (First) or 40 (Middle)"
+    ]
+  },
+  {
+    id: "rummy_gin",
+    name: "Gin Rummy",
+    tagline: "Knock, Gin, and Big Gin.",
+    badge: "2 PLAYERS",
+    color: "#27AE60",
+    icon: "git-commit",
+    description: "Match cards into melds and minimize your deadwood. Knock if your deadwood is 10 or less.",
+    targetScore: 100,
+    maxPenalty: 100,
+    dropPenalties: {},
+    cardValues: {
+      ace: 1,
+      face: 10,
+      numbers: "face"
+    },
+    bonuses: {
+      gin: 25,
+      big_gin: 31,
+      undercut: 25
+    },
+    notes: [
+      "Gin: 0 deadwood = +25 bonus",
+      "Undercut: Opponent has less deadwood = +25 bonus",
+      "Aces are always 1 point"
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  GAMES LIST
 // ═══════════════════════════════════════════════════════════════════════════
 export const GAMES: GameDefinition[] = [
@@ -717,13 +921,126 @@ export const GAMES: GameDefinition[] = [
     hasCalculator: true,
   })),
   { id: "scrabble", name: "Scrabble", category: "board", icon: "grid", color: "#FFB800", winCondition: "highest", minPlayers: 2, maxPlayers: 4, description: "Classic word game on a 15×15 grid", objective: "Score the most points by placing tiles", houseRules: [{ ruleId: "bingo_bonus", label: "Bingo Bonus (7 tiles)", defaultValue: 50, currentValue: 50 }], hasCalculator: false, quickPenalties: [{ label: "+50 Bingo!", points: 50 }] },
-  { id: "spades", name: "Spades", category: "trick", icon: "triangle", color: "#6B21E8", winCondition: "highest", targetScore: 500, minPlayers: 4, maxPlayers: 4, description: "Classic trick-taking partnership card game", objective: "First partnership to 500 points", houseRules: [{ ruleId: "bag_penalty", label: "Bag Penalty (per 10 bags)", defaultValue: 100, currentValue: 100 }, { ruleId: "nil_bonus", label: "Nil Bid Bonus", defaultValue: 100, currentValue: 100 }], hasCalculator: true, quickPenalties: [{ label: "Set (miss bid)", points: -10 }, { label: "Bags penalty", points: -100 }] },
-  { id: "hearts", name: "Hearts", category: "trick", icon: "heart", color: "#FF4757", winCondition: "lowest", targetScore: 100, minPlayers: 4, maxPlayers: 4, description: "Trick-avoidance card game", objective: "Avoid taking hearts and the Queen of Spades", scoreRules: [{ label: "Each Heart", points: 1 }, { label: "Queen of Spades", points: 13 }], houseRules: [{ ruleId: "moon_bonus", label: "Shoot the Moon Effect", defaultValue: -26, currentValue: -26 }], hasCalculator: true, quickPenalties: [{ label: "+1 (Heart)", points: 1 }, { label: "+13 (Queen)", points: 13 }] },
+  {
+    id: "spades",
+    name: "Spades",
+    category: "trick",
+    icon: "triangle",
+    color: "#6B21E8",
+    winCondition: "highest",
+    targetScore: 500,
+    minPlayers: 4,
+    maxPlayers: 4,
+    description: "3 variants — Standard, Suicide, Mirror",
+    objective: "First partnership to 500 points",
+    hasVariants: true,
+    houseRules: [
+      { ruleId: "bag_penalty", label: "Bag Penalty (per 10 bags)", defaultValue: 100, currentValue: 100 },
+      { ruleId: "nil_bonus", label: "Nil Bid Bonus", defaultValue: 100, currentValue: 100 },
+    ],
+    hasCalculator: false,
+  },
+  // Spades variant game entries
+  ...SPADES_VARIANTS.map((v) => ({
+    id: v.id,
+    name: v.name,
+    category: "trick" as GameCategory,
+    icon: v.icon,
+    color: v.color,
+    winCondition: "highest" as WinCondition,
+    targetScore: v.targetScore,
+    minPlayers: 4,
+    maxPlayers: 4,
+    description: v.description,
+    objective: "First partnership to 500 points",
+    parentId: "spades",
+    scoreRules: v.scoringRules,
+    houseRules: [
+      { ruleId: "bag_penalty", label: "Bag Penalty (per 10 bags)", defaultValue: 100, currentValue: 100 },
+      { ruleId: "nil_bonus", label: "Nil Bid Bonus", defaultValue: 100, currentValue: 100 },
+    ],
+    hasCalculator: true,
+  })),
+  {
+    id: "hearts",
+    name: "Hearts",
+    category: "trick",
+    icon: "heart",
+    color: "#FF4757",
+    winCondition: "lowest",
+    targetScore: 100,
+    minPlayers: 4,
+    maxPlayers: 4,
+    description: "2 variants — Standard, Omnibus",
+    objective: "Avoid taking hearts and the Queen of Spades",
+    hasVariants: true,
+    houseRules: [
+      { ruleId: "moon_bonus", label: "Shoot the Moon Effect", defaultValue: -26, currentValue: -26 },
+    ],
+    hasCalculator: false,
+  },
+  // Hearts variant game entries
+  ...HEARTS_VARIANTS.map((v) => ({
+    id: v.id,
+    name: v.name,
+    category: "trick" as GameCategory,
+    icon: v.icon,
+    color: v.color,
+    winCondition: "lowest" as WinCondition,
+    targetScore: v.targetScore,
+    minPlayers: 4,
+    maxPlayers: 4,
+    description: v.description,
+    objective: "Take the fewest points (or Shoot the Moon!)",
+    parentId: "hearts",
+    scoreRules: v.scoringRules,
+    houseRules: [
+      { ruleId: "moon_bonus", label: "Shoot the Moon Effect", defaultValue: -26, currentValue: -26 },
+    ],
+    hasCalculator: true,
+  })),
   { id: "farkle", name: "Farkle", category: "dice", icon: "circle", color: "#00F5A0", winCondition: "highest", targetScore: 10000, minPlayers: 2, maxPlayers: 8, description: "Press-your-luck dice game", objective: "First to 10,000 points", scoreRules: [{ label: "Single 1", points: 100 }, { label: "Single 5", points: 50 }, { label: "Three 1s", points: 1000 }, { label: "Straight (1–6)", points: 1500 }], houseRules: [{ ruleId: "entry_min", label: "Min entry score", defaultValue: 500, currentValue: 500 }], hasCalculator: true, quickPenalties: [{ label: "+100 (One)", points: 100 }, { label: "+50 (Five)", points: 50 }] },
-  { id: "cribbage", name: "Cribbage", category: "card", icon: "bar-chart-2", color: "#FF8C42", winCondition: "highest", targetScore: 121, minPlayers: 2, maxPlayers: 4, description: "Card game scored using a cribbage board", objective: "First to 121 points", houseRules: [{ ruleId: "skunk_line", label: "Skunk line", defaultValue: 91, currentValue: 91 }], hasCalculator: false },
-  { id: "euchre", name: "Euchre", category: "trick", icon: "award", color: "#9B59B6", winCondition: "highest", targetScore: 10, minPlayers: 4, maxPlayers: 4, description: "Fast-paced trick-taking partnership game", objective: "First team to 10 points", scoreRules: [{ label: "Win 3–4 tricks", points: 1 }, { label: "Win all 5 tricks", points: 2 }, { label: "Loner — win all 5", points: 4 }], houseRules: [{ ruleId: "loner_points", label: "Loner bonus", defaultValue: 4, currentValue: 4 }], hasCalculator: false, quickPenalties: [{ label: "+1 (3–4 tricks)", points: 1 }, { label: "+2 (all 5)", points: 2 }, { label: "+4 (Loner!)", points: 4 }] },
-  { id: "poker", name: "Poker", category: "card", icon: "dollar-sign", color: "#27AE60", winCondition: "highest", minPlayers: 2, maxPlayers: 10, description: "Classic betting card game", objective: "Win the most chips", houseRules: [{ ruleId: "starting_chips", label: "Starting chips", defaultValue: 1000, currentValue: 1000 }], hasCalculator: false },
-  { id: "gin_rummy", name: "Gin Rummy", category: "card", icon: "shuffle", color: "#F39C12", winCondition: "highest", targetScore: 100, minPlayers: 2, maxPlayers: 4, description: "Matching card game of sets and runs", objective: "First to 100 points", scoreRules: [{ label: "Gin bonus", points: 25 }, { label: "Undercut bonus", points: 25 }], houseRules: [{ ruleId: "gin_bonus", label: "Gin bonus", defaultValue: 25, currentValue: 25 }], hasCalculator: false, quickPenalties: [{ label: "+25 Gin!", points: 25 }, { label: "+25 Undercut!", points: 25 }] },
+  { id: "skyjo", name: "Skyjo", category: "card", icon: "grid", color: "#FF5733", winCondition: "lowest", targetScore: 100, minPlayers: 2, maxPlayers: 8, description: "Classic card game with a 12-card grid", objective: "Score the lowest points after reaching 100", hasCalculator: true, scoreRules: [{ label: "-2 points", points: -2 }, { label: "0 points", points: 0 }, { label: "5 points", points: 5 }, { label: "10 points", points: 10 }, { label: "12 points", points: 12 }], houseRules: [] },
+  { id: "golf", name: "Golf", category: "card", icon: "flag", color: "#2ECC71", winCondition: "lowest", minPlayers: 2, maxPlayers: 6, description: "Card game played over 9 or 18 holes", objective: "Get the lowest score over all holes", hasCalculator: true, houseRules: [], scoreRules: [] },
+  { id: "five_crowns", name: "Five Crowns", category: "card", icon: "award", color: "#F39C12", winCondition: "lowest", minPlayers: 2, maxPlayers: 7, description: "Rummy-style game with 11 rounds and changing wild cards", objective: "Lowest score after 11 rounds", hasCalculator: true, houseRules: [], scoreRules: [] },
+  { id: "skip_bo", name: "Skip-Bo", category: "card", icon: "fast-forward", color: "#E67E22", winCondition: "lowest", targetScore: 500, minPlayers: 2, maxPlayers: 6, description: "Sequence card game. Play to 500 points", objective: "Be the first to reach a target score", hasCalculator: true, houseRules: [], scoreRules: [] },
+  { id: "seven_wonders", name: "7 Wonders", category: "board", icon: "home", color: "#8E44AD", winCondition: "highest", minPlayers: 2, maxPlayers: 7, description: "End-game scoring for civilizations", objective: "Highest score across 7 categories", hasCalculator: true, houseRules: [], scoreRules: [] },
+  { id: "moelkky", name: "Mölkky", category: "outdoor", icon: "target", color: "#D35400", winCondition: "highest", targetScore: 50, minPlayers: 2, maxPlayers: 10, description: "Finnish throwing game. Exactly 50 points to win", objective: "Reach exactly 50 points (Bust back to 25 if >50)", hasCalculator: true, houseRules: [{ ruleId: "bust_penalty", label: "Bust Penalty (Reset to)", defaultValue: 25, currentValue: 25 }], scoreRules: [] },
+  { id: "cornhole", name: "Cornhole", category: "outdoor", icon: "circle", color: "#C0392B", winCondition: "highest", targetScore: 21, minPlayers: 2, maxPlayers: 4, description: "Bean bag toss with cancellation scoring", objective: "First to exactly 21 points", hasCalculator: true, houseRules: [{ ruleId: "cancellation", label: "Use Cancellation Scoring", defaultValue: 1, currentValue: 1 }], scoreRules: [] },
+  { id: "billiards", name: "Straight Pool", category: "billiards", icon: "circle", color: "#16A085", winCondition: "highest", targetScore: 100, minPlayers: 2, maxPlayers: 2, description: "14.1 Continuous Pool pool game", objective: "First to reach the point goal", hasCalculator: true, houseRules: [], scoreRules: [] },
+  { id: "hand_and_foot", name: "Hand and Foot", category: "card", icon: "layers", color: "#27AE60", winCondition: "highest", targetScore: 10000, minPlayers: 2, maxPlayers: 6, description: "Canasta variant scoring into tens of thousands", objective: "Highest score over all rounds", hasCalculator: true, houseRules: [], scoreRules: [] },
+  {
+    id: "rummy",
+    name: "Rummy",
+    category: "card",
+    icon: "shuffle",
+    color: "#F39C12",
+    winCondition: "lowest",
+    minPlayers: 2,
+    maxPlayers: 6,
+    description: "Rummy variants including Indian 13-Card and Gin Rummy",
+    objective: "Meld your cards and minimize your score",
+    hasVariants: true,
+    houseRules: [],
+    hasCalculator: false,
+  },
+  ...RUMMY_VARIANTS.map((v) => ({
+    id: v.id,
+    name: v.name,
+    category: "card" as GameCategory,
+    icon: v.icon,
+    color: v.color,
+    winCondition: (v.id === "rummy_gin" ? "highest" : "lowest") as WinCondition,
+    targetScore: v.targetScore,
+    minPlayers: 2,
+    maxPlayers: (v.id === "rummy_gin" ? 2 : 6),
+    description: v.description,
+    objective: v.id === "rummy_gin" ? `First to ${v.targetScore} points wins` : "Score the lowest points across rounds",
+    parentId: "rummy",
+    scoreRules: [],
+    houseRules: [],
+    hasCalculator: true,
+  })),
   { id: "dominoes", name: "Dominoes", category: "tile", icon: "columns", color: "#ECF0F1", winCondition: "lowest", targetScore: 100, minPlayers: 2, maxPlayers: 4, description: "Classic tile-matching game", objective: "Be first to play all your tiles", houseRules: [{ ruleId: "target_score", label: "Target score", defaultValue: 100, currentValue: 100 }], hasCalculator: false },
   { id: "skull_king", name: "Skull King", category: "trick", icon: "anchor", color: "#1ABC9C", winCondition: "highest", minPlayers: 2, maxPlayers: 8, description: "Pirate-themed trick-taking bidding game", objective: "Accurately predict tricks to score max", scoreRules: [{ label: "Per correct trick", points: 20 }, { label: "Miss bid (−10/trick)", points: -10 }, { label: "Skull King captures Pirate", points: 40 }], houseRules: [], hasCalculator: true, quickPenalties: [{ label: "+20 (Correct trick)", points: 20 }, { label: "-10 (Miss bid)", points: -10 }] },
   { id: "wizard", name: "Wizard", category: "trick", icon: "star", color: "#8E44AD", winCondition: "highest", minPlayers: 3, maxPlayers: 6, description: "Trick-taking bidding game with Wizards and Jesters", objective: "Accurately predict tricks each round", scoreRules: [{ label: "Correct bid bonus", points: 20 }, { label: "Per correct trick", points: 10 }], houseRules: [{ ruleId: "correct_bid_bonus", label: "Correct bid bonus", defaultValue: 20, currentValue: 20 }], hasCalculator: true },
@@ -732,20 +1049,65 @@ export const GAMES: GameDefinition[] = [
   { id: "canasta", name: "Canasta", category: "card", icon: "layers", color: "#D35400", winCondition: "highest", targetScore: 5000, minPlayers: 4, maxPlayers: 4, description: "Partnership card game collecting melds", objective: "First team to 5,000 points", houseRules: [{ ruleId: "natural_canasta", label: "Natural canasta bonus", defaultValue: 500, currentValue: 500 }], hasCalculator: false, quickPenalties: [{ label: "+500 Natural Canasta", points: 500 }] },
   { id: "dutch_blitz", name: "Dutch Blitz", category: "card", icon: "zap", color: "#F1C40F", winCondition: "highest", targetScore: 75, minPlayers: 2, maxPlayers: 4, description: "Fast-paced simultaneous card game", objective: "First to 75 points", scoreRules: [{ label: "Dutch pile (+2)", points: 2 }, { label: "Blitz pile (−1)", points: -1 }], houseRules: [], hasCalculator: false, quickPenalties: [{ label: "+2 (Dutch)", points: 2 }, { label: "−1 (Blitz)", points: -1 }] },
   { id: "oh_hell", name: "Oh Hell", category: "trick", icon: "zap-off", color: "#2ECC71", winCondition: "highest", minPlayers: 3, maxPlayers: 7, description: "Trick-taking bidding game (Up & Down the River)", objective: "Accurately predict tricks for max score", scoreRules: [{ label: "Correct bid bonus", points: 10 }, { label: "Per trick taken", points: 1 }], houseRules: [{ ruleId: "bonus", label: "Correct bid bonus", defaultValue: 10, currentValue: 10 }], hasCalculator: false },
-  { id: "monopoly", name: "Monopoly", category: "board", icon: "home", color: "#3498DB", winCondition: "highest", minPlayers: 2, maxPlayers: 8, description: "Classic real-estate trading board game", objective: "Bankrupt all other players", houseRules: [{ ruleId: "free_parking", label: "Free Parking jackpot", defaultValue: 500, currentValue: 500 }], hasCalculator: false },
   { id: "pinochle", name: "Pinochle", category: "trick", icon: "award", color: "#8E44AD", winCondition: "highest", targetScore: 1500, minPlayers: 4, maxPlayers: 4, description: "Partnership trick-taking and melding game", objective: "First team to 1,500 points", houseRules: [{ ruleId: "trump_bonus", label: "Double trump bonus", defaultValue: 1500, currentValue: 1500 }], hasCalculator: false },
 ];
 
-export const MAIN_GAMES = GAMES.filter((g) => g.category !== "uno");
+export const MAIN_GAMES = GAMES.filter((g) => !g.parentId);
 
 export const GAME_CATEGORIES: { id: GameCategory; label: string; icon: string }[] = [
   { id: "card", label: "Card Games", icon: "layers" },
-  { id: "board", label: "Board Games", icon: "grid" },
   { id: "trick", label: "Trick-Taking", icon: "award" },
-  { id: "dice", label: "Dice & Darts", icon: "circle" },
-  { id: "tile", label: "Tile Games", icon: "columns" },
+  { id: "outdoor", label: "Outdoor/Bar", icon: "map-pin" },
+  { id: "billiards", label: "Billiards", icon: "circle" },
+  { id: "dice", label: "Dice & Darts", icon: "hash" },
+  { id: "tile", label: "Tile Games", icon: "grid" },
+  { id: "board", label: "Board Games", icon: "layout" },
 ];
 
 export function getGameById(id: string): GameDefinition | undefined {
-  return GAMES.find((g) => g.id === id);
+  // 1. Check main registry
+  let game = GAMES.find((g) => g.id === id);
+  if (game) return game;
+
+  // 2. Fallback: Search source arrays explicitly if registry spread failed for some reason
+  const allVariants = [
+    ...SPADES_VARIANTS.map(v => ({ ...v, parentId: "spades", category: "trick" as GameCategory })),
+    ...HEARTS_VARIANTS.map(v => ({ ...v, parentId: "hearts", category: "trick" as GameCategory })),
+    ...PHASE10_VARIANTS.map(v => ({ ...v, parentId: "phase10", category: "card" as GameCategory })),
+    ...UNO_VARIANTS.map(v => ({ ...v, parentId: "uno", category: "uno" as GameCategory })),
+    ...RUMMY_VARIANTS.map(v => ({ ...v, parentId: "rummy", category: "card" as GameCategory })),
+  ];
+
+  const variant = allVariants.find(v => v.id === id);
+  if (variant) {
+    // Map variant to GameDefinition
+    const isSpades = variant.parentId === "spades";
+    const isHearts = variant.parentId === "hearts";
+    const isTrick = isSpades || isHearts;
+
+    return {
+      id: variant.id,
+      name: variant.name,
+      category: isTrick ? "trick" : (variant.parentId === "uno" ? "uno" : "card"),
+      icon: variant.icon,
+      color: variant.color,
+      winCondition: (variant.id === "rummy_gin" || isSpades) ? "highest" : "lowest" as WinCondition,
+      targetScore: (variant as any).targetScore || (isSpades ? 500 : 100),
+      maxPlayers: 4,
+      minPlayers: 4,
+      description: variant.description,
+      objective: isSpades ? "First partnership to 500 points" : "Take the fewest points",
+      houseRules: isSpades ? [
+        { ruleId: "bag_penalty", label: "Bag Penalty (per 10 bags)", defaultValue: 100, currentValue: 100 },
+        { ruleId: "nil_bonus", label: "Nil Bid Bonus", defaultValue: 100, currentValue: 100 },
+      ] : (isHearts ? [
+        { ruleId: "moon_bonus", label: "Shoot the Moon Effect", defaultValue: -26, currentValue: -26 },
+      ] : []),
+      hasCalculator: true,
+      scoreRules: (variant as any).scoringRules || (variant as any).scoring || [],
+      parentId: variant.parentId,
+    } as GameDefinition;
+  }
+
+  return undefined;
 }

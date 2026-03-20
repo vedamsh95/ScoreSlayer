@@ -37,7 +37,6 @@ export const PolymerButton = ({
           pressed && { opacity: 0.9, transform: [{ translateY: 2 }] }
         ]}
       >
-        <View style={styles.gloss} pointerEvents="none" />
         <View style={styles.content}>
           {icon && <View style={styles.icon}>{icon}</View>}
           <Text style={[styles.text, { color: textColor }]}>{label}</Text>
@@ -60,16 +59,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
     position: "relative",
-  },
-  gloss: {
-    position: "absolute",
-    top: 4,
-    left: 8,
-    width: "40%",
-    height: "40%",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderBottomRightRadius: 40,
-    zIndex: 1,
   },
   content: {
     flexDirection: "row",

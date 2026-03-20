@@ -16,7 +16,12 @@ export interface Player {
   roundLogs: Record<number, number[]>; // Round index -> list of card values
   currentPhase?: number;
   currentPhaseCleared?: boolean;
+  clearedHistory: boolean[]; // Parallel to scores array
+  bids: (number | null)[]; // Parallel to scores array
+  tricksWon: (number | null)[]; // Parallel to scores array
+  bagsHistory: number[]; // Parallel to scores array
   totalScore: number;
+  totalBags?: number;
   isEliminated?: boolean;
 }
 
@@ -113,14 +118,18 @@ interface GameContextType {
     sessionId: string,
     scores: Record<string, number>,
     logs: Record<string, number[]>,
-    cleared?: Record<string, boolean>
+    cleared?: Record<string, boolean>,
+    bids?: Record<string, number>,
+    tricksWon?: Record<string, number>
   ) => void;
   updateRoundScores: (
     sessionId: string,
     roundIndex: number,
     scores: Record<string, number>,
     logs: Record<string, number[]>,
-    cleared?: Record<string, boolean>
+    cleared?: Record<string, boolean>,
+    bids?: Record<string, number>,
+    tricksWon?: Record<string, number>
   ) => void;
   deleteRound: (sessionId: string, roundIndex: number) => void;
   endSession: (sessionId: string) => void;
@@ -181,7 +190,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           roundLogs: {},
           currentPhase: game.phases ? 1 : undefined,
           currentPhaseCleared: false,
+          clearedHistory: [],
+          bids: [],
+          tricksWon: [],
+          bagsHistory: [],
           totalScore: 0,
+          totalBags: 0,
           isEliminated: false,
         })),
         currentRound: 1,
@@ -214,20 +228,63 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       sessionId: string,
       scores: Record<string, number>,
       logs: Record<string, number[]>,
-      cleared?: Record<string, boolean>
+      cleared?: Record<string, boolean>,
+      bids?: Record<string, number>,
+      tricksWon?: Record<string, number>
     ) => {
       const session = state.sessions.find((s) => s.id === sessionId);
       if (!session) return;
 
+      const isSpades = session.gameId.startsWith("spades");
+
       const updatedPlayers = session.players.map((p) => {
-        const roundScore = scores[p.id] ?? 0;
+        let roundScore = scores[p.id] ?? 0;
+        
+        // 1. Mölkky: Cancellation/Bust logic
+        if (session.gameId === "moelkky") {
+          let newTotal = p.totalScore + roundScore;
+          if (newTotal > 50) {
+            // Bust! Reset to 25
+            roundScore = 25 - p.totalScore;
+          }
+        }
+        
+        // 2. Cornhole: Cancellation logic
+        // Note: Raw scores should be passed to 'scores', we apply cancellation here
+        if (session.gameId === "cornhole") {
+          const allScores = Object.values(scores);
+          const maxScore = Math.max(...allScores);
+          const minScore = Math.min(...allScores);
+          // Simple cancellation for 2 players/teams
+          if (allScores.length === 2) {
+             const diff = Math.abs(allScores[0] - allScores[1]);
+             if (scores[p.id] === maxScore && maxScore !== minScore) {
+               roundScore = diff;
+             } else {
+               roundScore = 0;
+             }
+          }
+        }
+
         const playerLogs = logs[p.id] ?? [];
         const wasCleared = cleared?.[p.id] ?? false;
+        const playerBid = bids?.[p.id] ?? null;
+        const playerWon = tricksWon?.[p.id] ?? null;
 
         let nextPhase = p.currentPhase;
         if (p.currentPhase !== undefined && wasCleared) {
           nextPhase = p.currentPhase + 1;
         }
+
+        const newBids = [...p.bids, playerBid];
+        const newTricksWon = [...p.tricksWon, playerWon];
+        
+        let roundBags = 0;
+        if (isSpades && playerBid !== null && playerWon !== null && playerWon >= playerBid && playerBid > 0) {
+          roundBags = playerWon - playerBid;
+        }
+        const newBagsHistory = [...p.bagsHistory, roundBags];
+        const totalBags = newBagsHistory.reduce((sum, b) => sum + b, 0);
 
         return {
           ...p,
@@ -235,6 +292,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           roundLogs: { ...p.roundLogs, [session.currentRound - 1]: playerLogs },
           currentPhase: nextPhase,
           currentPhaseCleared: wasCleared,
+          clearedHistory: [...p.clearedHistory, wasCleared],
+          bids: newBids,
+          tricksWon: newTricksWon,
+          bagsHistory: newBagsHistory,
+          totalBags,
           totalScore: p.totalScore + roundScore,
         };
       });
@@ -256,35 +318,85 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       roundIndex: number,
       scores: Record<string, number>,
       logs: Record<string, number[]>,
-      cleared?: Record<string, boolean>
+      cleared?: Record<string, boolean>,
+      bids?: Record<string, number>,
+      tricksWon?: Record<string, number>
     ) => {
       const session = state.sessions.find((s) => s.id === sessionId);
       if (!session) return;
 
+      const isSpades = session.gameId.startsWith("spades");
+
       const updatedPlayers = session.players.map((p) => {
         const newScores = [...p.scores];
-        newScores[roundIndex] = scores[p.id] ?? 0;
+        let rScore = scores[p.id] ?? 0;
+
+        // 1. Mölkky: Bust logic
+        if (session.gameId === "moelkky") {
+           // Get score BEFORE this round
+           const scoreBeforeHand = p.scores.slice(0, roundIndex).reduce((sum, s) => sum + s, 0);
+           if (scoreBeforeHand + rScore > 50) {
+              rScore = 25 - scoreBeforeHand;
+           }
+        }
+
+        // 2. Cornhole: Cancellation logic
+        if (session.gameId === "cornhole") {
+          const allScores = Object.values(scores);
+          const maxScore = Math.max(...allScores);
+          const minScore = Math.min(...allScores);
+          if (allScores.length === 2) {
+             const diff = Math.abs(allScores[0] - allScores[1]);
+             if (scores[p.id] === maxScore && maxScore !== minScore) {
+               rScore = diff;
+             } else {
+               rScore = 0;
+             }
+          }
+        }
+
+        newScores[roundIndex] = rScore;
         
         const newRoundLogs = { ...p.roundLogs, [roundIndex]: logs[p.id] ?? [] };
-        const total = newScores.reduce((sum, s) => sum + s, 0);
+        const newClearedHistory = [...p.clearedHistory];
+        newClearedHistory[roundIndex] = cleared?.[p.id] ?? p.clearedHistory[roundIndex] ?? false;
 
-        // Recalculate phase progress for Phase 10 if needed
-        let currentPhase = p.currentPhase;
-        if (p.currentPhase !== undefined && cleared) {
-          // This is a simplified recalculation; for full accuracy, we'd need to re-run all rounds
-          // But for now, we'll just update based on the current edit if it's the last round
-          if (roundIndex === session.currentRound - 2) {
-             const wasCleared = cleared[p.id];
-             // If we're editing the most recent round, we might need to adjust currentPhase
-             // This logic is complex and ideally would re-sweep all rounds.
+        const newBids = [...p.bids];
+        newBids[roundIndex] = bids?.[p.id] ?? p.bids[roundIndex] ?? null;
+
+        const newTricksWon = [...p.tricksWon];
+        newTricksWon[roundIndex] = tricksWon?.[p.id] ?? p.tricksWon[roundIndex] ?? null;
+
+        // Recalculate bags history
+        const newBagsHistory = [...p.bagsHistory];
+        if (isSpades) {
+          const rBid = newBids[roundIndex];
+          const rWon = newTricksWon[roundIndex];
+          let rBags = 0;
+          if (rBid !== null && rWon !== null && rWon >= rBid && rBid > 0) {
+            rBags = rWon - rBid;
           }
+          newBagsHistory[roundIndex] = rBags;
+        }
+
+        // Recalculate phase progress
+        let currentPhase = p.currentPhase !== undefined ? 1 : undefined;
+        if (currentPhase !== undefined) {
+          currentPhase = newClearedHistory.reduce((acc, c) => (c ? (acc || 0) + 1 : acc), 1);
         }
 
         return {
           ...p,
           scores: newScores,
           roundLogs: newRoundLogs,
-          totalScore: total,
+          clearedHistory: newClearedHistory,
+          bids: newBids,
+          tricksWon: newTricksWon,
+          bagsHistory: newBagsHistory,
+          currentPhase,
+          currentPhaseCleared: newClearedHistory[newClearedHistory.length - 1],
+          totalBags: newBagsHistory.reduce((sum, b) => sum + b, 0),
+          totalScore: newScores.reduce((sum, s) => sum + s, 0),
         };
       });
 
@@ -300,18 +412,36 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       const updatedPlayers = session.players.map((p) => {
         const newScores = p.scores.filter((_, i) => i !== roundIndex);
+        const newClearedHistory = p.clearedHistory.filter((_, i) => i !== roundIndex);
+        const newBids = p.bids.filter((_, i) => i !== roundIndex);
+        const newTricksWon = p.tricksWon.filter((_, i) => i !== roundIndex);
+        const newBagsHistory = p.bagsHistory.filter((_, i) => i !== roundIndex);
+
         const newRoundLogs: Record<number, number[]> = {};
-        // Shift round logs after the deleted round
+        
         Object.entries(p.roundLogs).forEach(([idx, log]) => {
           const i = parseInt(idx);
           if (i < roundIndex) newRoundLogs[i] = log;
           else if (i > roundIndex) newRoundLogs[i - 1] = log;
         });
 
+        // Recalculate phase progress
+        let currentPhase = p.currentPhase !== undefined ? 1 : undefined;
+        if (currentPhase !== undefined) {
+          currentPhase = newClearedHistory.reduce((acc, c) => (c ? (acc || 0) + 1 : acc), 1);
+        }
+
         return {
           ...p,
           scores: newScores,
           roundLogs: newRoundLogs,
+          clearedHistory: newClearedHistory,
+          bids: newBids,
+          tricksWon: newTricksWon,
+          bagsHistory: newBagsHistory,
+          currentPhase,
+          currentPhaseCleared: newClearedHistory[newClearedHistory.length - 1] ?? false,
+          totalBags: newBagsHistory.reduce((sum, b) => sum + b, 0),
           totalScore: newScores.reduce((sum, s) => sum + s, 0),
         };
       });

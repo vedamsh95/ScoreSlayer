@@ -6,7 +6,10 @@ import { NeuTrench } from "./PolymerCard";
 interface PlayerScoreRowProps {
   player: Player;
   rank: number;
+  isLeader?: boolean;
   isDealer?: boolean;
+  isPhase10?: boolean;
+  showBags?: boolean;
   roundScore?: number;
   showRoundScore?: boolean;
 }
@@ -14,11 +17,13 @@ interface PlayerScoreRowProps {
 export function PlayerScoreRow({
   player,
   rank,
+  isLeader = false,
   isDealer = false,
+  isPhase10 = false,
+  showBags = false,
   roundScore,
   showRoundScore = false,
 }: PlayerScoreRowProps) {
-  const isLeader = rank === 1;
 
   return (
     // Each row is a clay card colored by player, with neumorphic rank badge + score well
@@ -27,21 +32,14 @@ export function PlayerScoreRow({
         style={[
           styles.cardBody,
           {
-            backgroundColor: isLeader
-              ? player.color + "28"
-              : "rgba(42,10,96,0.8)",
+            backgroundColor: player.color + "22",
             borderRadius: 20,
-            borderWidth: isLeader ? 1.5 : 1,
-            borderColor: isLeader ? player.color + "55" : "rgba(255,255,255,0.05)",
+            borderWidth: 1.5,
+            borderColor: player.color + "44",
           },
         ]}
       >
-        {isLeader && (
-          <>
-            <View style={[styles.leaderGloss, { borderRadius: 18 }]} pointerEvents="none" />
-            <View style={[styles.leaderInnerShadow, { borderRadius: 20 }]} pointerEvents="none" />
-          </>
-        )}
+        {/* No gloss/shadow - clean primary color */}
 
         {/* Neumorphic rank well */}
         <NeuTrench
@@ -63,9 +61,16 @@ export function PlayerScoreRow({
             {player.name}
             {isDealer ? "  🃏" : ""}
           </Text>
-          {player.currentPhase !== undefined && (
-            <Text style={styles.phaseText}>Phase {player.currentPhase}</Text>
-          )}
+          <View style={styles.badgesRow}>
+            {isPhase10 && player.currentPhase !== undefined && (
+              <Text style={styles.phaseText}>Phase {player.currentPhase}</Text>
+            )}
+            {showBags && player.totalBags !== undefined && player.totalBags > 0 && (
+              <View style={[styles.bagBadge, { backgroundColor: player.color + "33" }]}>
+                <Text style={[styles.bagText, { color: player.color }]}>{player.totalBags} Bags</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Score display — neumorphic well for the number */}
@@ -117,28 +122,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
-  leaderGloss: {
-    position: "absolute",
-    top: 3,
-    left: 6,
-    width: "45%",
-    height: "50%",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderBottomRightRadius: 30,
-    zIndex: 1,
-    pointerEvents: "none",
-  },
-  leaderInnerShadow: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: "40%",
-    height: "45%",
-    backgroundColor: "rgba(0,0,0,0.15)",
-    borderTopLeftRadius: 30,
-    zIndex: 1,
-    pointerEvents: "none",
-  },
   rankWell: {
     alignItems: "center",
     justifyContent: "center",
@@ -170,10 +153,26 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   phaseText: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Inter_700Bold",
     fontSize: 11,
     color: "rgba(255,255,255,0.45)",
+  },
+  badgesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     marginTop: 2,
+  },
+  bagBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  bagText: {
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   scoreArea: {
     flexDirection: "row",

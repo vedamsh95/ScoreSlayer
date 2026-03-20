@@ -43,15 +43,13 @@ function NumberChip({
   return (
     <View style={[styles.numCardShadow, { shadowColor: color, borderRadius: 12 }]}>
       <View style={[styles.numCardBody, { backgroundColor: color, borderRadius: 12 }]}>
-        <View style={styles.numCardGloss} pointerEvents="none" />
-        <View style={styles.numCardInner} pointerEvents="none" />
         {/* Top-left small number */}
         <Text style={styles.numCardCorner}>{num}</Text>
         {/* Center big number */}
         <Text style={styles.numCardCenter}>{num}</Text>
         {/* Point value badge */}
         <NeuTrench
-          color={darken(color, 0.45)}
+          color="#150428"
           borderRadius={6}
           padding={0}
           style={styles.numCardBadge}
@@ -111,7 +109,6 @@ function CardRow({ card, color }: { card: UnoCard; color: string }) {
           {/* Point value — clay pill */}
           <View style={[styles.pointsShadow, { borderRadius: 10, shadowColor: pointColor }]}>
             <View style={[styles.pointsBody, { backgroundColor: pointColor, borderRadius: 10 }]}>
-              <View style={styles.pointsGloss} pointerEvents="none" />
               <Text style={styles.pointsText}>
                 {card.points === 0 ? "FV" : `+${card.points}`}
               </Text>
@@ -147,10 +144,6 @@ function ScoringGroupCard({
   return (
     <View style={[styles.groupShadow, { borderRadius: 22, shadowColor: color }]}>
       <View style={[styles.groupBody, { backgroundColor: headerBg, borderRadius: 22 }]}>
-        {/* Clay gloss */}
-        <View style={styles.groupGloss} pointerEvents="none" />
-        <View style={styles.groupInnerShadow} pointerEvents="none" />
-
         {/* Group header */}
         <View style={styles.groupHeader}>
           <NeuIconWell
@@ -177,12 +170,12 @@ function ScoringGroupCard({
             </Text>
           </View>
           <NeuTrench
-            color={darken(headerBg, 0.35)}
+            color="#150428"
             borderRadius={8}
             padding={4}
             style={styles.cardCountChip}
           >
-            <Text style={[styles.cardCountText, { color: groupColor }]}>
+            <Text style={[styles.cardCountText, { color: groupColor === "#FF2D78" ? "#FF8C42" : groupColor }]}>
               {group.cards.length} {group.cards.length === 1 ? "card" : "cards"}
             </Text>
           </NeuTrench>
@@ -201,7 +194,8 @@ function ScoringGroupCard({
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function VariantDetailScreen() {
-  const { variantId } = useLocalSearchParams<{ variantId: string }>();
+  const { variantId, readOnly } = useLocalSearchParams<{ variantId: string; readOnly?: string }>();
+  const isReadOnly = readOnly === "true";
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
@@ -237,19 +231,16 @@ export default function VariantDetailScreen() {
         {/* Clay hero header */}
         <View style={[styles.heroShadow, { borderRadius: 28, shadowColor: variant.color }]}>
           <View style={[styles.heroBody, { backgroundColor: variant.color, borderRadius: 28 }]}>
-            <View style={styles.heroGloss} pointerEvents="none" />
-            <View style={styles.heroInnerShadow} pointerEvents="none" />
-
             {/* Nav row */}
             <View style={styles.heroNav}>
-              <NeuIconWell color={darken(variant.color, 0.45)} size={40} borderRadius={13}>
+              <NeuIconWell color="rgba(0,0,0,0.3)" size={40} borderRadius={13}>
                 <Pressable onPress={() => router.back()} style={styles.backPress}>
                   <Ionicons name="arrow-back" size={18} color="rgba(255,255,255,0.9)" />
                 </Pressable>
               </NeuIconWell>
               {variant.badge && (
                 <NeuTrench
-                  color={darken(variant.color, 0.45)}
+                  color="#150428"
                   borderRadius={9}
                   padding={0}
                   style={styles.heroBadge}
@@ -260,7 +251,7 @@ export default function VariantDetailScreen() {
             </View>
 
             {/* Title */}
-            <NeuIconWell color={darken(variant.color, 0.4)} size={52} borderRadius={16} style={styles.heroIcon}>
+            <NeuIconWell color="#150428" size={52} borderRadius={16} style={styles.heroIcon}>
               <Feather name={variant.icon as any} size={24} color={variant.color} />
             </NeuIconWell>
             <Text style={styles.heroName}>{variant.name}</Text>
@@ -268,15 +259,15 @@ export default function VariantDetailScreen() {
 
             {/* Stat chips */}
             <View style={styles.heroStats}>
-              <NeuTrench color={darken(variant.color, 0.4)} borderRadius={12} padding={10} style={styles.heroStat}>
+              <NeuTrench color="#150428" borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>{variant.deckSize}</Text>
                 <Text style={styles.heroStatLabel}>cards</Text>
               </NeuTrench>
-              <NeuTrench color={darken(variant.color, 0.4)} borderRadius={12} padding={10} style={styles.heroStat}>
+              <NeuTrench color="#150428" borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>{variant.targetScore}</Text>
                 <Text style={styles.heroStatLabel}>target</Text>
               </NeuTrench>
-              <NeuTrench color={darken(variant.color, 0.4)} borderRadius={12} padding={10} style={styles.heroStat}>
+              <NeuTrench color="#150428" borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>2–10</Text>
                 <Text style={styles.heroStatLabel}>players</Text>
               </NeuTrench>
@@ -303,14 +294,22 @@ export default function VariantDetailScreen() {
               <Text style={styles.numberValueText}>{variant.numberValueRule}</Text>
             </NeuTrench>
 
-            {/* Each color row of number cards */}
-            {UNO_COLORS.map((unoColor, ci) => (
-              <View key={ci} style={styles.colorNumRow}>
+            {/* Multi-color for standard Uno, single for others */}
+            {variant.id === "uno_standard" ? (
+              UNO_COLORS.map((color) => (
+                <View key={color} style={styles.colorNumRow}>
+                  {numArr.map((n) => (
+                    <NumberChip key={`${color}_${n}`} num={n} color={color} />
+                  ))}
+                </View>
+              ))
+            ) : (
+              <View style={styles.colorNumRow}>
                 {numArr.map((n) => (
-                  <NumberChip key={n} num={n} color={unoColor} isDOS={variant.id === "uno_dos"} />
+                  <NumberChip key={n} num={n} color={variant.color} isDOS={variant.id === "uno_dos"} />
                 ))}
               </View>
-            ))}
+            )}
           </View>
         )}
 
@@ -344,7 +343,6 @@ export default function VariantDetailScreen() {
             {variant.bonuses.map((b) => (
               <View key={b.label} style={[styles.bonusShadow, { borderRadius: 16, shadowColor: "#FFB800" }]}>
                 <View style={[styles.bonusBody, { borderRadius: 16 }]}>
-                  <View style={styles.bonusGloss} pointerEvents="none" />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.bonusLabel}>{b.label}</Text>
                   </View>
@@ -372,20 +370,22 @@ export default function VariantDetailScreen() {
       </ScrollView>
 
       {/* Sticky Play button */}
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
-        <PolymerButton
-          label={`Play ${variant.name}`}
-          onPress={() => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
-          }}
-          color={variant.color}
-          textColor="#FFFFFF"
-          size="lg"
-          style={{ flex: 1 }}
-          icon={<Feather name="play" size={16} color="#FFFFFF" />}
-        />
-      </View>
+      {!isReadOnly && (
+        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+          <PolymerButton
+            label={`Play ${variant.name}`}
+            onPress={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
+            }}
+            color={variant.color}
+            textColor="#FFFFFF"
+            size="lg"
+            style={{ flex: 1 }}
+            icon={<Feather name="play" size={16} color="#FFFFFF" />}
+          />
+        </View>
+      )}
     </View>
   );
 }

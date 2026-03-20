@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useGame } from "@/context/GameContext";
-import { getGameById } from "@/constants/games";
+import { getGameById, GameDefinition } from "@/constants/games";
 import { NerdCard } from "@/components/NerdCard";
 import { PolymerButton } from "@/components/PolymerButton";
 import { Player } from "@/context/GameContext";
@@ -27,10 +27,11 @@ function formatDuration(ms: number): string {
   return `${minutes}m`;
 }
 
-function sortPlayers(players: Player[], gameId: string): Player[] {
-  const lowestWins = ["hearts", "uno", "phase10", "dominoes", "darts_301"];
+function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] {
+  if (!game) return players;
+  const isLowestWins = game.winCondition === "lowest";
   return [...players].sort((a, b) =>
-    lowestWins.includes(gameId)
+    isLowestWins
       ? a.totalScore - b.totalScore
       : b.totalScore - a.totalScore
   );
@@ -48,7 +49,7 @@ export default function ResultsScreen() {
   const handleShare = useCallback(async () => {
     if (!session) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const sorted = sortPlayers(session.players, session.gameId);
+    const sorted = sortPlayers(session.players, game);
     const duration = session.endedAt
       ? formatDuration(session.endedAt - session.startedAt)
       : "—";
@@ -83,7 +84,7 @@ export default function ResultsScreen() {
   }
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const sortedPlayers = sortPlayers(session.players, session.gameId);
+  const sortedPlayers = sortPlayers(session.players, game);
   const winner = sortedPlayers[0];
   const duration = session.endedAt
     ? formatDuration(session.endedAt - session.startedAt)

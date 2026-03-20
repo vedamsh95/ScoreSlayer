@@ -13,7 +13,6 @@ interface Props {
 export const PolymerCard = ({ children, style, color = COLORS.surface, borderRadius = 24 }: Props) => (
   <View style={[styles.cardShadow, { borderRadius }]}>
     <View style={[styles.cardBody, { backgroundColor: color, borderRadius }, style]}>
-      <View style={styles.specular} pointerEvents="none" />
       {children}
     </View>
   </View>
@@ -48,16 +47,6 @@ const styles = StyleSheet.create({
   cardBody: {
     position: "relative",
     overflow: "hidden",
-  },
-  specular: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "60%",
-    height: "100%",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    transform: [{ skewX: "-45deg" }, { translateX: -30 }],
-    zIndex: 0,
   },
   trench: {
     shadowColor: "#000",

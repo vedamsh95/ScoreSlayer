@@ -1,20 +1,32 @@
 import React, { useCallback, useState, useMemo } from "react";
 import {
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
 import { PolymerButton } from "./PolymerButton";
-import { NeuTrench, NeuIconWell } from "./PolymerCard";
+import { NeuIconWell } from "./PolymerCard";
+
+// Game Calculators
+import { SkyjoCalculator } from "./game_calculators/SkyjoCalculator";
+import { CornholeCalculator } from "./game_calculators/CornholeCalculator";
+import { UnoCalculator } from "./game_calculators/UnoCalculator";
+import { Phase10Calculator } from "./game_calculators/Phase10Calculator";
+import { SpadesCalculator } from "./game_calculators/SpadesCalculator";
+import { HeartsCalculator } from "./game_calculators/HeartsCalculator";
+import { SevenWondersCalculator } from "./game_calculators/SevenWondersCalculator";
+import { RummyCalculator } from "./game_calculators/RummyCalculator";
+import { GinRummyCalculator } from "./game_calculators/GinRummyCalculator";
+import { GolfCalculator } from "./game_calculators/GolfCalculator";
 
 interface ScoreInputModalProps {
   visible: boolean;
@@ -23,18 +35,18 @@ interface ScoreInputModalProps {
   round: number;
   initialLogs?: Record<string, number[]>;
   initialCleared?: Record<string, boolean>;
-  onSubmit: (scores: Record<string, number>, logs: Record<string, number[]>, cleared: Record<string, boolean>) => void;
+  initialBids?: Record<string, number>;
+  initialTricksWon?: Record<string, number>;
+  onSubmit: (
+    scores: Record<string, number>, 
+    logs: Record<string, any[]>, 
+    cleared: Record<string, boolean>,
+    bids?: Record<string, number>,
+    tricksWon?: Record<string, number>
+  ) => void;
   onClose: () => void;
   isEditing?: boolean;
 }
-
-const ACTION_CARDS = [
-  { label: "Skip", value: 20, icon: "block-helper" },
-  { label: "Reverse", value: 20, icon: "cached" },
-  { label: "Draw 2", value: 20, icon: "plus-box-multiple" },
-  { label: "Wild", value: 50, icon: "star-circle" },
-  { label: "Draw 4", value: 50, icon: "plus-box-multiple-outline" },
-];
 
 export function ScoreInputModal({
   visible,
@@ -43,84 +55,148 @@ export function ScoreInputModal({
   round,
   initialLogs,
   initialCleared,
+  initialBids,
+  initialTricksWon,
   onSubmit,
   onClose,
   isEditing = false,
 }: ScoreInputModalProps) {
   const insets = useSafeAreaInsets();
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
-  const [playerLogs, setPlayerLogs] = useState<Record<string, number[]>>(initialLogs || {});
-  const [clearedPlayers, setClearedPlayers] = useState<Set<string>>(
-    new Set(Object.keys(initialCleared || {}).filter(k => initialCleared?.[k]))
-  );
+  
+  // Unified Session State for the Modal
+  const [allLogs, setAllLogs] = useState<Record<string, any[]>>(initialLogs || {});
+  const [allCleared, setAllCleared] = useState<Record<string, boolean>>(initialCleared || {});
+  const [allScores, setAllScores] = useState<Record<string, number>>(() => {
+    const scores: Record<string, number> = {};
+    if (initialLogs) {
+      Object.keys(initialLogs).forEach(pid => {
+        scores[pid] = (initialLogs[pid] || []).reduce((a, b) => a + b, 0);
+      });
+    }
+    return scores;
+  });
+  const [allBids, setAllBids] = useState<Record<string, number>>(initialBids || {});
+  const [allTricksWon, setAllTricksWon] = useState<Record<string, number>>(initialTricksWon || {});
+  const [allMetadata, setAllMetadata] = useState<Record<string, any>>({});
+  const [resetCounters, setResetCounters] = useState<Record<string, number>>({});
 
   const activePlayer = players[activePlayerIndex];
 
-  const currentLog = useMemo(() => playerLogs[activePlayer.id] || [], [playerLogs, activePlayer.id]);
-  const currentTotal = useMemo(() => currentLog.reduce((a, b) => a + b, 0), [currentLog]);
-
-  const addCard = useCallback((value: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPlayerLogs(prev => ({
-      ...prev,
-      [activePlayer.id]: [...(prev[activePlayer.id] || []), value]
-    }));
-  }, [activePlayer.id]);
-
-  const removeLast = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setPlayerLogs(prev => {
-      const logs = [...(prev[activePlayer.id] || [])];
-      logs.pop();
-      return { ...prev, [activePlayer.id]: logs };
-    });
-  }, [activePlayer.id]);
-
-  const clearLogs = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    setPlayerLogs(prev => ({ ...prev, [activePlayer.id]: [] }));
-  }, [activePlayer.id]);
-
-  const toggleCleared = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setClearedPlayers(prev => {
-      const next = new Set(prev);
-      if (next.has(activePlayer.id)) next.delete(activePlayer.id);
-      else next.add(activePlayer.id);
-      return next;
-    });
+  const handleUpdate = useCallback((score: number, logs: any[], extra?: any) => {
+    setAllScores(prev => ({ ...prev, [activePlayer.id]: score }));
+    setAllLogs(prev => ({ ...prev, [activePlayer.id]: logs }));
+    
+    if (extra) {
+      if (extra.cleared !== undefined) setAllCleared(prev => ({ ...prev, [activePlayer.id]: extra.cleared }));
+      if (extra.bid !== undefined) setAllBids(prev => ({ ...prev, [activePlayer.id]: extra.bid }));
+      if (extra.won !== undefined) setAllTricksWon(prev => ({ ...prev, [activePlayer.id]: extra.won }));
+      setAllMetadata(prev => ({ ...prev, [activePlayer.id]: extra }));
+    }
   }, [activePlayer.id]);
 
   const handleSubmit = useCallback(() => {
-    const scores: Record<string, number> = {};
-    const clearedMap: Record<string, boolean> = {};
-    players.forEach(p => {
-      scores[p.id] = (playerLogs[p.id] || []).reduce((a, b) => a + b, 0);
-      clearedMap[p.id] = clearedPlayers.has(p.id);
-    });
-    onSubmit(scores, playerLogs, clearedMap);
-    setPlayerLogs({});
-    setClearedPlayers(new Set());
-    setActivePlayerIndex(0);
-  }, [players, playerLogs, clearedPlayers, onSubmit]);
+    onSubmit(allScores, allLogs, allCleared, allBids, allTricksWon);
+    onClose();
+  }, [allScores, allLogs, allCleared, allBids, allTricksWon, onSubmit, onClose]);
+
+  const handleReset = useCallback(() => {
+    Alert.alert(
+      "Reset Scores?",
+      `This will clear all entries for ${activePlayer.name} in this round.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Reset", 
+          style: "destructive",
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setResetCounters(prev => ({ ...prev, [activePlayer.id]: (prev[activePlayer.id] || 0) + 1 }));
+            setAllScores(prev => ({ ...prev, [activePlayer.id]: 0 }));
+            setAllLogs(prev => ({ ...prev, [activePlayer.id]: [] }));
+            setAllCleared(prev => ({ ...prev, [activePlayer.id]: false }));
+            setAllMetadata(prev => ({ ...prev, [activePlayer.id]: {} }));
+          }
+        }
+      ]
+    );
+  }, [activePlayer.id, activePlayer.name]);
+
+  const renderCalculator = () => {
+    const common = {
+      player: activePlayer,
+      game: game,
+      onUpdate: handleUpdate
+    };
+
+    const calcKey = activePlayer.id + (resetCounters[activePlayer.id] || 0);
+
+    if (game.id === "skyjo") {
+      return <SkyjoCalculator key={calcKey} {...common} initialGrid={allLogs[activePlayer.id]} />;
+    }
+    if (game.parentId === "phase10" || game.id.includes("phase10")) {
+      return (
+        <Phase10Calculator 
+          key={calcKey}
+          {...common} 
+          initialPhase={allMetadata[activePlayer.id]?.phase} 
+          initialLogs={allLogs[activePlayer.id]} 
+          initialCleared={allCleared[activePlayer.id]} 
+        />
+      );
+    }
+    if (game.id === "golf") {
+      return <GolfCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+    }
+    if (game.id === "uno" || game.parentId === "uno") {
+      return <UnoCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+    }
+    if (game.id === "cornhole") {
+      return <CornholeCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]} />;
+    }
+    if (game.parentId === "spades" || game.id.startsWith("spades")) {
+      return <SpadesCalculator key={calcKey} {...common} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
+    }
+    if (game.parentId === "hearts" || game.id.startsWith("hearts")) {
+      return <HeartsCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+    }
+    if (game.id === "seven_wonders") {
+      return <SevenWondersCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} initialScience={allMetadata[activePlayer.id]?.science} />;
+    }
+    if (game.parentId === "rummy" || game.id.includes("rummy")) {
+      if (game.id === "rummy_gin") {
+        return <GinRummyCalculator key={calcKey} {...common} />;
+      }
+      return <RummyCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+    }
+
+    // Default to Uno Style for now as a fallback
+    return <UnoCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
+        <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
             <View>
-              <Text style={styles.title}>{isEditing ? "Edit" : "Enter"} Round {round}</Text>
-              <Text style={styles.subtitle}>{game.name}</Text>
+              <Text style={styles.title}>{isEditing ? "Edit Round" : `Round ${round}`}</Text>
+              <Text style={styles.subtitle}>Enter cards for {activePlayer.name}</Text>
             </View>
-            <NeuIconWell color="#150428" size={38} borderRadius={12}>
-              <Pressable onPress={onClose} style={styles.closePressable}>
-                <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
+            <View style={styles.headerActions}>
+              <Pressable onPress={handleReset} style={styles.resetPressable}>
+                <NeuIconWell color="#150428" size={38} borderRadius={12}>
+                  <Ionicons name="trash-outline" size={18} color="#FF4757" />
+                </NeuIconWell>
               </Pressable>
-            </NeuIconWell>
+              <Pressable onPress={onClose} style={styles.closePressable}>
+                <NeuIconWell color="#150428" size={38} borderRadius={12}>
+                  <Ionicons name="close" size={20} color="rgba(255,255,255,0.6)" />
+                </NeuIconWell>
+              </Pressable>
+            </View>
           </View>
 
-          {/* Player Strip */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.playerStrip}>
             {players.map((p, i) => (
               <Pressable
@@ -136,85 +212,20 @@ export function ScoreInputModal({
               >
                 <View style={[styles.tabDot, { backgroundColor: p.color }]} />
                 <Text style={[styles.tabText, activePlayerIndex === i && { color: "#FFF" }]}>{p.name}</Text>
+                {allScores[p.id] !== undefined && (
+                   <Text style={[styles.tabScore, { color: p.color }]}>{allScores[p.id]}</Text>
+                )}
               </Pressable>
             ))}
           </ScrollView>
 
-          {/* Active Player Calculator */}
           <View style={styles.calcArea}>
-            <NeuTrench color="#150428" borderRadius={20} padding={12} style={styles.displayArea}>
-              <View style={styles.displayTextRow}>
-                <Text style={[styles.displayTotal, { color: activePlayer.color }]}>{currentTotal}</Text>
-                <Text style={styles.displayPts}>pts</Text>
-              </View>
-              
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.logScroll}>
-                {currentLog.length === 0 ? (
-                  <Text style={styles.placeholderText}>Tap cards to add scores...</Text>
-                ) : (
-                  currentLog.map((val, idx) => (
-                    <View key={idx} style={[styles.logChip, { backgroundColor: activePlayer.color + "22" }]}>
-                      <Text style={[styles.logChipText, { color: activePlayer.color }]}>{val}</Text>
-                    </View>
-                  ))
-                )}
-              </ScrollView>
-              
-              <Pressable onPress={removeLast} style={styles.backspace}>
-                <Ionicons name="backspace-outline" size={24} color="rgba(255,255,255,0.4)" />
-              </Pressable>
-            </NeuTrench>
-
-            {/* Grid 0-9 */}
-            <View style={styles.grid}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
-                <Pressable
-                  key={num}
-                  onPress={() => addCard(num)}
-                  style={({ pressed }: { pressed: boolean }) => [styles.key, pressed && styles.keyPressed]}
-                >
-                  <Text style={styles.keyText}>{num}</Text>
-                </Pressable>
-              ))}
-              <Pressable onPress={clearLogs} style={[styles.key, { backgroundColor: "rgba(255,45,120,0.1)" }]}>
-                <Text style={[styles.keyText, { color: "#FF2D78" }]}>C</Text>
-              </Pressable>
-              
-              {/* Phase Toggle for Phase 10 */}
-              {game.phases && (
-                <Pressable 
-                  onPress={toggleCleared} 
-                  style={[styles.key, clearedPlayers.has(activePlayer.id) && { backgroundColor: "#00F5A022" }]}
-                >
-                  <MaterialCommunityIcons 
-                    name={clearedPlayers.has(activePlayer.id) ? "check-circle" : "circle-outline"} 
-                    size={24} 
-                    color={clearedPlayers.has(activePlayer.id) ? "#00F5A0" : "rgba(255,255,255,0.3)"} 
-                  />
-                  <Text style={[styles.keySubtext, clearedPlayers.has(activePlayer.id) && { color: "#00F5A0" }]}>CLEARED</Text>
-                </Pressable>
-              )}
-            </View>
-
-            {/* Action Cards */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.actionStrip}>
-              {ACTION_CARDS.map((card) => (
-                <Pressable
-                  key={card.label}
-                  onPress={() => addCard(card.value)}
-                  style={styles.actionKey}
-                >
-                  <MaterialCommunityIcons name={card.icon as any} size={20} color={activePlayer.color} />
-                  <Text style={styles.actionLabel}>{card.label}</Text>
-                  <Text style={styles.actionValue}>+{card.value}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+             {renderCalculator()}
           </View>
 
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
             <PolymerButton
-              label={activePlayerIndex < players.length - 1 ? "Next Player" : "Submit All Scores"}
+              label={activePlayerIndex < players.length - 1 ? "Next Player" : (isEditing ? "Save Changes" : "Submit All Scores")}
               onPress={() => {
                 if (activePlayerIndex < players.length - 1) {
                   setActivePlayerIndex(idx => idx + 1);
@@ -235,113 +246,19 @@ export function ScoreInputModal({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    backgroundColor: "#1A0533",
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingTop: 20,
-    maxHeight: "92%",
-  },
-  sheetHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingHorizontal: 24,
-    marginBottom: 20,
-  },
-  title: { fontFamily: "Inter_900Black", fontSize: 24, color: "#FFFFFF" },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" },
+  sheet: { backgroundColor: "#1A0533", borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingTop: 24, flex: 1, maxHeight: "94%" },
+  sheetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: 24, marginBottom: 16 },
+  title: { fontFamily: "Inter_900Black", fontSize: 22, color: "#FFFFFF" },
   subtitle: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: "rgba(255,255,255,0.4)" },
   closePressable: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  playerStrip: {
-    flexGrow: 0,
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-  playerTab: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.05)",
-    marginRight: 8,
-    backgroundColor: "rgba(255,255,255,0.02)",
-  },
+  headerActions: { flexDirection: "row", gap: 12 },
+  resetPressable: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  playerStrip: { flexGrow: 0, paddingHorizontal: 20, marginBottom: 16 },
+  playerTab: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.05)", marginRight: 8, backgroundColor: "rgba(255,255,255,0.02)" },
   tabDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
   tabText: { fontFamily: "Inter_700Bold", fontSize: 13, color: "rgba(255,255,255,0.4)" },
-  calcArea: {
-    paddingHorizontal: 20,
-  },
-  displayArea: {
-    height: 100,
-    marginBottom: 20,
-    position: "relative",
-    justifyContent: "center",
-  },
-  displayTextRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 4,
-    marginBottom: 4,
-  },
-  displayTotal: { fontFamily: "Inter_900Black", fontSize: 42, lineHeight: 42 },
-  displayPts: { fontFamily: "Inter_700Bold", fontSize: 14, color: "rgba(255,255,255,0.3)" },
-  logScroll: { flexGrow: 0 },
-  placeholderText: { fontFamily: "Inter_500Medium", fontSize: 14, color: "rgba(255,255,255,0.2)" },
-  logChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginRight: 6,
-  },
-  logChipText: { fontFamily: "Inter_800ExtraBold", fontSize: 12 },
-  backspace: {
-    position: "absolute",
-    right: 12,
-    top: 12,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  key: {
-    width: "30%",
-    height: 52,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-  },
-  keyPressed: { backgroundColor: "rgba(255,255,255,0.15)" },
-  keyText: { fontFamily: "Inter_900Black", fontSize: 24, color: "#FFF" },
-  keySubtext: { fontFamily: "Inter_800ExtraBold", fontSize: 9, color: "rgba(255,255,255,0.3)" },
-  actionStrip: {
-    flexGrow: 0,
-    marginBottom: 20,
-  },
-  actionKey: {
-    width: 76,
-    height: 76,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  actionLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 4 },
-  actionValue: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFF" },
-  footer: {
-    paddingHorizontal: 20,
-    marginTop: "auto",
-  },
+  tabScore: { fontFamily: "Inter_800ExtraBold", fontSize: 10, marginLeft: 6 },
+  calcArea: { paddingHorizontal: 20, flex: 1 },
+  footer: { paddingHorizontal: 20, paddingTop: 10 },
 });
