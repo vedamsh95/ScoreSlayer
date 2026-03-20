@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useGame } from "@/context/GameContext";
-import { GAMES, GAME_CATEGORIES, GameCategory } from "@/constants/games";
+import { MAIN_GAMES, GAME_CATEGORIES, GameCategory, GameDefinition } from "@/constants/games";
 import { PolymerCard, NeuIconWell, NeuTrench } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
 import Animated, {
@@ -21,16 +21,17 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
-const CATEGORY_COLORS: Record<GameCategory, string> = {
+const CATEGORY_COLORS: Record<string, string> = {
   card: "#FF2D78",
   board: "#FFB800",
   trick: "#6B21E8",
   dice: "#00F5A0",
   tile: "#00BFFF",
+  uno: "#FF2D78",
 };
 
 // Extracted animated game card component (to avoid hook-in-loop)
-function GameCard({ game, onPress }: { game: typeof GAMES[0]; onPress: () => void }) {
+function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void }) {
   const scale = useSharedValue(1);
 
   const animStyle = useAnimatedStyle(() => ({
@@ -72,7 +73,20 @@ function GameCard({ game, onPress }: { game: typeof GAMES[0]; onPress: () => voi
             </NeuIconWell>
 
             <Text style={styles.gameName} numberOfLines={2}>{game.name}</Text>
-            <Text style={styles.gamePlayerCount}>{game.minPlayers}–{game.maxPlayers}p</Text>
+            {game.hasVariants ? (
+              <NeuTrench
+                color={darken(game.color, 0.45)}
+                borderRadius={8}
+                padding={4}
+                style={{ alignSelf: "flex-start" }}
+              >
+                <Text style={{ fontFamily: "Inter_700Bold", fontSize: 8, color: game.color, letterSpacing: 0.8 }}>
+                  8 VARIANTS
+                </Text>
+              </NeuTrench>
+            ) : (
+              <Text style={styles.gamePlayerCount}>{game.minPlayers}–{game.maxPlayers}p</Text>
+            )}
           </View>
         </View>
       </Pressable>
@@ -173,7 +187,8 @@ export default function HomeScreen() {
       <Text style={styles.sectionTitle}>Choose a Game</Text>
 
       {GAME_CATEGORIES.map((cat) => {
-        const catGames = GAMES.filter((g) => g.category === cat.id);
+        const catGames = MAIN_GAMES.filter((g) => g.category === cat.id);
+        if (catGames.length === 0) return null;
         return (
           <View key={cat.id} style={styles.categorySection}>
             <View style={styles.catHeader}>
@@ -197,7 +212,11 @@ export default function HomeScreen() {
                   game={game}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    router.push({ pathname: "/setup/[gameId]", params: { gameId: game.id } });
+                    if (game.hasVariants) {
+                      router.push("/uno");
+                    } else {
+                      router.push({ pathname: "/setup/[gameId]", params: { gameId: game.id } });
+                    }
                   }}
                 />
               ))}

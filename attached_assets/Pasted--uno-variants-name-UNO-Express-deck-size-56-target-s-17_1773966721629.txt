@@ -1,0 +1,73 @@
+{
+  "uno_variants": [
+    {
+      "name": "UNO Express",
+      "deck_size": 56,
+      "target_score": 250,
+      "scoring_system": {
+        "number_cards": "Face Value (0-9)",
+        "action_cards": { "value": 20, "types": ["Skip", "Reverse", "Draw One"] },
+        "wild_cards": { "value": 50, "types": ["Wild", "Wild Draw Two"] }
+      }
+    },
+    {
+      "name": "UNO Flip! Express",
+      "deck_size": 56,
+      "target_score": 250,
+      "scoring_system": {
+        "number_cards": "Face Value (0-9)",
+        "action_cards": [
+          {"types": ["Reverse", "Skip", "Flip", "Draw Three"], "value": 20},
+          {"types": ["Skip Everyone"], "value": 30}
+        ],
+        "wild_cards": [
+          {"types": ["Wild"], "value": 40},
+          {"types": ["Wild Draw Two"], "value": 50},
+          {"types": ["Wild Draw Color (Max 5 cards)"], "value": 60}
+        ]
+      }
+    },
+    {
+      "name": "UNO Attack (Extreme)",
+      "deck_size": 112,
+      "target_score": 500,
+      "scoring_system": {
+        "number_cards": "Face Value (0-9)",
+        "action_cards": { "value": 20, "types": ["Reverse", "Skip", "Hit 2", "Discard All"] },
+        "wild_cards": { "value": 50, "types": ["Wild", "Wild Attack"] }
+      }
+    },
+    {
+      "name": "UNO Flex",
+      "deck_size": 112,
+      "target_score": 500,
+      "scoring_system": {
+        "number_cards": "Face Value (0-9)",
+        "action_cards": { "value": 20, "types": ["Skip", "Flex Skip", "Reverse", "Flex Reverse", "Draw Two", "Flex Draw Two"] },
+        "wild_cards": { "value": 50, "types": ["Wild", "Flex Wild", "Flex Wild All Draw", "Flex Wild Draw Two"] }
+      }
+    },
+    {
+      "name": "UNO All Wild!",
+      "deck_size": 112,
+      "target_score": 500,
+      "scoring_system": {
+        "wild_cards": [
+          {"types": ["Standard Wild"], "value": 20},
+          {"types": ["Wild Skip", "Wild Reverse", "Wild Draw 2", "Wild Draw 4", "Wild Targeted Draw 2", "Wild Forced Swap"], "value": 50}
+        ]
+      }
+    },
+    {
+      "name": "UNO Show 'em No Mercy",
+      "deck_size": 168,
+      "target_score": 1000,
+      "scoring_system": {
+        "number_cards": "Face Value (0-9)",
+        "action_cards": { "value": 20, "types": ["Skip", "Reverse", "Draw 2", "Draw 4", "Discard All", "Skip Everyone"] },
+        "wild_cards": { "value": 50, "types": ["Wild Reverse Draw 4", "Wild Draw 6", "Wild Draw 10", "Wild Color Roulette"] },
+        "bonuses": { "mercy_elimination": 250 }
+      }
+    }
+  ]
+}

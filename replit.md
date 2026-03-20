@@ -94,3 +94,34 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+### `artifacts/mobile` (`@workspace/mobile`)
+
+**ScoreSlayer** — Expo React Native scorekeeper app with "Polymer Pop" aesthetic (claymorphism + neumorphism + vibrant colors).
+
+- **Design system**: `components/PolymerCard.tsx` (NeuTrench, NeuIconWell), `components/PolymerButton.tsx` (clay press animation)
+- **Background**: `#1A0533` · Deep surface: `#150428` · Sheet surface: `#2A0A60`
+- **Persistence**: AsyncStorage key `@scoreslayer_sessions`
+- **State**: `context/GameContext.tsx`
+- **Constants**: `constants/games.ts` — `GAMES`, `MAIN_GAMES`, `UNO_VARIANTS`, `UNO_VARIANTS`
+
+**Routes:**
+- `app/(tabs)/index.tsx` — Home screen, game grid (uses `MAIN_GAMES`)
+- `app/uno/index.tsx` — "Uno Universe" variant picker (8 clay cards)
+- `app/uno/[variantId].tsx` — Variant detail (number card grid, card values, scoring, Play button)
+- `app/setup/[gameId].tsx` — Player setup (works for both regular games and Uno variant IDs)
+- `app/game/[id].tsx` — Live scoring screen
+- `app/results/[id].tsx` — Post-game results / Nerd Card
+- `app/history.tsx` — Session history
+
+**Uno Variants (8 total):**
+1. `uno_standard` — Standard UNO, 108 cards, target 500
+2. `uno_dos` — DOS, 108 cards, 1–10 numbers, target 200
+3. `uno_express` — Express, 56 cards, target 250
+4. `uno_flip_express` — Flip! Express, 56 cards, dual-sided, target 250
+5. `uno_attack` — Attack (Extreme), 112 cards + launcher, target 500
+6. `uno_flex` — Flex, 112 cards, Flex variants of every card, target 500
+7. `uno_all_wild` — All Wild!, 112 cards, no number cards, target 500
+8. `uno_no_mercy` — Show 'em No Mercy, 168 cards, infinite stacking, target 1000
+
+**Games (20+ total):** Uno (hub), Phase 10, Scrabble, Spades, Hearts, Farkle, Cribbage, Euchre, Poker, Gin Rummy, Dominoes, Skull King, Wizard, Darts Cricket, Darts 301, Canasta, Dutch Blitz, Oh Hell, Monopoly, Pinochle.
