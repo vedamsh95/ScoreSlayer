@@ -72,7 +72,7 @@ export function MoelkkyCalculator({ player, initialScore = 0, onUpdate }: Moelkk
       <Text style={styles.sectionTitle}>Points Thrown</Text>
       <View style={styles.grid}>
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-          <NeuButton key={n} onPress={() => addPoints(n)} color="#150428" borderRadius={14} style={styles.key}>
+          <NeuButton key={n} onPress={() => addPoints(n)} color="#00D2FF" borderRadius={14} style={styles.key}>
             <Text style={styles.keyText}>{n}</Text>
           </NeuButton>
         ))}

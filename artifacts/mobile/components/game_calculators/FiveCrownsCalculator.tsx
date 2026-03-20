@@ -78,15 +78,15 @@ export function FiveCrownsCalculator({ player, round, initialLogs, onUpdate }: F
       <View style={styles.grid}>
         {/* Numeric Keys 3-10 */}
         {[3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-          <NeuButton key={n} onPress={() => addValue(n)} color="#150428" borderRadius={14} style={styles.key}>
+          <NeuButton key={n} onPress={() => addValue(n)} color="#00D2FF" borderRadius={14} style={styles.key}>
             <Text style={styles.keyText}>{n}</Text>
           </NeuButton>
         ))}
         {/* Special Keys */}
         {cardValues.slice(1).map((c, i) => (
-          <NeuButton key={i} onPress={() => addValue(c.val as number)} color="#150428" borderRadius={14} style={styles.wideKey}>
-            <Text style={[styles.keyText, { color: c.color }]}>{c.val}</Text>
-            <Text style={styles.keySub}>{c.label}</Text>
+          <NeuButton key={i} onPress={() => addValue(c.val as number)} color={c.color} borderRadius={14} style={styles.wideKey}>
+            <Text style={[styles.keyText, { color: "#1A0533" }]}>{c.val}</Text>
+            <Text style={[styles.keySub, { color: "rgba(26,5,51,0.5)" }]}>{c.label}</Text>
           </NeuButton>
         ))}
         
@@ -116,6 +116,6 @@ const styles = StyleSheet.create({
   key: { width: "22%", height: 50 },
   wideKey: { width: "30%", height: 64 },
   backKey: { width: "30%", height: 64 },
-  keyText: { fontFamily: "Inter_900Black", fontSize: 20, color: "#FFF" },
-  keySub: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(255,255,255,0.2)", textTransform: "uppercase" },
+  keyText: { fontFamily: "Inter_900Black", fontSize: 20, color: "#1A0533" },
+  keySub: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(26,5,51,0.5)", textTransform: "uppercase" },
 });

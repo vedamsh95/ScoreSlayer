@@ -67,8 +67,8 @@ export function CarcassonneCalculator({ player, game, onUpdate, initialStats }: 
     <View style={styles.stepperContainer}>
       <Text style={styles.stepperLabel}>{label}</Text>
       <View style={styles.stepperControls}>
-        <NeuButton onPress={() => updateStat(key, -1)} color="#150428" borderRadius={8} style={styles.stepBtn}>
-          <Ionicons name="remove" size={16} color="rgba(255,255,255,0.4)" />
+        <NeuButton onPress={() => updateStat(key, -1)} color="#00D2FF" borderRadius={8} style={styles.stepBtn}>
+          <Ionicons name="remove" size={16} color="#1A0533" />
         </NeuButton>
         <Text style={styles.stepValue}>{value}</Text>
         <NeuButton onPress={() => updateStat(key, 1)} color={color} borderRadius={8} style={styles.stepBtn}>

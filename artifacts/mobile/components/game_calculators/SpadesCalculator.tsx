@@ -80,11 +80,11 @@ export function SpadesCalculator({ player, initialBid, initialWon, onUpdate }: S
             <NeuButton
               key={num}
               onPress={() => handleKeyPress(num)}
-              color="#150428"
+              color="#00D2FF"
               borderRadius={16}
               style={styles.key}
             >
-              <Text style={styles.keyText}>{num}</Text>
+              <Text style={[styles.keyText, { color: "#1A0533" }]}>{num}</Text>
             </NeuButton>
           ))}
           <NeuButton 

@@ -60,7 +60,7 @@ export function Phase10Calculator({ player, game, initialLogs, initialCleared, o
       <View style={{ marginBottom: 16 }}>
         <NeuButton 
           onPress={handlePhaseWin}
-          color={cleared && logs.length === 0 ? "#00F5A0" : "#150428"}
+          color="#00F5A0"
           borderRadius={18}
           style={styles.winNeuBtn}
         >
@@ -68,11 +68,11 @@ export function Phase10Calculator({ player, game, initialLogs, initialCleared, o
             <MaterialCommunityIcons 
               name="trophy-outline" 
               size={18} 
-              color={cleared && logs.length === 0 ? "#1A0533" : "#00F5A0"} 
+              color={cleared && logs.length === 0 ? "#1A0533" : "rgba(26,5,51,0.5)"} 
             />
             <Text style={[
               styles.winText, 
-              { color: cleared && logs.length === 0 ? "#1A0533" : "#00F5A0" }
+              { color: cleared && logs.length === 0 ? "#1A0533" : "rgba(26,5,51,0.5)" }
             ]}>FINISHED PHASE / 0 PTS</Text>
           </View>
         </NeuButton>

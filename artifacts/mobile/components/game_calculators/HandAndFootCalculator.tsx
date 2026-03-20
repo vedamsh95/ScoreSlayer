@@ -63,8 +63,8 @@ export function HandAndFootCalculator({ player, game, onUpdate, initialStats }: 
         <Text style={styles.bookPts}>{pts} pts ea</Text>
       </View>
       <View style={styles.stepperControls}>
-        <NeuButton onPress={() => updateStat(key, -1)} color="#1A0533" borderRadius={10} style={styles.stepBtn}>
-          <Ionicons name="remove" size={16} color="rgba(255,255,255,0.4)" />
+        <NeuButton onPress={() => updateStat(key, -1)} color="#00D2FF" borderRadius={10} style={styles.stepBtn}>
+          <Ionicons name="remove" size={16} color="#1A0533" />
         </NeuButton>
         <Text style={styles.stepValue}>{value}</Text>
         <NeuButton onPress={() => updateStat(key, 1)} color={color} borderRadius={10} style={styles.stepBtn}>
@@ -81,8 +81,8 @@ export function HandAndFootCalculator({ player, game, onUpdate, initialStats }: 
         <Text style={styles.valLabel}>{label}</Text>
       </View>
       <View style={styles.stepperControls}>
-        <NeuButton onPress={() => updateStat(key, -1)} color="#1A0533" borderRadius={8} style={styles.miniBtn}>
-          <Ionicons name="remove" size={14} color="rgba(255,255,255,0.3)" />
+        <NeuButton onPress={() => updateStat(key, -1)} color="#00D2FF" borderRadius={8} style={styles.miniBtn}>
+          <Ionicons name="remove" size={14} color="#1A0533" />
         </NeuButton>
         <Text style={styles.miniValue}>{value}</Text>
         <NeuButton onPress={() => updateStat(key, 1)} color={color} borderRadius={8} style={styles.miniBtn}>

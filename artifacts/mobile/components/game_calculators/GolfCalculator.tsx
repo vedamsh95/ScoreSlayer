@@ -113,13 +113,13 @@ export function GolfCalculator({ player, initialLogs, onUpdate }: GolfCalculator
             <NeuButton
               key={k.label}
               onPress={() => handleKeyPress(k.val)}
-              color="#150428"
+              color="#00D2FF"
               borderRadius={12}
               style={styles.key}
             >
               <View style={styles.keyInner}>
-                <Text style={styles.keyText}>{k.label}</Text>
-                <Text style={styles.keyVal}>{k.val > 0 ? `+${k.val}` : k.val}</Text>
+                <Text style={[styles.keyText, { color: "#1A0533" }]}>{k.label}</Text>
+                <Text style={[styles.keyVal, { color: "rgba(26,5,51,0.5)" }]}>{k.val > 0 ? `+${k.val}` : k.val}</Text>
               </View>
             </NeuButton>
           ))}

@@ -62,7 +62,7 @@ export function CatanCalculator({ player, game, onUpdate, initialStats }: CatanC
       </NeuIconWell>
       <Text style={styles.stepperLabel}>{label}</Text>
       <View style={styles.stepperControls}>
-        <NeuButton onPress={() => updateStat(key, -1)} color="#150428" borderRadius={10} style={styles.stepBtn}>
+        <NeuButton onPress={() => updateStat(key, -1)} color="#4A4A4A" borderRadius={10} style={styles.stepBtn}>
           <Ionicons name="remove" size={20} color="rgba(255,255,255,0.6)" />
         </NeuButton>
         <Text style={styles.stepValue}>{value}</Text>

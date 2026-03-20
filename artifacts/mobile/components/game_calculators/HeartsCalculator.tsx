@@ -69,16 +69,16 @@ export function HeartsCalculator({ player, initialLogs, onUpdate }: HeartsCalcul
           <NeuButton
             key={i}
             onPress={() => addValue(card.value)}
-            color="#150428"
+            color={card.color}
             borderRadius={20}
             style={styles.actionKey}
           >
             <View style={styles.actionInner}>
-              <View style={[styles.iconWell, { backgroundColor: card.color + "22" }]}>
-                <MaterialCommunityIcons name={card.icon as any} size={22} color={card.color} />
+              <View style={[styles.iconWell, { backgroundColor: "rgba(26,5,51,0.2)" }]}>
+                <MaterialCommunityIcons name={card.icon as any} size={22} color="#1A0533" />
               </View>
-              <Text style={styles.actionValue}>{card.value > 0 ? `+${card.value}` : card.value}</Text>
-              <Text style={styles.actionLabel}>{card.label}</Text>
+              <Text style={[styles.actionValue, { color: "#1A0533" }]}>{card.value > 0 ? `+${card.value}` : card.value}</Text>
+              <Text style={[styles.actionLabel, { color: "rgba(26,5,51,0.5)" }]}>{card.label}</Text>
             </View>
           </NeuButton>
         ))}
@@ -90,11 +90,11 @@ export function HeartsCalculator({ player, initialLogs, onUpdate }: HeartsCalcul
           <NeuButton
             key={num}
             onPress={() => addValue(num)}
-            color="#150428"
+            color="#00D2FF"
             borderRadius={16}
             style={styles.key}
           >
-            <Text style={styles.keyText}>{num}</Text>
+            <Text style={[styles.keyText, { color: "#1A0533" }]}>{num}</Text>
           </NeuButton>
         ))}
         <NeuButton 

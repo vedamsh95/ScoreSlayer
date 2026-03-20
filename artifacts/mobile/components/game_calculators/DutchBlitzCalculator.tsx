@@ -55,8 +55,8 @@ export function DutchBlitzCalculator({ player, game, onUpdate, initialStats }: D
             <Text style={styles.sectionTitle}>Dutch Pile (+2)</Text>
           </View>
           <NeuTrench color="#150428" borderRadius={24} padding={12} style={styles.hugeStepper}>
-            <NeuButton onPress={() => updateStat("dutchPile", -1)} color="#1A0533" borderRadius={20} style={styles.hugeBtn}>
-              <Ionicons name="remove" size={32} color="rgba(255,255,255,0.4)" />
+            <NeuButton onPress={() => updateStat("dutchPile", -1)} color="#00D2FF" borderRadius={20} style={styles.hugeBtn}>
+              <Ionicons name="remove" size={32} color="rgba(26,5,51,0.5)" />
             </NeuButton>
             <View style={styles.hugeValueContainer}>
               <Text style={styles.hugeValue}>{stats.dutchPile}</Text>
@@ -75,8 +75,8 @@ export function DutchBlitzCalculator({ player, game, onUpdate, initialStats }: D
             <Text style={styles.sectionTitle}>Blitz Pile (-1)</Text>
           </View>
           <NeuTrench color="#150428" borderRadius={20} padding={10} style={styles.stepperContainer}>
-            <NeuButton onPress={() => updateStat("blitzPile", -1)} color="#1A0533" borderRadius={14} style={styles.stepBtn}>
-              <Ionicons name="remove" size={24} color="rgba(255,255,255,0.4)" />
+            <NeuButton onPress={() => updateStat("blitzPile", -1)} color="#FF4757" borderRadius={14} style={styles.stepBtn}>
+              <Ionicons name="remove" size={24} color="rgba(255,255,255,0.6)" />
             </NeuButton>
             <Text style={styles.stepValue}>{stats.blitzPile}</Text>
             <NeuButton onPress={() => updateStat("blitzPile", 1)} color="#FF4757" borderRadius={14} style={styles.stepBtn}>

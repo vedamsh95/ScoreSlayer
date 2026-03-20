@@ -88,8 +88,8 @@ export function WizardCalculator({ player, initialBid = 0, initialWon = 0, onUpd
       <Text style={styles.sectionTitle}>Tap to Enter Values</Text>
       <View style={styles.grid}>
         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((num) => (
-          <NeuButton key={num} onPress={() => handleKeyPress(num)} color="#150428" borderRadius={14} style={styles.key}>
-            <Text style={styles.keyText}>{num}</Text>
+          <NeuButton key={num} onPress={() => handleKeyPress(num)} color="#00D2FF" borderRadius={14} style={styles.key}>
+            <Text style={[styles.keyText, { color: "#1A0533" }]}>{num}</Text>
           </NeuButton>
         ))}
       </View>

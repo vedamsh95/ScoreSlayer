@@ -115,11 +115,11 @@ export function SevenWondersCalculator({
                 <View style={styles.milItem}>
                   <Text style={styles.milLabel}>AGE I (+1)</Text>
                   <View style={styles.counter}>
-                    <NeuButton onPress={() => updateMil("age1", -1)} color="#1A0533" borderRadius={8} style={styles.miniBtn}>
-                      <Ionicons name="remove" size={12} color="rgba(255,255,255,0.4)"/>
+                    <NeuButton onPress={() => updateMil("age1", -1)} color="#FF4757" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="remove" size={12} color="#1A0533"/>
                     </NeuButton>
                     <Text style={styles.count}>{milDetail.age1}</Text>
-                    <NeuButton onPress={() => updateMil("age1", 1)} color="#E74C3C" borderRadius={8} style={styles.miniBtn}>
+                    <NeuButton onPress={() => updateMil("age1", 1)} color="#00F5A0" borderRadius={8} style={styles.miniBtn}>
                       <Ionicons name="add" size={12} color="#1A0533"/>
                     </NeuButton>
                   </View>
@@ -127,11 +127,11 @@ export function SevenWondersCalculator({
                 <View style={styles.milItem}>
                   <Text style={styles.milLabel}>AGE II (+3)</Text>
                   <View style={styles.counter}>
-                    <NeuButton onPress={() => updateMil("age2", -1)} color="#1A0533" borderRadius={8} style={styles.miniBtn}>
-                      <Ionicons name="remove" size={12} color="rgba(255,255,255,0.4)"/>
+                    <NeuButton onPress={() => updateMil("age2", -1)} color="#FF4757" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="remove" size={12} color="#1A0533"/>
                     </NeuButton>
                     <Text style={styles.count}>{milDetail.age2}</Text>
-                    <NeuButton onPress={() => updateMil("age2", 1)} color="#E74C3C" borderRadius={8} style={styles.miniBtn}>
+                    <NeuButton onPress={() => updateMil("age2", 1)} color="#00F5A0" borderRadius={8} style={styles.miniBtn}>
                       <Ionicons name="add" size={12} color="#1A0533"/>
                     </NeuButton>
                   </View>
@@ -141,11 +141,11 @@ export function SevenWondersCalculator({
                 <View style={styles.milItem}>
                   <Text style={styles.milLabel}>AGE III (+5)</Text>
                   <View style={styles.counter}>
-                    <NeuButton onPress={() => updateMil("age3", -1)} color="#1A0533" borderRadius={8} style={styles.miniBtn}>
-                      <Ionicons name="remove" size={12} color="rgba(255,255,255,0.4)"/>
+                    <NeuButton onPress={() => updateMil("age3", -1)} color="#FF4757" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="remove" size={12} color="#1A0533"/>
                     </NeuButton>
                     <Text style={styles.count}>{milDetail.age3}</Text>
-                    <NeuButton onPress={() => updateMil("age3", 1)} color="#E74C3C" borderRadius={8} style={styles.miniBtn}>
+                    <NeuButton onPress={() => updateMil("age3", 1)} color="#00F5A0" borderRadius={8} style={styles.miniBtn}>
                       <Ionicons name="add" size={12} color="#1A0533"/>
                     </NeuButton>
                   </View>
@@ -153,11 +153,11 @@ export function SevenWondersCalculator({
                 <View style={styles.milItem}>
                   <Text style={[styles.milLabel, {color: "#FF4757"}]}>DEFEATS (-1)</Text>
                   <View style={styles.counter}>
-                    <NeuButton onPress={() => updateMil("defeats", -1)} color="#1A0533" borderRadius={8} style={styles.miniBtn}>
-                      <Ionicons name="remove" size={12} color="rgba(255,255,255,0.4)"/>
+                    <NeuButton onPress={() => updateMil("defeats", -1)} color="#FF4757" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="remove" size={12} color="#1A0533"/>
                     </NeuButton>
                     <Text style={styles.count}>{milDetail.defeats}</Text>
-                    <NeuButton onPress={() => updateMil("defeats", 1)} color="#FF4757" borderRadius={8} style={styles.miniBtn}>
+                    <NeuButton onPress={() => updateMil("defeats", 1)} color="#00F5A0" borderRadius={8} style={styles.miniBtn}>
                       <Ionicons name="add" size={12} color="#1A0533"/>
                     </NeuButton>
                   </View>
@@ -176,8 +176,8 @@ export function SevenWondersCalculator({
               <Text style={styles.cardLabel}>{cat.label}</Text>
             </View>
             <View style={styles.controls}>
-              <NeuButton onPress={() => updateStat(cat.id, stats[cat.id] - 1)} color="#1A0533" borderRadius={10} style={styles.adjBtn}>
-                <Ionicons name="remove" size={14} color="rgba(255,255,255,0.4)" />
+              <NeuButton onPress={() => updateStat(cat.id, stats[cat.id] - 1)} color="#FF4757" borderRadius={10} style={styles.adjBtn}>
+                <Ionicons name="remove" size={14} color="#1A0533" />
               </NeuButton>
               <TextInput 
                 style={[styles.input, { color: cat.color }]} 
@@ -186,7 +186,7 @@ export function SevenWondersCalculator({
                 onChangeText={(v) => updateStat(cat.id, parseInt(v) || 0)} 
                 selectTextOnFocus 
               />
-              <NeuButton onPress={() => updateStat(cat.id, stats[cat.id] + 1)} color={cat.color} borderRadius={10} style={styles.adjBtn}>
+              <NeuButton onPress={() => updateStat(cat.id, stats[cat.id] + 1)} color="#00F5A0" borderRadius={10} style={styles.adjBtn}>
                 <Ionicons name="add" size={14} color="#1A0533" />
               </NeuButton>
             </View>
@@ -240,11 +240,11 @@ export function SevenWondersCalculator({
               <View key={s.id} style={styles.sciItem}>
                 <Text style={styles.sciLabel}>{s.label}</Text>
                 <View style={styles.sciControls}>
-                  <NeuButton onPress={() => updateSci(s.id as any, -1)} color="#1A0533" borderRadius={10} style={styles.miniBtn}>
-                    <Ionicons name="remove" size={12} color="rgba(255,255,255,0.3)" />
+                  <NeuButton onPress={() => updateSci(s.id as any, -1)} color="#FF4757" borderRadius={10} style={styles.miniBtn}>
+                    <Ionicons name="remove" size={12} color="#1A0533" />
                   </NeuButton>
                   <Text style={styles.sciVal}>{science[s.id as keyof typeof science]}</Text>
-                  <NeuButton onPress={() => updateSci(s.id as any, 1)} color="#00D2FF" borderRadius={10} style={styles.miniBtn}>
+                  <NeuButton onPress={() => updateSci(s.id as any, 1)} color="#00F5A0" borderRadius={10} style={styles.miniBtn}>
                     <Ionicons name="add" size={12} color="#1A0533" />
                   </NeuButton>
                 </View>

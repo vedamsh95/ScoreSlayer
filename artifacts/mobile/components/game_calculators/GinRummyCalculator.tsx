@@ -121,8 +121,8 @@ export function GinRummyCalculator({ player, onUpdate }: GinRummyCalculatorProps
       <View style={styles.quickInputRow}>
         <View style={styles.quickGrid}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-            <NeuButton key={num} onPress={() => addValue(num)} color="#150428" borderRadius={12} style={styles.quickBtn}>
-              <Text style={styles.quickBtnText}>
+            <NeuButton key={num} onPress={() => addValue(num)} color="#00D2FF" borderRadius={12} style={styles.quickBtn}>
+              <Text style={[styles.quickBtnText, { color: "#1A0533" }]}>
                 {num === 1 ? "A" : num === 10 ? "10/F" : num}
               </Text>
             </NeuButton>

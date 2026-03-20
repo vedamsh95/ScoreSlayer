@@ -98,7 +98,7 @@ export function FarkleCalculator({ player, initialLogs, onUpdate }: FarkleCalcul
       <Text style={styles.sectionTitle}>Custom Score</Text>
       <View style={styles.numpad}>
         {[1, 2, 3, 4, 5, 0].map(n => (
-          <NeuButton key={n} onPress={() => addScore(n * 100)} color="#150428" borderRadius={12} style={styles.key}>
+          <NeuButton key={n} onPress={() => addScore(n * 100)} color="#00D2FF" borderRadius={12} style={styles.key}>
             <Text style={styles.keyText}>+{n * 100}</Text>
           </NeuButton>
         ))}
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   quickLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", marginTop: 2 },
   numpad: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 28 },
   key: { width: "31%", height: 50 },
-  keyText: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFF" },
+  keyText: { fontFamily: "Inter_900Black", fontSize: 14, color: "#1A0533" },
   actionRow: { flexDirection: "row", gap: 10 },
   farkleBtn: { flex: 1, height: 56 },
   bankBtn: { flex: 2, height: 56 },

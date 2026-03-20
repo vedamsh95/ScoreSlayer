@@ -102,8 +102,8 @@ export function SkullKingCalculator({ player, round, initialBid = 0, initialWon 
       <Text style={styles.sectionTitle}>Numeric Input</Text>
       <View style={styles.grid}>
         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-          <NeuButton key={num} onPress={() => handleKeyPress(num)} color="#150428" borderRadius={14} style={styles.key}>
-            <Text style={styles.keyText}>{num}</Text>
+          <NeuButton key={num} onPress={() => handleKeyPress(num)} color="#00D2FF" borderRadius={14} style={styles.key}>
+            <Text style={[styles.keyText, { color: "#1A0533" }]}>{num}</Text>
           </NeuButton>
         ))}
         <NeuButton onPress={() => { setBid(0); setWon(0); setCaptures(0); setMode("bid"); }} color="#FF4757" borderRadius={14} style={styles.key}>
