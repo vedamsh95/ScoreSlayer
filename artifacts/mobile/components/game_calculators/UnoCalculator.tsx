@@ -4,7 +4,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { GameDefinition, UNO_VARIANTS } from "@/constants/games";
-import { NeuTrench, NeuButton } from "../PolymerCard";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface UnoCalculatorProps {
   player: Player;
@@ -15,7 +15,7 @@ interface UnoCalculatorProps {
 
 export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalculatorProps) {
   const [logs, setLogs] = useState<number[]>(initialLogs || []);
-  const [cardLabels, setCardLabels] = useState<string[]>([]); // Track names like "Skip", "Wild +4", etc.
+  const [cardLabels, setCardLabels] = useState<string[]>([]);
   const [caughtWithUno, setCaughtWithUno] = useState(false);
 
   const unoVariant = useMemo(() => UNO_VARIANTS.find(v => v.id === game.id), [game.id]);
@@ -29,27 +29,13 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
   }, [unoVariant]);
 
   const actionCardColors: Record<string, string> = {
-    "Skip": "#FF9F43",
-    "Reverse": "#54a0ff",
-    "Draw Two": "#FF4757",
-    "Draw One": "#FF4757",
-    "Draw Five": "#FF4757",
-    "Wild": "#A29BFE",
-    "Wild Draw Four": "#6C5CE7",
-    "Wild Draw 2": "#6C5CE7",
-    "Wild Draw Color": "#6C5CE7",
-    "Wild DOS": "#00D2FF",
-    "Wild Number": "#00CEC9",
-    "Flip": "#00CEC9",
-    "Dark Flip": "#0984e3",
-    "Hit 2": "#d63031",
-    "Discard All": "#2d3436",
-    "Wild Attack": "#e17055",
-    "Flex Skip/Rev": "#fdcb6e",
-    "Flex Wild": "#fd79a8",
-    "Standard Wild": "#A29BFE",
-    "Power Wild": "#6c5ce7",
-    "Skip Everyone": "#2d3436",
+    "Skip": "#FF9F43", "Reverse": "#54a0ff", "Draw Two": "#FF4757",
+    "Draw One": "#FF4757", "Draw Five": "#EE5253", "Wild": "#A29BFE",
+    "Wild Draw Four": "#6C5CE7", "Wild Draw 2": "#5F27CD", "Wild Draw Color": "#341F97",
+    "Wild DOS": "#00D2FF", "Wild Number": "#01A3A4", "Flip": "#00CEC9",
+    "Dark Flip": "#0984E3", "Hit 2": "#D63031", "Discard All": "#2D3436",
+    "Wild Attack": "#E17055", "Flex Skip/Rev": "#FDCB6E", "Flex Wild": "#FD79A8",
+    "Standard Wild": "#A29BFE", "Power Wild": "#6C5CE7", "Skip Everyone": "#222F3E",
   };
 
   const actionCards = useMemo(() => {
@@ -60,7 +46,7 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
         value: c.points,
         icon: c.isWild ? "star-circle" : c.isDark ? "moon-waning-crescent" : "flash",
         type: c.isWild ? "wild" : "action",
-        color: actionCardColors[c.name] || "#1e272e"
+        color: actionCardColors[c.name] || "#2D3436"
       }))
     );
   }, [unoVariant]);
@@ -68,20 +54,7 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
   const total = useMemo(() => logs.reduce((a, b) => a + b, 0), [logs]);
 
   useEffect(() => {
-    // Analysis
-    const actionCount = cardLabels.filter(l => 
-      actionCards.some(ac => ac.label === l && ac.type === "action")
-    ).length;
-    const wildCount = cardLabels.filter(l => 
-      actionCards.some(ac => ac.label === l && ac.type === "wild")
-    ).length;
-    const numberCount = logs.length - actionCount - wildCount;
-
-    onUpdate(total, logs, { 
-      cardLabels, 
-      counts: { action: actionCount, wild: wildCount, number: numberCount },
-      caughtWithUno 
-    });
+    onUpdate(total, logs, { cardLabels, caughtWithUno });
   }, [total, logs, cardLabels, caughtWithUno, onUpdate]);
 
   const addValue = (val: number, label?: string) => {
@@ -115,7 +88,7 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
           <View style={styles.topBtnInner}>
             <MaterialCommunityIcons 
               name="cards-playing-outline" 
-              size={20} 
+              size={18} 
               color={total === 0 && logs.length === 0 ? "#1A0533" : "#00F5A0"} 
             />
             <Text style={[
@@ -137,13 +110,13 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
           <View style={styles.topBtnInner}>
             <MaterialCommunityIcons 
               name="alert-decagram" 
-              size={20} 
+              size={18} 
               color={caughtWithUno ? "#FFF" : "#FF4757"} 
             />
             <Text style={[
               styles.catchText, 
               { color: caughtWithUno ? "#FFF" : "#FF4757" }
-            ]}>{caughtWithUno ? "CAUGHT!" : "CAUGHT WITH UNO?"}</Text>
+            ]}>{caughtWithUno ? "CAUGHT!" : "CAUGHT?"}</Text>
           </View>
         </NeuButton>
       </View>
@@ -152,23 +125,6 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
         <View style={styles.displayTextRow}>
           <Text style={[styles.displayTotal, { color: player.color }]}>{total}</Text>
           <Text style={styles.displayPts}>pts</Text>
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statVal}>{logs.length - cardLabels.filter(l => actionCards.some(ac => ac.label === l)).length}</Text>
-            <Text style={styles.statLabel}>Nums</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statVal}>{cardLabels.filter(l => actionCards.find(ac => ac.label === l)?.type === "action").length}</Text>
-            <Text style={styles.statLabel}>Actions</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statVal}>{cardLabels.filter(l => actionCards.find(ac => ac.label === l)?.type === "wild").length}</Text>
-            <Text style={styles.statLabel}>Wilds</Text>
-          </View>
         </View>
         
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.logStrip}>
@@ -186,7 +142,9 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
         </ScrollView>
 
         <Pressable onPress={removeLast} style={styles.backspace}>
-          <Ionicons name="backspace-outline" size={24} color="rgba(255,255,255,0.4)" />
+          <NeuIconWell color="#150428" size={36} borderRadius={10}>
+             <Ionicons name="backspace-outline" size={20} color="rgba(255,255,255,0.4)" />
+          </NeuIconWell>
         </Pressable>
       </NeuTrench>
 
@@ -200,8 +158,8 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
               borderRadius={16}
               style={styles.key}
             >
-              <Text style={[styles.keyText, { color: "#1A0533" }]}>{num}</Text>
-              <Text style={[styles.keySubtext, { color: "rgba(26,5,51,0.5)" }]}>+{num} pts</Text>
+              <Text style={styles.keyText}>{num}</Text>
+              <Text style={styles.keySubtext}>+{num} pts</Text>
             </NeuButton>
           ))}
         </View>
@@ -217,7 +175,7 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
               style={styles.actionKey}
             >
               <MaterialCommunityIcons name={card.icon as any} size={28} color="#FFF" />
-              <Text style={[styles.actionLabel, { color: "rgba(255,255,255,0.7)" }]} numberOfLines={1}>{card.label}</Text>
+              <Text style={styles.actionLabel} numberOfLines={1}>{card.label}</Text>
               <Text style={styles.actionValue}>+{card.value}</Text>
             </NeuButton>
           ))}
@@ -230,20 +188,15 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topActions: { flexDirection: "row", gap: 10, marginBottom: 16 },
-  unoNeuBtn: { flex: 1.5, height: 50 },
-  catchNeuBtn: { flex: 1, height: 50 },
+  unoNeuBtn: { flex: 1.5, height: 44 },
+  catchNeuBtn: { flex: 1, height: 44 },
   topBtnInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  unoText: { fontFamily: "Inter_900Black", fontSize: 11, letterSpacing: 0.5 },
+  unoText: { fontFamily: "Inter_900Black", fontSize: 10, letterSpacing: 0.5 },
   catchText: { fontFamily: "Inter_900Black", fontSize: 10 },
   displayArea: { marginBottom: 16, position: "relative" },
   displayTextRow: { flexDirection: "row", alignItems: "baseline", gap: 4, marginBottom: 12 },
   displayTotal: { fontFamily: "Inter_900Black", fontSize: 42 },
   displayPts: { fontFamily: "Inter_700Bold", fontSize: 14, color: "rgba(255,255,255,0.3)" },
-  statsRow: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 8, marginBottom: 16 },
-  statItem: { flex: 1, alignItems: "center" },
-  statVal: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFF" },
-  statLabel: { fontFamily: "Inter_700Bold", fontSize: 9, color: "rgba(255,255,255,0.3)", textTransform: "uppercase" },
-  statDivider: { width: 1, backgroundColor: "rgba(255,255,255,0.05)" },
   logStrip: { flexDirection: "row" },
   logChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginRight: 6 },
   logChipText: { fontFamily: "Inter_800ExtraBold", fontSize: 12 },
@@ -251,13 +204,13 @@ const styles = StyleSheet.create({
   backspace: { position: "absolute", right: 16, top: 16 },
   scroll: { flex: 1 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between", marginBottom: 20 },
-  key: { width: "31%", height: 62 },
-  keyText: { fontFamily: "Inter_900Black", fontSize: 20, color: "#FFF" },
-  keySubtext: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(255,255,255,0.3)" },
+  key: { width: "31%", height: 58 },
+  keyText: { fontFamily: "Inter_900Black", fontSize: 20, color: "#1A0533" },
+  keySubtext: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(26,5,51,0.5)" },
   sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 },
   actionStrip: { flexGrow: 0, marginBottom: 20 },
-  actionStripContent: { gap: 10 },
-  actionKey: { width: 88, height: 95 },
-  actionLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 9, color: "rgba(255,255,255,0.4)", marginTop: 6, textAlign: "center" },
+  actionStripContent: { gap: 10, paddingRight: 20 },
+  actionKey: { width: 84, height: 90 },
+  actionLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 9, color: "rgba(255,255,255,0.8)", marginTop: 6, textAlign: "center", paddingHorizontal: 4 },
   actionValue: { fontFamily: "Inter_900Black", fontSize: 13, color: "#FFF", marginTop: 2 },
 });

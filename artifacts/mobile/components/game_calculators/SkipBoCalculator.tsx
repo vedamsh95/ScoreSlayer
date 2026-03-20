@@ -4,6 +4,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface SkipBoCalculatorProps {
   player: Player;
@@ -20,9 +21,6 @@ export function SkipBoCalculator({ player, game, onUpdate, initialStats }: SkipB
   });
 
   const totalScore = useMemo(() => {
-    // Only the winner scores points in some variations, 
-    // but usually, everyone scores points and the winner gets the sum.
-    // However, for this app, we'll follow the rule where you enter the cards in your hand.
     let score = 0;
     score += stats.cards1to12 * 5;
     score += stats.skipBoCards * 25;
@@ -31,7 +29,7 @@ export function SkipBoCalculator({ player, game, onUpdate, initialStats }: SkipB
 
   useEffect(() => {
     onUpdate(totalScore, [], { stats });
-  }, [totalScore]);
+  }, [totalScore, stats, onUpdate]);
 
   const updateStat = (key: string, delta: number) => {
     setStats(prev => ({
@@ -42,38 +40,40 @@ export function SkipBoCalculator({ player, game, onUpdate, initialStats }: SkipB
   };
 
   const renderStepper = (label: string, key: string, value: number, pts: number, color: string) => (
-    <View style={styles.card}>
+    <NeuTrench color="#150428" borderRadius={20} padding={16} style={styles.card}>
       <View style={styles.cardInfo}>
         <Text style={styles.cardLabel}>{label}</Text>
-        <Text style={styles.cardPts}>{pts} pts ea</Text>
+        <Text style={styles.cardPts}>{pts} pts each</Text>
       </View>
       <View style={styles.stepper}>
-        <Pressable onPress={() => updateStat(key, -1)} style={styles.stepBtn}>
-          <Ionicons name="remove" size={20} color="rgba(255,255,255,0.4)" />
-        </Pressable>
+        <NeuButton onPress={() => updateStat(key, -1)} color="#1A0533" borderRadius={10} style={styles.stepBtn}>
+          <Ionicons name="remove" size={18} color="rgba(255,255,255,0.4)" />
+        </NeuButton>
         <Text style={styles.stepValue}>{value}</Text>
-        <Pressable onPress={() => updateStat(key, 1)} style={styles.stepBtn}>
-          <Ionicons name="add" size={20} color={color} />
-        </Pressable>
+        <NeuButton onPress={() => updateStat(key, 1)} color={color} borderRadius={10} style={styles.stepBtn}>
+          <Ionicons name="add" size={18} color="#1A0533" />
+        </NeuButton>
       </View>
-    </View>
+    </NeuTrench>
   );
 
   return (
     <View style={styles.container}>
-      <View style={styles.summary}>
+      <NeuTrench color="#150428" borderRadius={28} padding={24} style={styles.summary}>
         <Text style={styles.summaryLabel}>Hand Penalty</Text>
-        <Text style={styles.summaryValue}>{totalScore}</Text>
-      </View>
+        <Text style={[styles.summaryValue, { color: player.color }]}>{totalScore}</Text>
+      </NeuTrench>
 
       <View style={styles.grid}>
         {renderStepper("Numbers (1-12)", "cards1to12", stats.cards1to12, 5, "#E67E22")}
-        {renderStepper("Skip-Bo Wilds", "skipBoCards", stats.skipBoCards, 25, "#F1C40F")}
+        {renderStepper("Skip-Bo Wilds", "skipBoCards", stats.skipBoCards, 25, "#00D2FF")}
       </View>
 
       <View style={styles.tipBox}>
-        <Ionicons name="information-circle-outline" size={16} color="rgba(255,255,255,0.4)" />
-        <Text style={styles.tipText}>Enter the cards remaining in your hand.</Text>
+        <NeuIconWell color="rgba(255,255,255,0.1)" size={32} borderRadius={10}>
+          <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.4)" />
+        </NeuIconWell>
+        <Text style={styles.tipText}>Enter cards remaining in your hand at round end.</Text>
       </View>
     </View>
   );
@@ -81,17 +81,17 @@ export function SkipBoCalculator({ player, game, onUpdate, initialStats }: SkipB
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  summary: { backgroundColor: "rgba(0,245,160,0.05)", borderRadius: 20, padding: 20, alignItems: "center", marginBottom: 20, borderWidth: 1, borderColor: "rgba(0,245,160,0.2)" },
-  summaryLabel: { fontFamily: "Inter_700Bold", fontSize: 12, color: "#00F5A0", textTransform: "uppercase", marginBottom: 4 },
-  summaryValue: { fontFamily: "Inter_900Black", fontSize: 44, color: "#FFF" },
+  summary: { alignItems: "center", marginBottom: 24 },
+  summaryLabel: { fontFamily: "Inter_900Black", fontSize: 11, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 },
+  summaryValue: { fontFamily: "Inter_900Black", fontSize: 56, lineHeight: 62 },
   grid: { gap: 12 },
-  card: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
+  card: { flexDirection: "row", alignItems: "center" },
   cardInfo: { flex: 1 },
-  cardLabel: { fontFamily: "Inter_700Bold", fontSize: 15, color: "#FFF" },
-  cardPts: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.3)" },
-  stepper: { flexDirection: "row", alignItems: "center", gap: 12 },
-  stepBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center" },
-  stepValue: { fontFamily: "Inter_900Black", fontSize: 20, color: "#FFF", minWidth: 28, textAlign: "center" },
-  tipBox: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 20, padding: 12, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.02)" },
-  tipText: { fontFamily: "Inter_500Medium", fontSize: 12, color: "rgba(255,255,255,0.3)" },
+  cardLabel: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFF", textTransform: "uppercase" },
+  cardPts: { fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "rgba(255,255,255,0.3)" },
+  stepper: { flexDirection: "row", alignItems: "center", gap: 14 },
+  stepBtn: { width: 36, height: 36 },
+  stepValue: { fontFamily: "Inter_900Black", fontSize: 22, color: "#FFF", minWidth: 28, textAlign: "center" },
+  tipBox: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 28, padding: 12 },
+  tipText: { flex: 1, fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: 0.5 },
 });

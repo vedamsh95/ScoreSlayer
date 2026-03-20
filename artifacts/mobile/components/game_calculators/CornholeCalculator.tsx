@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface CornholeCalculatorProps {
   player: Player;
@@ -41,46 +42,52 @@ export function CornholeCalculator({ player, initialStats, onUpdate }: CornholeC
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <NeuTrench color="#150428" borderRadius={32} padding={24} style={styles.header}>
         <Text style={[styles.scoreText, { color: player.color }]}>{totalRaw}</Text>
         <Text style={styles.scoreLabel}>raw pts</Text>
-      </View>
+      </NeuTrench>
 
       <View style={styles.buttonRow}>
-        <Pressable 
+        <NeuButton 
           onPress={() => increment("holes")}
-          style={({ pressed }) => [
-            styles.button,
-            { borderColor: player.color + "44", backgroundColor: "rgba(255,255,255,0.03)" },
-            pressed && { backgroundColor: player.color + "22" }
-          ]}
+          color="#00D2FF" // Sea Blue
+          borderRadius={24}
+          style={styles.button}
         >
-          <MaterialCommunityIcons name="star-circle" size={40} color={player.color} />
-          <Text style={styles.buttonVal}>+3 Hole</Text>
-          <Text style={styles.countText}>{stats.holes} in</Text>
-        </Pressable>
+          <View style={styles.buttonInner}>
+            <NeuIconWell color="rgba(26,5,51,0.2)" size={64} borderRadius={32}>
+              <MaterialCommunityIcons name="star-circle" size={40} color="#1A0533" />
+            </NeuIconWell>
+            <Text style={styles.buttonVal}>+3 Hole</Text>
+            <Text style={styles.countText}>{stats.holes} in</Text>
+          </View>
+        </NeuButton>
 
-        <Pressable 
+        <NeuButton 
           onPress={() => increment("board")}
-          style={({ pressed }) => [
-            styles.button,
-            { borderColor: player.color + "44", backgroundColor: "rgba(255,255,255,0.03)" },
-            pressed && { backgroundColor: player.color + "22" }
-          ]}
+          color={player.color}
+          borderRadius={24}
+          style={styles.button}
         >
-          <MaterialCommunityIcons name="record-circle-outline" size={40} color={player.color} />
-          <Text style={styles.buttonVal}>+1 Board</Text>
-          <Text style={styles.countText}>{stats.board} on</Text>
-        </Pressable>
+          <View style={styles.buttonInner}>
+            <NeuIconWell color="rgba(26,5,51,0.2)" size={64} borderRadius={32}>
+              <MaterialCommunityIcons name="record-circle-outline" size={40} color="#1A0533" />
+            </NeuIconWell>
+            <Text style={styles.buttonVal}>+1 Board</Text>
+            <Text style={styles.countText}>{stats.board} on</Text>
+          </View>
+        </NeuButton>
       </View>
 
-      <Pressable onPress={reset} style={styles.resetBtn}>
-        <Ionicons name="trash-outline" size={20} color="#FF4757" />
-        <Text style={styles.resetText}>Reset Hole Counters</Text>
-      </Pressable>
+      <NeuButton onPress={reset} color="#FF4757" borderRadius={18} style={styles.resetBtn}>
+        <View style={styles.resetInner}>
+          <Ionicons name="trash-outline" size={20} color="#FFF" />
+          <Text style={styles.resetText}>Reset Hole Counters</Text>
+        </View>
+      </NeuButton>
 
       <View style={styles.hintBox}>
-        <Ionicons name="information-circle-outline" size={14} color="rgba(255,255,255,0.3)" />
+        <Ionicons name="information-circle-outline" size={14} color="rgba(255,255,255,0.2)" />
         <Text style={styles.hintText}>Cancellation points will be applied automatically after submission.</Text>
       </View>
     </View>
@@ -89,15 +96,17 @@ export function CornholeCalculator({ player, initialStats, onUpdate }: CornholeC
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingVertical: 10 },
-  header: { flexDirection: "row", alignItems: "baseline", justifyContent: "center", gap: 8, marginBottom: 30 },
-  scoreText: { fontFamily: "Inter_900Black", fontSize: 64 },
-  scoreLabel: { fontFamily: "Inter_700Bold", fontSize: 18, color: "rgba(255,255,255,0.3)" },
+  header: { flexDirection: "row", alignItems: "baseline", justifyContent: "center", gap: 12, marginBottom: 32 },
+  scoreText: { fontFamily: "Inter_900Black", fontSize: 72 },
+  scoreLabel: { fontFamily: "Inter_900Black", fontSize: 14, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: 1 },
   buttonRow: { flexDirection: "row", gap: 16, marginBottom: 24 },
-  button: { flex: 1, height: 160, borderRadius: 24, borderWidth: 2, alignItems: "center", justifyContent: "center", gap: 10 },
-  buttonVal: { fontFamily: "Inter_800ExtraBold", fontSize: 16, color: "#FFF" },
-  countText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: "rgba(255,255,255,0.4)" },
-  resetBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, backgroundColor: "rgba(255,71,87,0.1)", borderRadius: 16, marginBottom: 20 },
-  resetText: { fontFamily: "Inter_700Bold", fontSize: 14, color: "#FF4757" },
-  hintBox: { flexDirection: "row", gap: 8, paddingHorizontal: 16, opacity: 0.6 },
-  hintText: { fontFamily: "Inter_500Medium", fontSize: 11, color: "rgba(255,255,255,0.5)", flex: 1 },
+  button: { flex: 1, height: 180 },
+  buttonInner: { alignItems: "center", justifyContent: "center", gap: 8 },
+  buttonVal: { fontFamily: "Inter_900Black", fontSize: 16, color: "#1A0533" },
+  countText: { fontFamily: "Inter_800ExtraBold", fontSize: 13, color: "rgba(26,5,51,0.5)" },
+  resetBtn: { width: "100%", height: 52, marginBottom: 20 },
+  resetInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  resetText: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFF" },
+  hintBox: { flexDirection: "row", gap: 8, paddingHorizontal: 16, opacity: 0.4 },
+  hintText: { fontFamily: "Inter_700Bold", fontSize: 11, color: "rgba(255,255,255,0.4)", flex: 1 },
 });

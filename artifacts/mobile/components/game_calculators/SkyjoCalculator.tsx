@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
-import { NeuTrench } from "../PolymerCard";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface SkyjoCalculatorProps {
   player: Player;
@@ -33,7 +33,6 @@ export function SkyjoCalculator({ player, initialGrid, onUpdate }: SkyjoCalculat
     return total;
   }, [grid]);
 
-  // Sync with parent whenever grid changes
   useEffect(() => {
     onUpdate(totalScore, grid);
   }, [totalScore, grid, onUpdate]);
@@ -44,11 +43,9 @@ export function SkyjoCalculator({ player, initialGrid, onUpdate }: SkyjoCalculat
       const next = [...prev];
       if (activeSlot !== null) {
         next[activeSlot] = num;
-        // Auto-advance
         if (activeSlot < 11) setActiveSlot(activeSlot + 1);
         else setActiveSlot(null);
       } else {
-        // Find first empty
         const firstEmpty = next.findIndex(v => v === null);
         if (firstEmpty !== -1) {
           next[firstEmpty] = num;
@@ -84,9 +81,9 @@ export function SkyjoCalculator({ player, initialGrid, onUpdate }: SkyjoCalculat
         </View>
         <View style={styles.roastContainer}>
           {roasts.map((r, i) => (
-            <View key={i} style={styles.roastBadge}>
+            <NeuTrench key={i} color="#150428" borderRadius={8} padding={6} style={styles.roastBadge}>
               <Text style={styles.roastText}>{r}</Text>
-            </View>
+            </NeuTrench>
           ))}
         </View>
       </View>
@@ -100,14 +97,22 @@ export function SkyjoCalculator({ player, initialGrid, onUpdate }: SkyjoCalculat
                 setActiveSlot(idx);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
-              style={[
-                styles.cell,
-                activeSlot === idx && { borderColor: player.color, backgroundColor: player.color + "22" }
-              ]}
+              style={{ width: "23%", marginBottom: 8 }}
             >
-              <Text style={[styles.cellText, val === null && styles.cellPlaceholder]}>
-                {val ?? "?"}
-              </Text>
+              <NeuTrench
+                color={activeSlot === idx ? player.color : "#150428"}
+                borderRadius={12}
+                padding={12}
+                style={[styles.cell, activeSlot === idx ? { borderColor: "rgba(255,255,255,0.2)", borderWidth: 1 } : {}]}
+              >
+                <Text style={[
+                  styles.cellText, 
+                  val === null && styles.cellPlaceholder,
+                  activeSlot === idx && { color: "#1A0533" }
+                ]}>
+                  {val ?? "?"}
+                </Text>
+              </NeuTrench>
             </Pressable>
           ))}
         </View>
@@ -115,26 +120,28 @@ export function SkyjoCalculator({ player, initialGrid, onUpdate }: SkyjoCalculat
 
       <View style={styles.keypad}>
         {skyjoKeys.map(num => (
-          <Pressable
+          <NeuButton
             key={num}
             onPress={() => handleKeyPress(num)}
-            style={({ pressed }) => [
-              styles.key,
-              pressed && styles.keyPressed
-            ]}
+            color="#00D2FF" // Sea Blue
+            borderRadius={10}
+            style={styles.key}
           >
             <Text style={styles.keyText}>{num}</Text>
-          </Pressable>
+          </NeuButton>
         ))}
-        <Pressable 
+        <NeuButton 
           onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             setGrid(Array(12).fill(null));
             setActiveSlot(0);
           }}
-          style={styles.keyReset}
+          color="#FF4757"
+          borderRadius={10}
+          style={styles.key}
         >
-          <Ionicons name="trash-outline" size={20} color="#FF4757" />
-        </Pressable>
+          <Ionicons name="trash-outline" size={18} color="#FFF" />
+        </NeuButton>
       </View>
     </View>
   );
@@ -147,16 +154,14 @@ const styles = StyleSheet.create({
   scoreText: { fontFamily: "Inter_900Black", fontSize: 42 },
   scoreLabel: { fontFamily: "Inter_700Bold", fontSize: 14, color: "rgba(255,255,255,0.3)" },
   roastContainer: { flex: 1, gap: 4 },
-  roastBadge: { backgroundColor: "rgba(255,184,0,0.1)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: "flex-start" },
-  roastText: { fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "#FFB800", textTransform: "uppercase" },
+  roastBadge: { alignSelf: "flex-start" },
+  roastText: { fontFamily: "Inter_900Black", fontSize: 9, color: "#FFB800", textTransform: "uppercase", letterSpacing: 0.5 },
   gridContainer: { marginBottom: 16 },
-  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8 },
-  cell: { width: "23%", height: 50, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center" },
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  cell: { height: 50, alignItems: "center", justifyContent: "center" },
   cellText: { fontFamily: "Inter_900Black", fontSize: 18, color: "#FFF" },
   cellPlaceholder: { color: "rgba(255,255,255,0.1)" },
-  keypad: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" },
-  key: { width: "18%", height: 46, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  keyPressed: { backgroundColor: "rgba(255,255,255,0.15)" },
-  keyText: { fontFamily: "Inter_800ExtraBold", fontSize: 16, color: "#FFF" },
-  keyReset: { width: "18%", height: 46, backgroundColor: "rgba(255,71,87,0.1)", borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  keypad: { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center" },
+  key: { width: "18%", height: 44 },
+  keyText: { fontFamily: "Inter_900Black", fontSize: 16, color: "#1A0533" },
 });

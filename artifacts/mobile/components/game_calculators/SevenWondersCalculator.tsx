@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView, TextInput, Dimensions } 
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 const { width } = Dimensions.get("window");
 
@@ -90,100 +91,167 @@ export function SevenWondersCalculator({
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
+      <NeuTrench color="#150428" borderRadius={28} padding={20} style={styles.header}>
         <View style={styles.totalBox}>
           <Text style={[styles.totalVal, { color: player.color }]}>{total}</Text>
-          <Text style={styles.totalLabel}>Grand Total</Text>
+          <Text style={styles.totalLabel}>Civilization Score</Text>
         </View>
-      </View>
+      </NeuTrench>
 
       <View style={styles.grid}>
-        {/* Military - Special Large Card */}
-        <View style={[styles.card, styles.wideCard, { borderColor: "#E74C3C33" }]}>
+        {/* Military Card */}
+        <NeuTrench color="#150428" borderRadius={24} padding={16} style={styles.wideCard}>
           <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: "#E74C3C22" }]}>
-              <MaterialCommunityIcons name="sword-cross" size={16} color="#E74C3C" />
+            <View style={[styles.iconWell, { backgroundColor: "#E74C3C22" }]}>
+              <MaterialCommunityIcons name="sword-cross" size={20} color="#E74C3C" />
             </View>
             <View>
-              <Text style={styles.cardLabel}>Military</Text>
-              <Text style={styles.scoreSummary}>{milScore} pts</Text>
+              <Text style={styles.cardLabel}>Military Might</Text>
+              <Text style={[styles.scoreSummary, { color: "#E74C3C" }]}>{milScore} points</Text>
             </View>
           </View>
           <View style={styles.milControls}>
              <View style={styles.milRow}>
-                <View style={styles.milItem}><Text style={styles.milLabel}>Age I (+1)</Text><View style={styles.counter}><Pressable onPress={() => updateMil("age1",-1)} style={styles.btn}><Ionicons name="remove" size={12} color="#FFF"/></Pressable><Text style={styles.count}>{milDetail.age1}</Text><Pressable onPress={() => updateMil("age1",1)} style={styles.btn}><Ionicons name="add" size={12} color="#FFF"/></Pressable></View></View>
-                <View style={styles.milItem}><Text style={styles.milLabel}>Age II (+3)</Text><View style={styles.counter}><Pressable onPress={() => updateMil("age2",-1)} style={styles.btn}><Ionicons name="remove" size={12} color="#FFF"/></Pressable><Text style={styles.count}>{milDetail.age2}</Text><Pressable onPress={() => updateMil("age2",1)} style={styles.btn}><Ionicons name="add" size={12} color="#FFF"/></Pressable></View></View>
+                <View style={styles.milItem}>
+                  <Text style={styles.milLabel}>AGE I (+1)</Text>
+                  <View style={styles.counter}>
+                    <NeuButton onPress={() => updateMil("age1", -1)} color="#1A0533" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="remove" size={12} color="rgba(255,255,255,0.4)"/>
+                    </NeuButton>
+                    <Text style={styles.count}>{milDetail.age1}</Text>
+                    <NeuButton onPress={() => updateMil("age1", 1)} color="#E74C3C" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="add" size={12} color="#1A0533"/>
+                    </NeuButton>
+                  </View>
+                </View>
+                <View style={styles.milItem}>
+                  <Text style={styles.milLabel}>AGE II (+3)</Text>
+                  <View style={styles.counter}>
+                    <NeuButton onPress={() => updateMil("age2", -1)} color="#1A0533" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="remove" size={12} color="rgba(255,255,255,0.4)"/>
+                    </NeuButton>
+                    <Text style={styles.count}>{milDetail.age2}</Text>
+                    <NeuButton onPress={() => updateMil("age2", 1)} color="#E74C3C" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="add" size={12} color="#1A0533"/>
+                    </NeuButton>
+                  </View>
+                </View>
              </View>
              <View style={styles.milRow}>
-                <View style={styles.milItem}><Text style={styles.milLabel}>Age III (+5)</Text><View style={styles.counter}><Pressable onPress={() => updateMil("age3",-1)} style={styles.btn}><Ionicons name="remove" size={12} color="#FFF"/></Pressable><Text style={styles.count}>{milDetail.age3}</Text><Pressable onPress={() => updateMil("age3",1)} style={styles.btn}><Ionicons name="add" size={12} color="#FFF"/></Pressable></View></View>
-                <View style={styles.milItem}><Text style={[styles.milLabel, {color: "#FF4757"}]}>Loss (-1)</Text><View style={styles.counter}><Pressable onPress={() => updateMil("defeats",-1)} style={styles.btn}><Ionicons name="remove" size={12} color="#FFF"/></Pressable><Text style={styles.count}>{milDetail.defeats}</Text><Pressable onPress={() => updateMil("defeats",1)} style={styles.btn}><Ionicons name="add" size={12} color="#FFF"/></Pressable></View></View>
+                <View style={styles.milItem}>
+                  <Text style={styles.milLabel}>AGE III (+5)</Text>
+                  <View style={styles.counter}>
+                    <NeuButton onPress={() => updateMil("age3", -1)} color="#1A0533" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="remove" size={12} color="rgba(255,255,255,0.4)"/>
+                    </NeuButton>
+                    <Text style={styles.count}>{milDetail.age3}</Text>
+                    <NeuButton onPress={() => updateMil("age3", 1)} color="#E74C3C" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="add" size={12} color="#1A0533"/>
+                    </NeuButton>
+                  </View>
+                </View>
+                <View style={styles.milItem}>
+                  <Text style={[styles.milLabel, {color: "#FF4757"}]}>DEFEATS (-1)</Text>
+                  <View style={styles.counter}>
+                    <NeuButton onPress={() => updateMil("defeats", -1)} color="#1A0533" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="remove" size={12} color="rgba(255,255,255,0.4)"/>
+                    </NeuButton>
+                    <Text style={styles.count}>{milDetail.defeats}</Text>
+                    <NeuButton onPress={() => updateMil("defeats", 1)} color="#FF4757" borderRadius={8} style={styles.miniBtn}>
+                      <Ionicons name="add" size={12} color="#1A0533"/>
+                    </NeuButton>
+                  </View>
+                </View>
              </View>
           </View>
-        </View>
+        </NeuTrench>
 
         {/* Regular Categories */}
         {categories.map(cat => (
-          <View key={cat.id} style={[styles.card, { borderColor: cat.color + "33" }]}>
+          <NeuTrench key={cat.id} color="#150428" borderRadius={24} padding={16} style={styles.card}>
             <View style={styles.cardHeader}>
-              <View style={[styles.iconBox, { backgroundColor: cat.color + "22" }]}>
-                <MaterialCommunityIcons name={cat.icon as any} size={16} color={cat.color} />
+              <View style={[styles.iconWell, { backgroundColor: cat.color + "22" }]}>
+                <MaterialCommunityIcons name={cat.icon as any} size={20} color={cat.color} />
               </View>
               <Text style={styles.cardLabel}>{cat.label}</Text>
             </View>
             <View style={styles.controls}>
-              <Pressable onPress={() => updateStat(cat.id, stats[cat.id] - 1)} style={styles.adjBtn}><Ionicons name="remove" size={14} color="rgba(255,255,255,0.4)" /></Pressable>
-              <TextInput style={[styles.input, { color: cat.color }]} keyboardType="numeric" value={stats[cat.id].toString()} onChangeText={(v) => updateStat(cat.id, parseInt(v) || 0)} selectTextOnFocus />
-              <Pressable onPress={() => updateStat(cat.id, stats[cat.id] + 1)} style={styles.adjBtn}><Ionicons name="add" size={14} color={cat.color} /></Pressable>
+              <NeuButton onPress={() => updateStat(cat.id, stats[cat.id] - 1)} color="#1A0533" borderRadius={10} style={styles.adjBtn}>
+                <Ionicons name="remove" size={14} color="rgba(255,255,255,0.4)" />
+              </NeuButton>
+              <TextInput 
+                style={[styles.input, { color: cat.color }]} 
+                keyboardType="numeric" 
+                value={stats[cat.id].toString()} 
+                onChangeText={(v) => updateStat(cat.id, parseInt(v) || 0)} 
+                selectTextOnFocus 
+              />
+              <NeuButton onPress={() => updateStat(cat.id, stats[cat.id] + 1)} color={cat.color} borderRadius={10} style={styles.adjBtn}>
+                <Ionicons name="add" size={14} color="#1A0533" />
+              </NeuButton>
             </View>
-          </View>
+          </NeuTrench>
         ))}
 
-        {/* Coins - Special Row */}
-        <View style={[styles.card, styles.wideCard, { borderColor: "#F1C40F33" }]}>
+        {/* Coins Card */}
+        <NeuTrench color="#150428" borderRadius={24} padding={16} style={styles.wideCard}>
           <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: "#F1C40F22" }]}>
-              <MaterialCommunityIcons name="cash" size={16} color="#F1C40F" />
+            <View style={[styles.iconWell, { backgroundColor: "#F1C40F22" }]}>
+              <MaterialCommunityIcons name="cash" size={20} color="#F1C40F" />
             </View>
             <View>
-              <Text style={styles.cardLabel}>Coins / 3</Text>
-              <Text style={[styles.scoreSummary, {color: "#F1C40F"}]}>{coinScore} pts</Text>
+              <Text style={styles.cardLabel}>Treasury</Text>
+              <Text style={[styles.scoreSummary, {color: "#F1C40F"}]}>{coinScore} pts (3:1 ratio)</Text>
             </View>
           </View>
           <View style={styles.coinEntry}>
-             <Text style={styles.coinLabel}>Total Coins:</Text>
-             <TextInput style={styles.coinInput} keyboardType="numeric" placeholder="0" value={totalCoins.toString()} onChangeText={(v) => setTotalCoins(parseInt(v) || 0)} selectTextOnFocus />
-             <Text style={styles.coinHint}>{totalCoins} ÷ 3 = {coinScore}</Text>
+             <Text style={styles.coinLabel}>TOTAL COINS</Text>
+             <TextInput 
+              style={styles.coinInput} 
+              keyboardType="numeric" 
+              placeholder="0" 
+              value={totalCoins.toString()} 
+              onChangeText={(v) => setTotalCoins(parseInt(v) || 0)} 
+              selectTextOnFocus 
+             />
+             <View style={styles.coinBadge}>
+               <Text style={styles.coinBadgeText}>+{coinScore} VP</Text>
+             </View>
           </View>
-        </View>
+        </NeuTrench>
 
-        {/* Science - Detailed Row */}
-        <View style={[styles.card, styles.wideCard, { borderColor: "#27AE6033" }]}>
+        {/* Science Card */}
+        <NeuTrench color="#150428" borderRadius={24} padding={16} style={styles.wideCard}>
           <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: "#27AE6022" }]}>
-              <MaterialCommunityIcons name="flask" size={16} color="#27AE60" />
+            <View style={[styles.iconWell, { backgroundColor: "#00D2FF22" }]}>
+              <MaterialCommunityIcons name="flask" size={20} color="#00D2FF" />
             </View>
             <View>
-              <Text style={styles.cardLabel}>Science Details</Text>
-              <Text style={[styles.scoreSummary, {color: "#27AE60"}]}>{sciScore} pts</Text>
+              <Text style={styles.cardLabel}>Scientific Advancements</Text>
+              <Text style={[styles.scoreSummary, {color: "#00D2FF"}]}>{sciScore} VP (Sets + Squaring)</Text>
             </View>
           </View>
           <View style={styles.sciTools}>
             {[
-              { id: "gears", icon: "cog", label: "Gear" },
-              { id: "tablets", icon: "tablet", label: "Table" },
-              { id: "compasses", icon: "compass-outline", label: "Comp" },
+              { id: "gears", icon: "cog", label: "GEAR" },
+              { id: "tablets", icon: "tablet", label: "TABLET" },
+              { id: "compasses", icon: "compass-outline", label: "COMPASS" },
             ].map(s => (
               <View key={s.id} style={styles.sciItem}>
                 <Text style={styles.sciLabel}>{s.label}</Text>
                 <View style={styles.sciControls}>
-                  <Pressable onPress={() => updateSci(s.id as any, -1)} style={styles.adjBtnSm}><Ionicons name="remove" size={12} color="rgba(255,255,255,0.3)" /></Pressable>
+                  <NeuButton onPress={() => updateSci(s.id as any, -1)} color="#1A0533" borderRadius={10} style={styles.miniBtn}>
+                    <Ionicons name="remove" size={12} color="rgba(255,255,255,0.3)" />
+                  </NeuButton>
                   <Text style={styles.sciVal}>{science[s.id as keyof typeof science]}</Text>
-                  <Pressable onPress={() => updateSci(s.id as any, 1)} style={styles.adjBtnSm}><Ionicons name="add" size={12} color="#27AE60" /></Pressable>
+                  <NeuButton onPress={() => updateSci(s.id as any, 1)} color="#00D2FF" borderRadius={10} style={styles.miniBtn}>
+                    <Ionicons name="add" size={12} color="#1A0533" />
+                  </NeuButton>
                 </View>
               </View>
             ))}
           </View>
-        </View>
+        </NeuTrench>
       </View>
       <View style={{ height: 60 }} />
     </ScrollView>
@@ -192,35 +260,35 @@ export function SevenWondersCalculator({
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16 },
-  header: { alignItems: "center", paddingVertical: 16 },
+  header: { alignItems: "center", marginBottom: 20 },
   totalBox: { alignItems: "center" },
-  totalVal: { fontFamily: "Inter_900Black", fontSize: 54 },
-  totalLabel: { fontFamily: "Inter_700Bold", fontSize: 12, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: 1 },
-  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12 },
-  card: { width: "48%", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 24, padding: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  totalVal: { fontFamily: "Inter_900Black", fontSize: 64, lineHeight: 70 },
+  totalLabel: { fontFamily: "Inter_900Black", fontSize: 11, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: 1.5 },
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 16 },
+  card: { width: "48%" },
   wideCard: { width: "100%" },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
-  iconBox: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  cardLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 13, color: "#FFF" },
-  scoreSummary: { fontFamily: "Inter_700Bold", fontSize: 11, color: "rgba(255,255,255,0.4)" },
-  controls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 16, padding: 4 },
-  adjBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center" },
-  adjBtnSm: { width: 28, height: 28, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center" },
-  input: { fontFamily: "Inter_900Black", fontSize: 22, textAlign: "center", minWidth: 40, padding: 0 },
-  milControls: { gap: 10 },
-  milRow: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
+  iconWell: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  cardLabel: { fontFamily: "Inter_900Black", fontSize: 13, color: "#FFF", textTransform: "uppercase" },
+  scoreSummary: { fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "rgba(255,255,255,0.3)" },
+  controls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  adjBtn: { width: 34, height: 34 },
+  miniBtn: { width: 28, height: 28 },
+  input: { fontFamily: "Inter_900Black", fontSize: 24, textAlign: "center", minWidth: 40, padding: 0 },
+  milControls: { gap: 12 },
+  milRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
   milItem: { flex: 1 },
-  milLabel: { fontFamily: "Inter_700Bold", fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 4 },
-  counter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 4 },
-  btn: { width: 24, height: 24, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center" },
-  count: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFF" },
-  coinEntry: { flexDirection: "row", alignItems: "center", gap: 12 },
-  coinLabel: { fontFamily: "Inter_700Bold", fontSize: 12, color: "rgba(255,255,255,0.4)" },
-  coinInput: { backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontFamily: "Inter_900Black", fontSize: 18, color: "#FFF", width: 80 },
-  coinHint: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.2)" },
+  milLabel: { fontFamily: "Inter_900Black", fontSize: 9, color: "rgba(255,255,255,0.2)", marginBottom: 6, letterSpacing: 0.5 },
+  counter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 4 },
+  count: { fontFamily: "Inter_900Black", fontSize: 16, color: "#FFF", minWidth: 20, textAlign: "center" },
+  coinEntry: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  coinLabel: { fontFamily: "Inter_900Black", fontSize: 10, color: "rgba(255,255,255,0.2)", letterSpacing: 1 },
+  coinInput: { backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, fontFamily: "Inter_900Black", fontSize: 20, color: "#FFF", width: 100 },
+  coinBadge: { backgroundColor: "#F1C40F22", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  coinBadgeText: { fontFamily: "Inter_900Black", fontSize: 12, color: "#F1C40F" },
   sciTools: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  sciItem: { flex: 1, alignItems: "center", gap: 8 },
-  sciLabel: { fontFamily: "Inter_700Bold", fontSize: 9, color: "rgba(255,255,255,0.3)", textTransform: "uppercase" },
-  sciControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 4, width: "100%" },
-  sciVal: { fontFamily: "Inter_900Black", fontSize: 16, color: "#FFF" },
+  sciItem: { flex: 1, gap: 6 },
+  sciLabel: { fontFamily: "Inter_900Black", fontSize: 8, color: "rgba(255,255,255,0.2)", letterSpacing: 0.5 },
+  sciControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 4 },
+  sciVal: { fontFamily: "Inter_900Black", fontSize: 18, color: "#FFF", minWidth: 22, textAlign: "center" },
 });

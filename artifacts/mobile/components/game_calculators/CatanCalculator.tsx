@@ -4,6 +4,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface CatanCalculatorProps {
   player: Player;
@@ -39,7 +40,7 @@ export function CatanCalculator({ player, game, onUpdate, initialStats }: CatanC
 
   useEffect(() => {
     onUpdate(totalScore, [], { stats });
-  }, [totalScore]);
+  }, [totalScore, stats, onUpdate]);
 
   const updateStat = (key: string, delta: number | boolean) => {
     setStats(prev => {
@@ -55,35 +56,39 @@ export function CatanCalculator({ player, game, onUpdate, initialStats }: CatanC
   };
 
   const renderStepper = (label: string, key: string, value: number, icon: any, color: string) => (
-    <View style={styles.stepperCard}>
-      <View style={[styles.iconCircle, { backgroundColor: color + "20" }]}>
+    <NeuTrench color="#150428" borderRadius={20} padding={12} style={styles.stepperCard}>
+      <NeuIconWell color={color + "20"} size={44} borderRadius={22}>
         <MaterialCommunityIcons name={icon} size={24} color={color} />
-      </View>
+      </NeuIconWell>
       <Text style={styles.stepperLabel}>{label}</Text>
       <View style={styles.stepperControls}>
-        <Pressable onPress={() => updateStat(key, -1)} style={styles.stepBtn}>
+        <NeuButton onPress={() => updateStat(key, -1)} color="#150428" borderRadius={10} style={styles.stepBtn}>
           <Ionicons name="remove" size={20} color="rgba(255,255,255,0.6)" />
-        </Pressable>
+        </NeuButton>
         <Text style={styles.stepValue}>{value}</Text>
-        <Pressable onPress={() => updateStat(key, 1)} style={styles.stepBtn}>
-          <Ionicons name="add" size={20} color={color} />
-        </Pressable>
+        <NeuButton onPress={() => updateStat(key, 1)} color={color} borderRadius={10} style={styles.stepBtn}>
+          <Ionicons name="add" size={20} color="#1A0533" />
+        </NeuButton>
       </View>
-    </View>
+    </NeuTrench>
   );
 
   const renderToggle = (label: string, key: string, active: boolean, icon: any, color: string) => (
-    <Pressable 
+    <NeuButton 
       onPress={() => updateStat(key, !active)}
-      style={[styles.toggleCard, active && { backgroundColor: color + "20", borderColor: color }]}
+      color={active ? color : "#150428"}
+      borderRadius={16}
+      style={styles.toggleCard}
     >
-      <MaterialCommunityIcons name={icon} size={28} color={active ? color : "rgba(255,255,255,0.2)"} />
-      <View style={styles.toggleText}>
-        <Text style={[styles.toggleLabel, active && { color: "#FFF" }]}>{label}</Text>
-        <Text style={styles.togglePoints}>+2 VP</Text>
+      <View style={styles.toggleInner}>
+        <MaterialCommunityIcons name={icon} size={28} color={active ? "#1A0533" : "rgba(255,255,255,0.2)"} />
+        <View style={styles.toggleText}>
+          <Text style={[styles.toggleLabel, { color: active ? "#1A0533" : "rgba(255,255,255,0.4)" }]}>{label}</Text>
+          <Text style={[styles.togglePoints, { color: active ? "#1A0533" : "rgba(255,255,255,0.2)" }]}>+2 VP</Text>
+        </View>
+        <View style={[styles.statusDot, { backgroundColor: active ? "#1A0533" : "rgba(255,255,255,0.05)" }]} />
       </View>
-      <View style={[styles.statusDot, active && { backgroundColor: color }]} />
-    </Pressable>
+    </NeuButton>
   );
 
   return (
@@ -95,21 +100,21 @@ export function CatanCalculator({ player, game, onUpdate, initialStats }: CatanC
       </View>
       <View style={styles.row}>
         {renderStepper("VP Cards", "vpCards", stats.vpCards, "cards-playing-outline", "#9B59B6")}
-        <View style={styles.scoreSummary}>
+        <NeuTrench color="#150428" borderRadius={20} padding={12} style={styles.scoreSummary}>
           <Text style={styles.summaryLabel}>Total Score</Text>
-          <Text style={styles.summaryValue}>{totalScore}</Text>
-        </View>
+          <Text style={[styles.summaryValue, { color: player.color }]}>{totalScore}</Text>
+        </NeuTrench>
       </View>
 
       <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Achievements</Text>
       <View style={styles.toggleGrid}>
         {renderToggle("Longest Road", "longestRoad", stats.longestRoad, "map-marker-distance", "#F1C40F")}
         {renderToggle("Largest Army", "largestArmy", stats.largestArmy, "sword-cross", "#E74C3C")}
-        {hasHarborMaster && renderToggle("Harbor Master", "harborMaster", stats.harborMaster, "anchor", "#1ABC9C")}
+        {hasHarborMaster && renderToggle("Harbor Master", "harborMaster", stats.harborMaster, "anchor", "#00D2FF")}
       </View>
 
       <View style={styles.tipBox}>
-        <Ionicons name="information-circle-outline" size={16} color="rgba(255,255,255,0.4)" />
+        <Ionicons name="information-circle-outline" size={16} color="rgba(255,255,255,0.2)" />
         <Text style={styles.tipText}>Target score is {game.targetScore} VP.</Text>
       </View>
     </ScrollView>
@@ -118,23 +123,23 @@ export function CatanCalculator({ player, game, onUpdate, initialStats }: CatanC
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  sectionTitle: { fontFamily: "Inter_800ExtraBold", fontSize: 13, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 },
+  sectionTitle: { fontFamily: "Inter_900Black", fontSize: 11, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 },
   row: { flexDirection: "row", gap: 12, marginBottom: 12 },
-  stepperCard: { flex: 1, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 12, alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
-  iconCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  stepperLabel: { fontFamily: "Inter_700Bold", fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 8 },
+  stepperCard: { flex: 1, alignItems: "center" },
+  stepperLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 12, textTransform: "uppercase" },
   stepperControls: { flexDirection: "row", alignItems: "center", gap: 12 },
-  stepBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center" },
+  stepBtn: { width: 32, height: 32 },
   stepValue: { fontFamily: "Inter_900Black", fontSize: 20, color: "#FFF", minWidth: 24, textAlign: "center" },
-  scoreSummary: { flex: 1, backgroundColor: "rgba(0,245,160,0.05)", borderRadius: 16, padding: 12, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(0,245,160,0.2)" },
-  summaryLabel: { fontFamily: "Inter_700Bold", fontSize: 10, color: "#00F5A0", textTransform: "uppercase", marginBottom: 4 },
-  summaryValue: { fontFamily: "Inter_900Black", fontSize: 32, color: "#00F5A0" },
+  scoreSummary: { flex: 1, alignItems: "center", justifyContent: "center" },
+  summaryLabel: { fontFamily: "Inter_900Black", fontSize: 9, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", marginBottom: 2 },
+  summaryValue: { fontFamily: "Inter_900Black", fontSize: 36 },
   toggleGrid: { gap: 10 },
-  toggleCard: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
+  toggleCard: { width: "100%", height: 64 },
+  toggleInner: { flexDirection: "row", alignItems: "center", width: "100%", paddingHorizontal: 16 },
   toggleText: { flex: 1, marginLeft: 16 },
-  toggleLabel: { fontFamily: "Inter_700Bold", fontSize: 15, color: "rgba(255,255,255,0.4)" },
-  togglePoints: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.3)" },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.05)" },
-  tipBox: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 24, padding: 12, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.02)" },
-  tipText: { fontFamily: "Inter_500Medium", fontSize: 12, color: "rgba(255,255,255,0.3)" },
+  toggleLabel: { fontFamily: "Inter_900Black", fontSize: 15 },
+  togglePoints: { fontFamily: "Inter_800ExtraBold", fontSize: 11 },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  tipBox: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 24, padding: 12, opacity: 0.5 },
+  tipText: { fontFamily: "Inter_700Bold", fontSize: 12, color: "rgba(255,255,255,0.3)" },
 });

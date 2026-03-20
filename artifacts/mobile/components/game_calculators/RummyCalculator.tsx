@@ -4,8 +4,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
-import { PolymerButton } from "../PolymerButton";
-import { NeuIconWell } from "../PolymerCard";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface RummyCalculatorProps {
   player: Player;
@@ -24,11 +23,7 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
   const score = useMemo(() => {
     if (drop === "first") return 20;
     if (drop === "middle") return 40;
-    
-    // If lives not met
     if (!firstLife) return 80;
-    
-    // If show is active
     if (firstLife && secondLife && thirdLife && addedCards.length === 0 && !points) return 0;
 
     const cardPoints = addedCards.reduce((sum, c) => sum + c.value, 0);
@@ -105,49 +100,58 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
   };
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <View style={styles.section}>
-        <View style={styles.row}>
-          <Pressable 
-            onPress={handleShow}
-            style={[styles.showBtn, score === 0 && firstLife && secondLife && thirdLife && styles.showActive]}
-          >
-            <MaterialCommunityIcons name="cards-playing-outline" size={20} color="#00F5A0" />
-            <Text style={styles.showText}>DECLARE SHOW / RUMMY</Text>
-            <Text style={styles.showSub}>0 POINTS</Text>
-          </Pressable>
-        </View>
+        <NeuButton 
+          onPress={handleShow}
+          color={score === 0 && firstLife && secondLife && thirdLife ? "#00F5A0" : "#150428"}
+          borderRadius={20}
+          style={styles.showNeuBtn}
+        >
+          <View style={styles.showBtnInner}>
+            <MaterialCommunityIcons 
+              name="cards-playing-outline" 
+              size={20} 
+              color={score === 0 && firstLife && secondLife && thirdLife ? "#1A0533" : "#00F5A0"} 
+            />
+            <View>
+              <Text style={[styles.showText, { color: score === 0 && firstLife && secondLife && thirdLife ? "#1A0533" : "#00F5A0" }]}>
+                DECLARE SHOW / RUMMY
+              </Text>
+              <Text style={[styles.showSub, { color: score === 0 && firstLife && secondLife && thirdLife ? "rgba(26,5,51,0.5)" : "rgba(0, 245, 160, 0.5)" }]}>
+                0 POINTS
+              </Text>
+            </View>
+          </View>
+        </NeuButton>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Lives Checklist</Text>
         <View style={styles.row}>
-          <Pressable 
-            onPress={toggleFirstLife}
-            style={[styles.chip, firstLife && { backgroundColor: player.color + "22", borderColor: player.color }]}
-          >
-            <Ionicons 
-              name={firstLife ? "checkmark-circle" : "ellipse-outline"} 
-              size={20} 
-              color={firstLife ? player.color : "rgba(255,255,255,0.2)"} 
-            />
-            <Text style={[styles.chipText, firstLife && { color: "#FFF" }]}>First Life (Pure)</Text>
+          <Pressable onPress={toggleFirstLife} style={{ flex: 1 }}>
+            <NeuTrench color={firstLife ? player.color : "#150428"} borderRadius={16} padding={12} style={styles.chip}>
+              <Ionicons 
+                name={firstLife ? "checkmark-circle" : "ellipse-outline"} 
+                size={20} 
+                color={firstLife ? "#1A0533" : "rgba(255,255,255,0.2)"} 
+              />
+              <Text style={[styles.chipText, firstLife && { color: "#1A0533" }]}>First Life</Text>
+            </NeuTrench>
           </Pressable>
 
-          <Pressable 
-            onPress={toggleSecondLife} 
-            style={[styles.chip, secondLife && { borderColor: player.color, backgroundColor: player.color + "11" }, !firstLife && { opacity: 0.3 }]}
-          >
-            <Ionicons name={secondLife ? "checkmark-circle" : "ellipse-outline"} size={16} color={secondLife ? player.color : "rgba(255,255,255,0.2)"} />
-            <Text style={[styles.chipText, secondLife && { color: "#FFF" }]}>Second Life</Text>
+          <Pressable onPress={toggleSecondLife} style={[{ flex: 1 }, !firstLife && { opacity: 0.3 }]}>
+            <NeuTrench color={secondLife ? player.color : "#150428"} borderRadius={16} padding={12} style={styles.chip}>
+              <Ionicons name={secondLife ? "checkmark-circle" : "ellipse-outline"} size={16} color={secondLife ? "#1A0533" : "rgba(255,255,255,0.2)"} />
+              <Text style={[styles.chipText, secondLife && { color: "#1A0533" }]}>Second Life</Text>
+            </NeuTrench>
           </Pressable>
 
-          <Pressable 
-            onPress={toggleThirdLife} 
-            style={[styles.chip, thirdLife && { borderColor: player.color, backgroundColor: player.color + "11" }, (!firstLife || !secondLife) && { opacity: 0.3 }]}
-          >
-            <Ionicons name={thirdLife ? "checkmark-circle" : "ellipse-outline"} size={16} color={thirdLife ? player.color : "rgba(255,255,255,0.2)"} />
-            <Text style={[styles.chipText, thirdLife && { color: "#FFF" }]}>Third Life / Sets</Text>
+          <Pressable onPress={toggleThirdLife} style={[{ flex: 1 }, (!firstLife || !secondLife) && { opacity: 0.3 }]}>
+            <NeuTrench color={thirdLife ? player.color : "#150428"} borderRadius={16} padding={12} style={styles.chip}>
+              <Ionicons name={thirdLife ? "checkmark-circle" : "ellipse-outline"} size={16} color={thirdLife ? "#1A0533" : "rgba(255,255,255,0.2)"} />
+              <Text style={[styles.chipText, thirdLife && { color: "#1A0533" }]}>Sets</Text>
+            </NeuTrench>
           </Pressable>
         </View>
       </View>
@@ -155,50 +159,54 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Drop Penalties</Text>
         <View style={styles.row}>
-          <Pressable 
+          <NeuButton 
             onPress={() => handleDrop("first")}
-            style={[styles.dropChip, drop === "first" && styles.dropActive]}
+            color={drop === "first" ? "#FF4757" : "#150428"}
+            borderRadius={16}
+            style={styles.dropButton}
           >
-            <Text style={styles.dropLabel}>FIRST DROP</Text>
-            <Text style={styles.dropPoints}>20</Text>
-          </Pressable>
+            <Text style={[styles.dropLabel, drop === "first" && { color: "rgba(255,255,255,0.8)" }]}>FIRST DROP</Text>
+            <Text style={[styles.dropPoints, drop === "first" && { color: "#FFF" }]}>20</Text>
+          </NeuButton>
 
-          <Pressable 
+          <NeuButton 
             onPress={() => handleDrop("middle")}
-            style={[styles.dropChip, drop === "middle" && styles.dropActive]}
+            color={drop === "middle" ? "#FF4757" : "#150428"}
+            borderRadius={16}
+            style={styles.dropButton}
           >
-            <Text style={styles.dropLabel}>MIDDLE DROP</Text>
-            <Text style={styles.dropPoints}>40</Text>
-          </Pressable>
+            <Text style={[styles.dropLabel, drop === "middle" && { color: "rgba(255,255,255,0.8)" }]}>MIDDLE DROP</Text>
+            <Text style={[styles.dropPoints, drop === "middle" && { color: "#FFF" }]}>40</Text>
+          </NeuButton>
         </View>
       </View>
 
       <View style={styles.section}>
         <View style={styles.rowBetween}>
-          <Text style={styles.sectionTitle}>Tap Cards to Add</Text>
+          <Text style={styles.sectionTitle}>Tap Cards</Text>
           {addedCards.length > 0 && (
             <Pressable onPress={removeLastCard}>
-              <Ionicons name="backspace-outline" size={16} color="rgba(255,255,255,0.3)" />
+              <NeuIconWell color="#150428" size={32} borderRadius={8}>
+                <Ionicons name="backspace-outline" size={16} color="rgba(255,255,255,0.4)" />
+              </NeuIconWell>
             </Pressable>
           )}
         </View>
         
-        {/* Face Cards row */}
         <View style={styles.cardGrid}>
           {["A", "K", "Q", "J"].map((card) => (
-            <Pressable key={card} onPress={() => addCard(card, 10)} style={styles.cardKey}>
+            <NeuButton key={card} onPress={() => addCard(card, 10)} color="#00D2FF" borderRadius={12} style={styles.cardKey}>
               <Text style={styles.cardText}>{card}</Text>
               <Text style={styles.cardSub}>10</Text>
-            </Pressable>
+            </NeuButton>
           ))}
         </View>
 
-        {/* Number Cards Grid */}
         <View style={styles.numberGrid}>
           {[10, 9, 8, 7, 6, 5, 4, 3, 2].map((num) => (
-            <Pressable key={num} onPress={() => addCard(num.toString(), num)} style={styles.numKey}>
+            <NeuButton key={num} onPress={() => addCard(num.toString(), num)} color="#00D2FF" borderRadius={10} style={styles.numKey}>
               <Text style={styles.numText}>{num}</Text>
-            </Pressable>
+            </NeuButton>
           ))}
         </View>
 
@@ -213,11 +221,11 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Other Deadwood Sum</Text>
-        <View style={styles.inputContainer}>
+        <NeuTrench color="#150428" borderRadius={18} padding={0} style={styles.inputTrench}>
           <TextInput
             style={styles.input}
-            placeholder="Sum of remaining cards..."
-            placeholderTextColor="rgba(255,255,255,0.2)"
+            placeholder="0"
+            placeholderTextColor="rgba(255,255,255,0.1)"
             keyboardType="numeric"
             value={points}
             onChangeText={handlePointInput}
@@ -225,63 +233,60 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
           />
           {parseInt(points) >= 80 && (
             <View style={styles.capBadge}>
-              <Text style={styles.capText}>CAPPED AT 80</Text>
+              <Text style={styles.capText}>CAPPED</Text>
             </View>
           )}
-        </View>
-        <Text style={styles.hint}>High Cards (A,K,Q,J) = 10 pts | Jokers = 0 pts</Text>
+        </NeuTrench>
       </View>
 
-      <View style={styles.totalBox}>
+      <NeuTrench color="#150428" borderRadius={24} padding={20} style={styles.totalBox}>
         <Text style={styles.totalLabel}>Round Penalty</Text>
         <Text style={[styles.totalValue, { color: score === 0 ? "#00F5A0" : "#FF4757" }]}>
           {score}
         </Text>
         {score === 80 && !firstLife && (
-          <View style={styles.roastBadge}>
-            <MaterialCommunityIcons name="emoticon-dead-outline" size={14} color="#FFF" />
+          <NeuTrench color="#FF475722" borderRadius={10} padding={6} style={styles.roastBadge}>
+            <MaterialCommunityIcons name="emoticon-dead-outline" size={14} color="#FF4757" />
             <Text style={styles.roastText}>THE ZOMBIE</Text>
-          </View>
+          </NeuTrench>
         )}
-      </View>
+      </NeuTrench>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  section: { marginBottom: 20 },
-  sectionTitle: { fontFamily: "Inter_800ExtraBold", fontSize: 12, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", marginBottom: 12, letterSpacing: 1 },
-  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  section: { marginBottom: 18 },
+  sectionTitle: { fontFamily: "Inter_900Black", fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", marginBottom: 10, letterSpacing: 1.5 },
+  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   row: { flexDirection: "row", gap: 10 },
-  showBtn: { flex: 1, backgroundColor: "rgba(0, 245, 160, 0.05)", borderRadius: 20, padding: 16, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(0, 245, 160, 0.1)", borderStyle: "dashed" },
-  showActive: { backgroundColor: "rgba(0, 245, 160, 0.15)", borderColor: "#00F5A0", borderStyle: "solid" },
-  showText: { fontFamily: "Inter_900Black", fontSize: 13, color: "#00F5A0", marginTop: 4 },
-  showSub: { fontFamily: "Inter_700Bold", fontSize: 10, color: "rgba(0, 245, 160, 0.5)" },
-  chip: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.03)", padding: 12, borderRadius: 16, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.05)", gap: 8 },
-  chipText: { fontFamily: "Inter_700Bold", fontSize: 13, color: "rgba(255,255,255,0.4)" },
-  dropChip: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.03)", paddingVertical: 12, borderRadius: 16, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.05)" },
-  dropActive: { borderColor: "#FF4757", backgroundColor: "rgba(255, 71, 87, 0.1)" },
-  dropLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 9, color: "rgba(255,255,255,0.3)" },
-  dropPoints: { fontFamily: "Inter_900Black", fontSize: 20, color: "#FFF" },
-  cardGrid: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  cardKey: { flex: 1, height: 54, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 12, alignItems: "center", justifyContent: "center", borderBottomWidth: 3, borderBottomColor: "rgba(0,0,0,0.3)" },
-  cardText: { fontFamily: "Inter_900Black", fontSize: 16, color: "#FFF" },
-  cardSub: { fontFamily: "Inter_700Bold", fontSize: 8, color: "rgba(255,255,255,0.3)" },
-  numberGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 16 },
-  numKey: { width: "18.5%", height: 38, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, alignItems: "center", justifyContent: "center", borderBottomWidth: 2, borderBottomColor: "rgba(0,0,0,0.2)" },
-  numText: { fontFamily: "Inter_800ExtraBold", fontSize: 13, color: "#FFF" },
-  logStrip: { flexDirection: "row", marginBottom: 10 },
+  showNeuBtn: { width: "100%", height: 64 },
+  showBtnInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
+  showText: { fontFamily: "Inter_900Black", fontSize: 13, letterSpacing: 0.5 },
+  showSub: { fontFamily: "Inter_700Bold", fontSize: 9, textTransform: "uppercase", marginTop: 2 },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "center" },
+  chipText: { fontFamily: "Inter_800ExtraBold", fontSize: 11, color: "rgba(255,255,255,0.3)" },
+  dropButton: { flex: 1, height: 60 },
+  dropLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(255,255,255,0.3)" },
+  dropPoints: { fontFamily: "Inter_900Black", fontSize: 20, color: "#1A0533", marginTop: 2 },
+  cardGrid: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  cardKey: { flex: 1, height: 50 },
+  cardText: { fontFamily: "Inter_900Black", fontSize: 15, color: "#1A0533" },
+  cardSub: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(26,5,51,0.4)" },
+  numberGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 },
+  numKey: { width: "18.5%", height: 36 },
+  numText: { fontFamily: "Inter_900Black", fontSize: 13, color: "#1A0533" },
+  logStrip: { flexDirection: "row" },
   logChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginRight: 6 },
   logChipText: { fontFamily: "Inter_900Black", fontSize: 11 },
-  inputContainer: { flexDirection: "row", alignItems: "center", gap: 12 },
-  input: { flex: 1, backgroundColor: "rgba(255,255,255,0.03)", paddingHorizontal: 16, paddingVertical: 14, borderRadius: 16, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.05)", color: "#FFF", fontFamily: "Inter_700Bold", fontSize: 16 },
+  inputTrench: { flexDirection: "row", alignItems: "center", paddingRight: 12 },
+  input: { flex: 1, paddingHorizontal: 16, paddingVertical: 12, color: "#FFF", fontFamily: "Inter_900Black", fontSize: 18 },
   capBadge: { backgroundColor: "#FF4757", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   capText: { fontFamily: "Inter_900Black", fontSize: 9, color: "#FFF" },
-  hint: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.2)", marginTop: 8 },
-  totalBox: { alignItems: "center", marginTop: 10, padding: 20, backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
+  totalBox: { alignItems: "center", marginTop: 10 },
   totalLabel: { fontFamily: "Inter_700Bold", fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 4 },
-  totalValue: { fontFamily: "Inter_900Black", fontSize: 42 },
-  roastBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.1)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginTop: 8 },
-  roastText: { fontFamily: "Inter_900Black", fontSize: 11, color: "#FFF" },
+  totalValue: { fontFamily: "Inter_900Black", fontSize: 44 },
+  roastBadge: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
+  roastText: { fontFamily: "Inter_900Black", fontSize: 10, color: "#FF4757", letterSpacing: 0.5 },
 });

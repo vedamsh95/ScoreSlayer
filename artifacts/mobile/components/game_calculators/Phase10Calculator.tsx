@@ -4,7 +4,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { GameDefinition, PHASE10_VARIANTS } from "@/constants/games";
-import { NeuTrench } from "../PolymerCard";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface Phase10CalculatorProps {
   player: Player;
@@ -15,7 +15,7 @@ interface Phase10CalculatorProps {
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
-export function Phase10Calculator({ player, game, initialLogs, initialCleared, initialPhase, onUpdate }: Phase10CalculatorProps) {
+export function Phase10Calculator({ player, game, initialLogs, initialCleared, onUpdate }: Phase10CalculatorProps) {
   const [logs, setLogs] = useState<number[]>(initialLogs || []);
   const [cleared, setCleared] = useState<boolean>(initialCleared !== undefined ? initialCleared : false);
 
@@ -51,20 +51,31 @@ export function Phase10Calculator({ player, game, initialLogs, initialCleared, i
   };
 
   const actionCards = [
-    { label: "Skip", value: 15, icon: "block-helper" },
-    { label: "Wild", value: 25, icon: "star-circle" }
+    { label: "Skip", value: 15, icon: "block-helper", color: "#FF9F43" },
+    { label: "Wild", value: 25, icon: "star-circle", color: "#FFB800" }
   ];
 
   return (
     <View style={styles.container}>
       <View style={{ marginBottom: 16 }}>
-        <Pressable 
+        <NeuButton 
           onPress={handlePhaseWin}
-          style={[styles.winBtn, cleared && logs.length === 0 && styles.winActive]}
+          color={cleared && logs.length === 0 ? "#00F5A0" : "#150428"}
+          borderRadius={18}
+          style={styles.winNeuBtn}
         >
-          <MaterialCommunityIcons name="trophy-outline" size={20} color="#00F5A0" />
-          <Text style={styles.winText}>FINISHED PHASE / 0 PTS</Text>
-        </Pressable>
+          <View style={styles.btnInner}>
+            <MaterialCommunityIcons 
+              name="trophy-outline" 
+              size={18} 
+              color={cleared && logs.length === 0 ? "#1A0533" : "#00F5A0"} 
+            />
+            <Text style={[
+              styles.winText, 
+              { color: cleared && logs.length === 0 ? "#1A0533" : "#00F5A0" }
+            ]}>FINISHED PHASE / 0 PTS</Text>
+          </View>
+        </NeuButton>
       </View>
 
       <NeuTrench color="#150428" borderRadius={20} padding={16} style={styles.displayArea}>
@@ -86,29 +97,38 @@ export function Phase10Calculator({ player, game, initialLogs, initialCleared, i
         </ScrollView>
 
         <Pressable onPress={removeLast} style={styles.backspace}>
-          <Ionicons name="backspace-outline" size={24} color="rgba(255,255,255,0.4)" />
+          <NeuIconWell color="#150428" size={36} borderRadius={10}>
+            <Ionicons name="backspace-outline" size={20} color="rgba(255,255,255,0.4)" />
+          </NeuIconWell>
         </Pressable>
       </NeuTrench>
 
       <Pressable onPress={toggleCleared} style={styles.phaseToggle}>
         <NeuTrench 
           color={cleared ? player.color : "#150428"} 
-          borderRadius={14} 
-          padding={12}
-          style={styles.phaseToggleContent}
+          borderRadius={18} 
+          padding={14}
         >
-          <Ionicons 
-            name={cleared ? "checkmark-circle" : "ellipse-outline"} 
-            size={20} 
-            color={cleared ? "#1A0533" : "rgba(255,255,255,0.3)"} 
-          />
-          <View>
-            <Text style={[styles.phaseToggleLabel, cleared && { color: "#1A0533" }]}>
-              Phase {player.currentPhase || 1} Cleared
-            </Text>
-            <Text style={[styles.phaseToggleDesc, cleared && { color: "rgba(26,5,51,0.6)" }]}>
-              {currentPhaseDesc}
-            </Text>
+          <View style={styles.phaseToggleRow}>
+            <NeuIconWell 
+              color={cleared ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.03)"} 
+              size={36} 
+              borderRadius={10}
+            >
+              <Ionicons 
+                name={cleared ? "checkmark-circle" : "ellipse-outline"} 
+                size={20} 
+                color={cleared ? "#1A0533" : "rgba(255,255,255,0.2)"} 
+              />
+            </NeuIconWell>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.phaseToggleLabel, cleared && { color: "#1A0533" }]}>
+                Phase {player.currentPhase || 1} Cleared
+              </Text>
+              <Text style={[styles.phaseToggleDesc, cleared && { color: "rgba(26,5,51,0.6)" }]}>
+                {currentPhaseDesc}
+              </Text>
+            </View>
           </View>
         </NeuTrench>
       </Pressable>
@@ -118,14 +138,16 @@ export function Phase10Calculator({ player, game, initialLogs, initialCleared, i
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => {
             const pts = num <= 9 ? 5 : 10;
             return (
-              <Pressable
+              <NeuButton
                 key={num}
                 onPress={() => addValue(pts)}
-                style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
+                color="#00D2FF"
+                borderRadius={14}
+                style={styles.key}
               >
                 <Text style={styles.keyText}>{num}</Text>
                 <Text style={styles.keySubtext}>+{pts} pts</Text>
-              </Pressable>
+              </NeuButton>
             );
           })}
         </View>
@@ -133,15 +155,17 @@ export function Phase10Calculator({ player, game, initialLogs, initialCleared, i
         <Text style={styles.sectionTitle}>Action Cards</Text>
         <View style={styles.actionRow}>
           {actionCards.map((card, i) => (
-            <Pressable
+            <NeuButton
               key={i}
               onPress={() => addValue(card.value)}
+              color={card.color}
+              borderRadius={18}
               style={styles.actionKey}
             >
-              <MaterialCommunityIcons name={card.icon as any} size={24} color={player.color} />
+              <MaterialCommunityIcons name={card.icon as any} size={24} color="#FFF" />
               <Text style={styles.actionLabel}>{card.label}</Text>
               <Text style={styles.actionValue}>+{card.value}</Text>
-            </Pressable>
+            </NeuButton>
           ))}
         </View>
       </ScrollView>
@@ -154,9 +178,9 @@ const styles = StyleSheet.create({
   displayArea: { marginBottom: 16, position: "relative" },
   displayTextRow: { flexDirection: "row", alignItems: "baseline", gap: 4, marginBottom: 8 },
   displayTotal: { fontFamily: "Inter_900Black", fontSize: 42 },
-  winBtn: { backgroundColor: "rgba(0, 245, 160, 0.05)", borderRadius: 18, padding: 14, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(0, 245, 160, 0.1)", borderStyle: "dashed" },
-  winActive: { backgroundColor: "rgba(0, 245, 160, 0.15)", borderColor: "#00F5A0", borderStyle: "solid" },
-  winText: { fontFamily: "Inter_900Black", fontSize: 13, color: "#00F5A0" },
+  winNeuBtn: { width: "100%", height: 48 },
+  btnInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  winText: { fontFamily: "Inter_900Black", fontSize: 11, letterSpacing: 0.5 },
   displayPts: { fontFamily: "Inter_700Bold", fontSize: 14, color: "rgba(255,255,255,0.3)" },
   logStrip: { flexDirection: "row" },
   logChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginRight: 6 },
@@ -164,18 +188,17 @@ const styles = StyleSheet.create({
   placeholderText: { fontFamily: "Inter_500Medium", fontSize: 14, color: "rgba(255,255,255,0.2)" },
   backspace: { position: "absolute", right: 16, top: 16 },
   phaseToggle: { width: "100%", marginBottom: 16 },
-  phaseToggleContent: { flexDirection: "row", alignItems: "center", gap: 12 },
-  phaseToggleLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 14, color: "#FFF" },
-  phaseToggleDesc: { fontFamily: "Inter_500Medium", fontSize: 11, color: "rgba(255,255,255,0.4)" },
+  phaseToggleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  phaseToggleLabel: { fontFamily: "Inter_900Black", fontSize: 13, color: "#FFF", letterSpacing: 0.3 },
+  phaseToggleDesc: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 1 },
   scroll: { flex: 1 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between", marginBottom: 20 },
-  key: { width: "23%", height: 50, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  keyPressed: { backgroundColor: "rgba(255,255,255,0.15)" },
-  keyText: { fontFamily: "Inter_900Black", fontSize: 18, color: "#FFF" },
-  keySubtext: { fontFamily: "Inter_800ExtraBold", fontSize: 9, color: "rgba(255,255,255,0.3)" },
-  sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 },
+  key: { width: "23%", height: 52 },
+  keyText: { fontFamily: "Inter_900Black", fontSize: 18, color: "#1A0533" },
+  keySubtext: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(26,5,51,0.5)" },
+  sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1.5 },
   actionRow: { flexDirection: "row", gap: 12 },
-  actionKey: { flex: 1, height: 80, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  actionLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 4 },
-  actionValue: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFF" },
+  actionKey: { flex: 1, height: 86 },
+  actionLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 9, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+  actionValue: { fontFamily: "Inter_900Black", fontSize: 13, color: "#FFF", marginTop: 2 },
 });

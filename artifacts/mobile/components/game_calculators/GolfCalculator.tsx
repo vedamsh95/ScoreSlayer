@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
-import { NeuTrench } from "../PolymerCard";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface GolfCalculatorProps {
   player: Player;
@@ -76,32 +76,33 @@ export function GolfCalculator({ player, initialLogs, onUpdate }: GolfCalculator
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.scoreBox}>
+        <NeuTrench color="#150428" borderRadius={24} padding={12} style={styles.scoreBox}>
           <Text style={[styles.scoreText, { color: player.color }]}>{totalScore}</Text>
           <Text style={styles.scoreLabel}>pts</Text>
-        </View>
+        </NeuTrench>
         <Text style={styles.desc}>Tap a card to set its value. Pairs in columns score 0.</Text>
       </View>
 
       <View style={styles.gridContainer}>
         <View style={styles.grid}>
           {grid.map((val, idx) => (
-            <Pressable
+            <NeuButton
               key={idx}
               onPress={() => {
                 setActiveSlot(idx);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
-              style={[
-                styles.cell,
-                activeSlot === idx && { borderColor: player.color, backgroundColor: player.color + "22" }
-              ]}
+              color={activeSlot === idx ? player.color : "#150428"}
+              borderRadius={16}
+              style={styles.cell}
             >
-              <Text style={[styles.cellText, val === null && styles.cellPlaceholder]}>
-                {val === -2 ? "-2" : (val ?? "?")}
-              </Text>
-              <Text style={styles.cellLabel}>Pos {idx + 1}</Text>
-            </Pressable>
+              <View style={styles.cellInner}>
+                <Text style={[styles.cellText, { color: activeSlot === idx ? "#1A0533" : val === null ? "rgba(255,255,255,0.1)" : "#FFF" }]}>
+                  {val === -2 ? "-2" : (val ?? "?")}
+                </Text>
+                <Text style={[styles.cellLabel, { color: activeSlot === idx ? "rgba(26,5,51,0.4)" : "rgba(255,255,255,0.2)" }]}>POS {idx + 1}</Text>
+              </View>
+            </NeuButton>
           ))}
         </View>
       </View>
@@ -109,27 +110,30 @@ export function GolfCalculator({ player, initialLogs, onUpdate }: GolfCalculator
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
         <View style={styles.keypad}>
           {golfKeys.map(k => (
-            <Pressable
+            <NeuButton
               key={k.label}
               onPress={() => handleKeyPress(k.val)}
-              style={({ pressed }) => [
-                styles.key,
-                pressed && styles.keyPressed
-              ]}
+              color="#150428"
+              borderRadius={12}
+              style={styles.key}
             >
-              <Text style={styles.keyText}>{k.label}</Text>
-              <Text style={styles.keyVal}>{k.val > 0 ? `+${k.val}` : k.val}</Text>
-            </Pressable>
+              <View style={styles.keyInner}>
+                <Text style={styles.keyText}>{k.label}</Text>
+                <Text style={styles.keyVal}>{k.val > 0 ? `+${k.val}` : k.val}</Text>
+              </View>
+            </NeuButton>
           ))}
-          <Pressable 
+          <NeuButton 
             onPress={() => {
               setGrid(Array(6).fill(null));
               setActiveSlot(0);
             }}
+            color="#FF4757"
+            borderRadius={12}
             style={styles.keyReset}
           >
-            <Ionicons name="trash-outline" size={20} color="#FF4757" />
-          </Pressable>
+            <Ionicons name="trash-outline" size={20} color="#FFF" />
+          </NeuButton>
         </View>
       </ScrollView>
     </View>
@@ -138,22 +142,22 @@ export function GolfCalculator({ player, initialLogs, onUpdate }: GolfCalculator
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", paddingBottom: 16, gap: 12 },
-  scoreBox: { flexDirection: "row", alignItems: "baseline", gap: 4 },
-  scoreText: { fontFamily: "Inter_900Black", fontSize: 42 },
-  scoreLabel: { fontFamily: "Inter_700Bold", fontSize: 14, color: "rgba(255,255,255,0.3)" },
-  desc: { flex: 1, fontFamily: "Inter_500Medium", fontSize: 11, color: "rgba(255,255,255,0.4)" },
-  gridContainer: { marginBottom: 20 },
+  header: { flexDirection: "row", alignItems: "center", paddingBottom: 20, gap: 16 },
+  scoreBox: { flexDirection: "row", alignItems: "baseline", gap: 6, minWidth: 100, justifyContent: "center" },
+  scoreText: { fontFamily: "Inter_900Black", fontSize: 44, lineHeight: 50 },
+  scoreLabel: { fontFamily: "Inter_900Black", fontSize: 12, color: "rgba(255,255,255,0.2)", textTransform: "uppercase" },
+  desc: { flex: 1, fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: 1 },
+  gridContainer: { marginBottom: 24 },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 10 },
-  cell: { width: "30%", height: 70, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" },
-  cellText: { fontFamily: "Inter_900Black", fontSize: 24, color: "#FFF" },
-  cellPlaceholder: { color: "rgba(255,255,255,0.1)" },
-  cellLabel: { fontFamily: "Inter_700Bold", fontSize: 8, color: "rgba(255,255,255,0.2)", marginTop: 2, textTransform: "uppercase" },
+  cell: { width: "31%", height: 74 },
+  cellInner: { alignItems: "center", justifyContent: "center" },
+  cellText: { fontFamily: "Inter_900Black", fontSize: 26 },
+  cellLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 8, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.5 },
   scroll: { flex: 1 },
-  keypad: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", paddingBottom: 20 },
-  key: { width: "22%", height: 54, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  keyPressed: { backgroundColor: "rgba(255,255,255,0.15)" },
+  keypad: { flexDirection: "row", flexWrap: "wrap", gap: 7, justifyContent: "center", paddingBottom: 20 },
+  key: { width: "23%", height: 56 },
+  keyInner: { alignItems: "center", justifyContent: "center" },
   keyText: { fontFamily: "Inter_900Black", fontSize: 16, color: "#FFF" },
-  keyVal: { fontFamily: "Inter_700Bold", fontSize: 9, color: "rgba(255,255,255,0.3)" },
-  keyReset: { width: "22%", height: 54, backgroundColor: "rgba(255,71,87,0.1)", borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  keyVal: { fontFamily: "Inter_900Black", fontSize: 9, color: "rgba(255,255,255,0.2)" },
+  keyReset: { width: "23%", height: 56 },
 });

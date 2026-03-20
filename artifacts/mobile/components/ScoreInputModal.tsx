@@ -42,6 +42,12 @@ import { BilliardsCalculator } from "./game_calculators/BilliardsCalculator";
 import { HandAndFootCalculator } from "./game_calculators/HandAndFootCalculator";
 import { SkipBoCalculator } from "./game_calculators/SkipBoCalculator";
 import { DutchBlitzCalculator } from "./game_calculators/DutchBlitzCalculator";
+import { FarkleCalculator } from "./game_calculators/FarkleCalculator";
+import { FiveCrownsCalculator } from "./game_calculators/FiveCrownsCalculator";
+import { MoelkkyCalculator } from "./game_calculators/MoelkkyCalculator";
+import { SkullKingCalculator } from "./game_calculators/SkullKingCalculator";
+import { WizardCalculator } from "./game_calculators/WizardCalculator";
+import { OhHellCalculator } from "./game_calculators/OhHellCalculator";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -252,6 +258,24 @@ export function ScoreInputModal({
     }
     if (game.id === "dutch_blitz") {
       return <DutchBlitzCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} />;
+    }
+    if (game.id === "farkle") {
+      return <FarkleCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+    }
+    if (game.id === "five_crowns") {
+      return <FiveCrownsCalculator key={calcKey} {...common} round={round} initialLogs={allLogs[activePlayer.id]} />;
+    }
+    if (game.id === "moelkky") {
+      return <MoelkkyCalculator key={calcKey} {...common} initialScore={allScores[activePlayer.id]} />;
+    }
+    if (game.id === "skull_king") {
+      return <SkullKingCalculator key={calcKey} {...common} round={round} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
+    }
+    if (game.id === "wizard") {
+      return <WizardCalculator key={calcKey} {...common} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
+    }
+    if (game.id === "oh_hell") {
+      return <OhHellCalculator key={calcKey} {...common} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
     }
     if (game.parentId === "rummy" || game.id.includes("rummy")) {
       if (game.id === "rummy_gin") {

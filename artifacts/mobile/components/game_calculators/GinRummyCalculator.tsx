@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView, TextInput } from "react-
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
+import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface GinRummyCalculatorProps {
   player: Player;
@@ -24,7 +25,7 @@ export function GinRummyCalculator({ player, onUpdate }: GinRummyCalculatorProps
     switch (mode) {
       case "gin": return opp + 25;
       case "big_gin": return opp + 31;
-      case "undercut": return (mine - opp) + 25; // Awarded to the opponent usually, but here 'player' is the one scoring
+      case "undercut": return (mine - opp) + 25;
       case "knock": return Math.max(0, opp - mine);
       default: return 0;
     }
@@ -56,95 +57,103 @@ export function GinRummyCalculator({ player, onUpdate }: GinRummyCalculatorProps
   };
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Round Ending</Text>
         <View style={styles.modeGrid}>
           {(["knock", "gin", "big_gin", "undercut"] as GinMode[]).map((m) => (
-            <Pressable
+            <NeuButton
               key={m}
               onPress={() => handleModeChange(m)}
-              style={[
-                styles.modeButton,
-                mode === m && { backgroundColor: player.color + "22", borderColor: player.color }
-              ]}
+              color={mode === m ? player.color : "#150428"}
+              borderRadius={16}
+              style={styles.modeButton}
             >
-              <Text style={[styles.modeText, mode === m && { color: "#FFF" }]}>
-                {m.replace("_", " ").toUpperCase()}
-              </Text>
-              {m === "gin" && <Text style={styles.bonusText}>+25</Text>}
-              {m === "big_gin" && <Text style={styles.bonusText}>+31</Text>}
-              {m === "undercut" && <Text style={styles.bonusText}>+25</Text>}
-            </Pressable>
+              <View style={styles.modeInner}>
+                <Text style={[styles.modeText, { color: mode === m ? "#1A0533" : "rgba(255,255,255,0.4)" }]}>
+                  {m.replace("_", " ").toUpperCase()}
+                </Text>
+                {(m === "gin" || m === "big_gin" || m === "undercut") && (
+                  <Text style={[styles.bonusText, { color: mode === m ? "#1A0533" : "#00D2FF" }]}>
+                    +{m === "gin" ? "25" : m === "big_gin" ? "31" : "25"}
+                  </Text>
+                )}
+              </View>
+            </NeuButton>
           ))}
         </View>
       </View>
 
       <View style={styles.deadwoodRow}>
-        <Pressable 
+        <NeuButton 
           onPress={() => setActiveSide("me")}
-          style={[styles.inputBox, activeSide === "me" && styles.activeSide]}
+          color={activeSide === "me" ? "#00D2FF" : "#150428"}
+          borderRadius={24}
+          style={styles.inputBox}
         >
-          <Text style={styles.inputLabel}>YOUR DEADWOOD</Text>
-          <TextInput
-            style={[styles.input, mode === "gin" || mode === "big_gin" ? styles.inputDisabled : null]}
-            value={myDeadwood}
-            onChangeText={setMyDeadwood}
-            keyboardType="numeric"
-            editable={mode !== "gin" && mode !== "big_gin"}
-            selectTextOnFocus
-            onFocus={() => setActiveSide("me")}
-          />
-        </Pressable>
+          <View style={styles.inputInner}>
+            <Text style={[styles.inputLabel, { color: activeSide === "me" ? "#1A0533" : "rgba(255,255,255,0.3)" }]}>YOUR DEADWOOD</Text>
+            <View style={[styles.displayContainer, { backgroundColor: activeSide === "me" ? "rgba(26,5,51,0.1)" : "rgba(255,255,255,0.03)" }]}>
+              <Text style={[styles.displayText, { color: activeSide === "me" ? "#1A0533" : "#FFF", opacity: mode === "gin" || mode === "big_gin" ? 0.3 : 1 }]}>
+                {myDeadwood}
+              </Text>
+            </View>
+          </View>
+        </NeuButton>
 
-        <Pressable 
+        <NeuButton 
           onPress={() => setActiveSide("opp")}
-          style={[styles.inputBox, activeSide === "opp" && styles.activeSide]}
+          color={activeSide === "opp" ? "#00D2FF" : "#150428"}
+          borderRadius={24}
+          style={styles.inputBox}
         >
-          <Text style={styles.inputLabel}>OPPONENT'S</Text>
-          <TextInput
-            style={styles.input}
-            value={oppDeadwood}
-            onChangeText={setOppDeadwood}
-            keyboardType="numeric"
-            selectTextOnFocus
-            onFocus={() => setActiveSide("opp")}
-          />
-        </Pressable>
+          <View style={styles.inputInner}>
+            <Text style={[styles.inputLabel, { color: activeSide === "opp" ? "#1A0533" : "rgba(255,255,255,0.3)" }]}>OPPONENT'S</Text>
+            <View style={[styles.displayContainer, { backgroundColor: activeSide === "opp" ? "rgba(26,5,51,0.1)" : "rgba(255,255,255,0.03)" }]}>
+              <Text style={[styles.displayText, { color: activeSide === "opp" ? "#1A0533" : "#FFF" }]}>
+                {oppDeadwood}
+              </Text>
+            </View>
+          </View>
+        </NeuButton>
       </View>
 
       <View style={styles.quickInputRow}>
         <View style={styles.quickGrid}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-            <Pressable key={num} onPress={() => addValue(num)} style={styles.quickBtn}>
-              <Text style={styles.quickBtnText}>{num === 1 ? "A (1)" : num === 10 ? "10/F" : num}</Text>
-            </Pressable>
+            <NeuButton key={num} onPress={() => addValue(num)} color="#150428" borderRadius={12} style={styles.quickBtn}>
+              <Text style={styles.quickBtnText}>
+                {num === 1 ? "A" : num === 10 ? "10/F" : num}
+              </Text>
+            </NeuButton>
           ))}
-          <Pressable onPress={clearValue} style={[styles.quickBtn, { backgroundColor: "rgba(255,71,87,0.1)", width: "18.5%" }]}>
-            <Ionicons name="refresh" size={16} color="#FF4757" />
-          </Pressable>
+          <NeuButton onPress={clearValue} color="#FF4757" borderRadius={12} style={[styles.quickBtn, { width: "18.5%" }]}>
+            <Ionicons name="refresh" size={16} color="#FFF" />
+          </NeuButton>
         </View>
       </View>
 
-      <View style={styles.resultBox}>
+      <NeuTrench color="#150428" borderRadius={28} padding={24} style={styles.resultBox}>
         <Text style={styles.resultLabel}>Total Score Earned</Text>
-        <Text style={[styles.resultValue, { color: score > 0 ? "#00F5A0" : "#FFF" }]}>
+        <Text style={[styles.resultValue, { color: score > 0 ? "#00D2FF" : "rgba(255,255,255,0.1)" }]}>
           {score}
         </Text>
         
-        {mode === "undercut" && (
-          <View style={styles.roastBadge}>
-            <MaterialCommunityIcons name="home-analytics" size={14} color="#FFF" />
-            <Text style={styles.roastText}>THE GLASS HOUSE</Text>
-          </View>
-        )}
-        {parseInt(oppDeadwood) >= 60 && (
-          <View style={[styles.roastBadge, { backgroundColor: "#8E44AD" }]}>
-            <MaterialCommunityIcons name="tree" size={14} color="#FFF" />
-            <Text style={styles.roastText}>DEADWOOD FOREST</Text>
-          </View>
-        )}
-      </View>
+        <View style={styles.badges}>
+          {mode === "undercut" && (
+            <View style={styles.roastBadge}>
+              <MaterialCommunityIcons name="home-analytics" size={14} color="#FFF" />
+              <Text style={styles.roastText}>THE GLASS HOUSE</Text>
+            </View>
+          )}
+          {parseInt(oppDeadwood) >= 60 && (
+            <View style={[styles.roastBadge, { backgroundColor: "#8E44AD" }]}>
+              <MaterialCommunityIcons name="tree" size={14} color="#FFF" />
+              <Text style={styles.roastText}>DEADWOOD FOREST</Text>
+            </View>
+          )}
+        </View>
+      </NeuTrench>
       
       <Text style={styles.hint}>Aces = 1 pt | Face Cards = 10 pts</Text>
     </ScrollView>
@@ -154,25 +163,27 @@ export function GinRummyCalculator({ player, onUpdate }: GinRummyCalculatorProps
 const styles = StyleSheet.create({
   container: { flex: 1 },
   section: { marginBottom: 24 },
-  sectionTitle: { fontFamily: "Inter_800ExtraBold", fontSize: 11, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", marginBottom: 12, letterSpacing: 1 },
-  modeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  modeButton: { width: "48%", backgroundColor: "rgba(255,255,255,0.03)", padding: 12, borderRadius: 16, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.05)", alignItems: "center" },
-  modeText: { fontFamily: "Inter_800ExtraBold", fontSize: 11, color: "rgba(255,255,255,0.4)" },
-  bonusText: { fontFamily: "Inter_900Black", fontSize: 9, color: "#00F5A0", marginTop: 2 },
-  deadwoodRow: { flexDirection: "row", gap: 12, marginBottom: 16 },
-  inputBox: { flex: 1, padding: 8, borderRadius: 20, borderWidth: 1.5, borderColor: "transparent" },
-  activeSide: { backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.1)" },
-  inputLabel: { fontFamily: "Inter_700Bold", fontSize: 9, color: "rgba(255,255,255,0.3)", marginBottom: 6, textAlign: "center" },
-  input: { backgroundColor: "rgba(255,255,255,0.03)", padding: 14, borderRadius: 16, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.05)", color: "#FFF", fontFamily: "Inter_900Black", fontSize: 20, textAlign: "center" },
-  inputDisabled: { opacity: 0.3 },
+  sectionTitle: { fontFamily: "Inter_900Black", fontSize: 10, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", marginBottom: 12, letterSpacing: 1.5 },
+  modeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  modeButton: { width: "48%", height: 60 },
+  modeInner: { alignItems: "center", justifyContent: "center" },
+  modeText: { fontFamily: "Inter_900Black", fontSize: 11, letterSpacing: 0.5 },
+  bonusText: { fontFamily: "Inter_900Black", fontSize: 10, marginTop: 2 },
+  deadwoodRow: { flexDirection: "row", gap: 12, marginBottom: 20 },
+  inputBox: { flex: 1, height: 100 },
+  inputInner: { alignItems: "center", justifyContent: "center", width: "100%", paddingHorizontal: 8 },
+  inputLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 9, marginBottom: 8, letterSpacing: 0.5 },
+  displayContainer: { width: "100%", height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  displayText: { fontFamily: "Inter_900Black", fontSize: 24 },
   quickInputRow: { marginBottom: 24 },
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  quickBtn: { width: "18.5%", height: 38, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 10, alignItems: "center", justifyContent: "center", borderBottomWidth: 2, borderBottomColor: "rgba(0,0,0,0.2)" },
-  quickBtnText: { fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "#FFF" },
-  resultBox: { alignItems: "center", paddingVertical: 24, backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
-  resultLabel: { fontFamily: "Inter_700Bold", fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 4 },
-  resultValue: { fontFamily: "Inter_900Black", fontSize: 48 },
-  roastBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.1)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, marginTop: 12 },
-  roastText: { fontFamily: "Inter_900Black", fontSize: 10, color: "#FFF" },
-  hint: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.15)", textAlign: "center", marginTop: 12 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  quickBtn: { width: "18.5%", height: 44 },
+  quickBtnText: { fontFamily: "Inter_900Black", fontSize: 11, color: "rgba(255,255,255,0.5)" },
+  resultBox: { alignItems: "center" },
+  resultLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 13, color: "rgba(255,255,255,0.2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 },
+  resultValue: { fontFamily: "Inter_900Black", fontSize: 56, lineHeight: 62 },
+  badges: { flexDirection: "row", gap: 8, marginTop: 12 },
+  roastBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  roastText: { fontFamily: "Inter_900Black", fontSize: 9, color: "#FFF" },
+  hint: { fontFamily: "Inter_800ExtraBold", fontSize: 11, color: "rgba(255,255,255,0.1)", textAlign: "center", marginTop: 20, textTransform: "uppercase", letterSpacing: 1 },
 });
