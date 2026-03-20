@@ -35,7 +35,7 @@ export const PolymerCard = ({ children, style, color = COLORS.surface, borderRad
   return (
     <View style={[styles.clayShadow, { borderRadius }, rootStyle as ViewStyle]}>
       <View style={[styles.cardBody, { backgroundColor: color, borderRadius, padding }, style as ViewStyle]}>
-        <View style={[styles.gloss, { borderRadius }]} />
+        <View pointerEvents="none" style={[styles.gloss, { borderRadius }]} />
         {children}
       </View>
     </View>
@@ -54,7 +54,8 @@ export const NeuTrench = ({ children, style, color = COLORS.background, borderRa
       style
     ]}
   >
-    <View style={[styles.trenchInnerShadow, { borderRadius }]} />
+    {/* Decorative border only — must not sit above TextInput in the hit tree */}
+    <View pointerEvents="none" style={[styles.trenchInnerShadow, { borderRadius }]} />
     {children}
   </View>
 );

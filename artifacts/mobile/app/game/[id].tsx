@@ -20,6 +20,7 @@ import { PolymerCard, NeuTrench, NeuButton, BrandButton, NeuIconWell, PolymerAle
 import { Player } from "@/context/GameContext";
 import { GameToolsModal } from "@/components/GameToolsModal";
 import { AnalysisModal } from "@/components/AnalysisModal";
+import { AddPlayerModal } from "@/components/AddPlayerModal";
 
 function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] {
   if (!game) return players;
@@ -34,7 +35,15 @@ function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] 
 export default function GameScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { getSession, addRoundScores, updateRoundScores, deleteRound, endSession, updateSession } = useGame();
+  const {
+    getSession,
+    addRoundScores,
+    updateRoundScores,
+    deleteRound,
+    endSession,
+    updateSession,
+    addPlayerMidGame,
+  } = useGame();
 
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [showToolsModal, setShowToolsModal] = useState(false);
@@ -43,6 +52,7 @@ export default function GameScreen() {
   const [editingRoundIndex, setEditingRoundIndex] = useState<number | null>(null);
   const [showEndAlert, setShowEndAlert] = useState(false);
   const [showResetAlert, setShowResetAlert] = useState(false);
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
 
   const FIVE_CROWNS_WILDS = ["3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
@@ -137,6 +147,21 @@ export default function GameScreen() {
     });
   }, [session, updateSession]);
 
+  const handleAddPlayer = useCallback(
+    (playerName: string, catchUpScore: number): boolean => {
+      if (!id) return false;
+      const ok = addPlayerMidGame(id, playerName, catchUpScore);
+      if (!ok) {
+        Alert.alert(
+          "Could not add player",
+          "Check the name, player limit, or that the game has not ended."
+        );
+      }
+      return ok;
+    },
+    [id, addPlayerMidGame]
+  );
+
   if (!session || !game) return null;
 
   const activeSession = session;
@@ -152,6 +177,8 @@ export default function GameScreen() {
   });
 
   const hasTargetScore = game.targetScore !== undefined;
+  const canAddPlayer =
+    !session.isComplete && session.players.length < game.maxPlayers;
   const leader = sortedPlayers[0];
   const leaderProgress = hasTargetScore && game.targetScore
     ? Math.min((leader?.totalScore ?? 0) / game.targetScore, 1)
@@ -320,6 +347,19 @@ export default function GameScreen() {
               showBags={game.id.startsWith("spades")}
             />
           ))}
+          {canAddPlayer && (
+            <NeuButton
+              onPress={() => setShowAddPlayerModal(true)}
+              color="rgba(0,245,160,0.12)"
+              borderRadius={16}
+              style={styles.addPlayerRow}
+            >
+              <View style={styles.addPlayerRowInner}>
+                <Ionicons name="person-add-outline" size={18} color="#00F5A0" />
+                <Text style={styles.addPlayerRowText}>Add player mid-game</Text>
+              </View>
+            </NeuButton>
+          )}
         </View>
 
         {session.currentRound > 1 && (
@@ -475,6 +515,13 @@ export default function GameScreen() {
         onClose={() => setShowAnalysisModal(false)}
       />
 
+      <AddPlayerModal
+        visible={showAddPlayerModal}
+        completedRounds={Math.max(0, session.currentRound - 1)}
+        onClose={() => setShowAddPlayerModal(false)}
+        onAdd={handleAddPlayer}
+      />
+
       <PolymerAlert
         visible={showEndAlert}
         title="End Game?"
@@ -614,6 +661,24 @@ const styles = StyleSheet.create({
   playersSection: {
     gap: 4,
     marginBottom: 20,
+  },
+  addPlayerRow: {
+    marginTop: 8,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "rgba(0,245,160,0.25)",
+  },
+  addPlayerRowInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  addPlayerRowText: {
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 13,
+    color: "#00F5A0",
+    letterSpacing: 0.5,
   },
   historyToggle: {
     marginBottom: 16,
