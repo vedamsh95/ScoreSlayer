@@ -4,7 +4,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { GameDefinition, UNO_VARIANTS } from "@/constants/games";
-import { NeuTrench } from "../PolymerCard";
+import { NeuTrench, NeuButton } from "../PolymerCard";
 
 interface UnoCalculatorProps {
   player: Player;
@@ -28,6 +28,30 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
     return keys;
   }, [unoVariant]);
 
+  const actionCardColors: Record<string, string> = {
+    "Skip": "#FF9F43",
+    "Reverse": "#54a0ff",
+    "Draw Two": "#FF4757",
+    "Draw One": "#FF4757",
+    "Draw Five": "#FF4757",
+    "Wild": "#A29BFE",
+    "Wild Draw Four": "#6C5CE7",
+    "Wild Draw 2": "#6C5CE7",
+    "Wild Draw Color": "#6C5CE7",
+    "Wild DOS": "#00D2FF",
+    "Wild Number": "#00CEC9",
+    "Flip": "#00CEC9",
+    "Dark Flip": "#0984e3",
+    "Hit 2": "#d63031",
+    "Discard All": "#2d3436",
+    "Wild Attack": "#e17055",
+    "Flex Skip/Rev": "#fdcb6e",
+    "Flex Wild": "#fd79a8",
+    "Standard Wild": "#A29BFE",
+    "Power Wild": "#6c5ce7",
+    "Skip Everyone": "#2d3436",
+  };
+
   const actionCards = useMemo(() => {
     if (!unoVariant) return [];
     return unoVariant.scoringGroups.flatMap(g => 
@@ -35,7 +59,8 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
         label: c.name,
         value: c.points,
         icon: c.isWild ? "star-circle" : c.isDark ? "moon-waning-crescent" : "flash",
-        type: c.isWild ? "wild" : "action"
+        type: c.isWild ? "wild" : "action",
+        color: actionCardColors[c.name] || "#1e272e"
       }))
     );
   }, [unoVariant]);
@@ -81,24 +106,46 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
   return (
     <View style={styles.container}>
       <View style={styles.topActions}>
-        <Pressable 
+        <NeuButton 
           onPress={handleUno}
-          style={[styles.unoBtn, total === 0 && logs.length === 0 && styles.unoActive]}
+          color={total === 0 && logs.length === 0 ? "#00F5A0" : "#150428"}
+          borderRadius={18}
+          style={styles.unoNeuBtn}
         >
-          <MaterialCommunityIcons name="cards-playing-outline" size={20} color="#00F5A0" />
-          <Text style={styles.unoText}>DECLARE UNO / 0 PTS</Text>
-        </Pressable>
+          <View style={styles.topBtnInner}>
+            <MaterialCommunityIcons 
+              name="cards-playing-outline" 
+              size={20} 
+              color={total === 0 && logs.length === 0 ? "#1A0533" : "#00F5A0"} 
+            />
+            <Text style={[
+              styles.unoText, 
+              { color: total === 0 && logs.length === 0 ? "#1A0533" : "#00F5A0" }
+            ]}>DECLARE UNO / 0 PTS</Text>
+          </View>
+        </NeuButton>
 
-        <Pressable 
+        <NeuButton 
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             setCaughtWithUno(!caughtWithUno);
           }}
-          style={[styles.catchBtn, caughtWithUno && styles.catchActive]}
+          color={caughtWithUno ? "#FF4757" : "#150428"}
+          borderRadius={18}
+          style={styles.catchNeuBtn}
         >
-          <MaterialCommunityIcons name="alert-decagram" size={20} color="#FF4757" />
-          <Text style={styles.catchText}>{caughtWithUno ? "CAUGHT!" : "CAUGHT WITH UNO?"}</Text>
-        </Pressable>
+          <View style={styles.topBtnInner}>
+            <MaterialCommunityIcons 
+              name="alert-decagram" 
+              size={20} 
+              color={caughtWithUno ? "#FFF" : "#FF4757"} 
+            />
+            <Text style={[
+              styles.catchText, 
+              { color: caughtWithUno ? "#FFF" : "#FF4757" }
+            ]}>{caughtWithUno ? "CAUGHT!" : "CAUGHT WITH UNO?"}</Text>
+          </View>
+        </NeuButton>
       </View>
 
       <NeuTrench color="#150428" borderRadius={20} padding={16} style={styles.displayArea}>
@@ -146,29 +193,33 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
         <View style={styles.grid}>
           {numberKeys.map((num) => (
-            <Pressable
+            <NeuButton
               key={num}
               onPress={() => addValue(num)}
-              style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
+              color="#00D2FF"
+              borderRadius={16}
+              style={styles.key}
             >
-              <Text style={styles.keyText}>{num}</Text>
-              <Text style={styles.keySubtext}>+{num} pts</Text>
-            </Pressable>
+              <Text style={[styles.keyText, { color: "#1A0533" }]}>{num}</Text>
+              <Text style={[styles.keySubtext, { color: "rgba(26,5,51,0.5)" }]}>+{num} pts</Text>
+            </NeuButton>
           ))}
         </View>
 
         <Text style={styles.sectionTitle}>Action Cards</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.actionStrip}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.actionStrip} contentContainerStyle={styles.actionStripContent}>
           {actionCards.map((card, i) => (
-            <Pressable
+            <NeuButton
               key={i}
               onPress={() => addValue(card.value, card.label)}
+              color={card.color}
+              borderRadius={20}
               style={styles.actionKey}
             >
-              <MaterialCommunityIcons name={card.icon as any} size={24} color={player.color} />
-              <Text style={styles.actionLabel} numberOfLines={1}>{card.label}</Text>
+              <MaterialCommunityIcons name={card.icon as any} size={28} color="#FFF" />
+              <Text style={[styles.actionLabel, { color: "rgba(255,255,255,0.7)" }]} numberOfLines={1}>{card.label}</Text>
               <Text style={styles.actionValue}>+{card.value}</Text>
-            </Pressable>
+            </NeuButton>
           ))}
         </ScrollView>
       </ScrollView>
@@ -178,13 +229,12 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  unoBtn: { backgroundColor: "rgba(0, 245, 160, 0.05)", borderRadius: 18, padding: 14, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(0, 245, 160, 0.1)", borderStyle: "dashed" },
-  unoActive: { backgroundColor: "rgba(0, 245, 160, 0.15)", borderColor: "#00F5A0", borderStyle: "solid" },
-  unoText: { fontFamily: "Inter_900Black", fontSize: 13, color: "#00F5A0" },
   topActions: { flexDirection: "row", gap: 10, marginBottom: 16 },
-  catchBtn: { flex: 1, backgroundColor: "rgba(255, 71, 87, 0.05)", borderRadius: 18, padding: 14, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255, 71, 87, 0.1)", borderStyle: "dashed" },
-  catchActive: { backgroundColor: "rgba(255, 71, 87, 0.15)", borderColor: "#FF4757", borderStyle: "solid" },
-  catchText: { fontFamily: "Inter_900Black", fontSize: 11, color: "#FF4757" },
+  unoNeuBtn: { flex: 1.5, height: 50 },
+  catchNeuBtn: { flex: 1, height: 50 },
+  topBtnInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  unoText: { fontFamily: "Inter_900Black", fontSize: 11, letterSpacing: 0.5 },
+  catchText: { fontFamily: "Inter_900Black", fontSize: 10 },
   displayArea: { marginBottom: 16, position: "relative" },
   displayTextRow: { flexDirection: "row", alignItems: "baseline", gap: 4, marginBottom: 12 },
   displayTotal: { fontFamily: "Inter_900Black", fontSize: 42 },
@@ -201,13 +251,13 @@ const styles = StyleSheet.create({
   backspace: { position: "absolute", right: 16, top: 16 },
   scroll: { flex: 1 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between", marginBottom: 20 },
-  key: { width: "31%", height: 60, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  keyPressed: { backgroundColor: "rgba(255,255,255,0.15)" },
-  keyText: { fontFamily: "Inter_900Black", fontSize: 24, color: "#FFF" },
-  keySubtext: { fontFamily: "Inter_800ExtraBold", fontSize: 9, color: "rgba(255,255,255,0.3)" },
+  key: { width: "31%", height: 62 },
+  keyText: { fontFamily: "Inter_900Black", fontSize: 20, color: "#FFF" },
+  keySubtext: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(255,255,255,0.3)" },
   sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 },
   actionStrip: { flexGrow: 0, marginBottom: 20 },
-  actionKey: { width: 90, height: 90, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 20, alignItems: "center", justifyContent: "center", marginRight: 10, padding: 8 },
-  actionLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 6, textAlign: "center" },
-  actionValue: { fontFamily: "Inter_900Black", fontSize: 14, color: "#FFF", marginTop: 2 },
+  actionStripContent: { gap: 10 },
+  actionKey: { width: 88, height: 95 },
+  actionLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 9, color: "rgba(255,255,255,0.4)", marginTop: 6, textAlign: "center" },
+  actionValue: { fontFamily: "Inter_900Black", fontSize: 13, color: "#FFF", marginTop: 2 },
 });

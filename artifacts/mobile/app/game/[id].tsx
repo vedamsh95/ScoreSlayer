@@ -16,8 +16,7 @@ import { useGame } from "@/context/GameContext";
 import { getGameById, GameDefinition } from "@/constants/games";
 import { PlayerScoreRow } from "@/components/PlayerScoreRow";
 import { ScoreInputModal } from "@/components/ScoreInputModal";
-import { PolymerButton } from "@/components/PolymerButton";
-import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
+import { PolymerCard, NeuTrench, NeuButton, NeuIconWell } from "@/components/PolymerCard";
 import { Player } from "@/context/GameContext";
 import { GameToolsModal } from "@/components/GameToolsModal";
 import { AnalysisModal } from "@/components/AnalysisModal";
@@ -161,89 +160,110 @@ export default function GameScreen() {
     : 0;
 
   return (
-    <View style={[styles.container]}>
-      <View
-        style={[
-          styles.header,
-          { paddingTop: topPadding + 8, backgroundColor: session.gameColor + "18" },
-        ]}
-      >
-        <View style={styles.headerTop}>
-          {/* Neumorphic back button */}
-          <NeuIconWell color="#150428" size={40} borderRadius={13}>
-            <Pressable onPress={() => router.back()} style={styles.iconBtnPressable}>
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
+        <PolymerCard color={session.gameColor + "15"} borderRadius={24} padding={16} style={styles.headerCard}>
+          <View style={styles.headerTop}>
+            <NeuButton 
+              size={44} 
+              borderRadius={14} 
+              color="#150428" 
+              onPress={() => router.back()}
+            >
               <Ionicons name="arrow-back" size={20} color="rgba(255,255,255,0.85)" />
-            </Pressable>
-          </NeuIconWell>
+            </NeuButton>
 
-          <NeuIconWell color="#150428" size={40} borderRadius={13} style={{ marginLeft: 10 }}>
-            <Pressable onPress={handleViewRules} style={styles.iconBtnPressable}>
-              <Ionicons name="book-outline" size={20} color={session.gameColor} />
-            </Pressable>
-          </NeuIconWell>
+            <View style={styles.headerActionRow}>
+              <NeuButton 
+                size={40} 
+                borderRadius={12} 
+                color="#150428" 
+                onPress={handleViewRules} 
+                style={{ marginLeft: 8 }}
+              >
+                <Ionicons name="book-outline" size={20} color={session.gameColor} />
+              </NeuButton>
 
-          <NeuIconWell color="#150428" size={40} borderRadius={13} style={{ marginLeft: 10 }}>
-            <Pressable onPress={() => { setShowToolsModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.iconBtnPressable}>
-              <MaterialCommunityIcons name="dice-5-outline" size={24} color="#00F5A0" />
-            </Pressable>
-          </NeuIconWell>
+              <NeuButton 
+                size={40} 
+                borderRadius={12} 
+                color="#150428" 
+                onPress={() => { setShowToolsModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} 
+                style={{ marginLeft: 8 }}
+              >
+                <MaterialCommunityIcons name="dice-5-outline" size={22} color="#00F5A0" />
+              </NeuButton>
 
-          <NeuIconWell color="#150428" size={40} borderRadius={13} style={{ marginLeft: 10 }}>
-            <Pressable onPress={() => { setShowAnalysisModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }} style={styles.iconBtnPressable}>
-              <MaterialCommunityIcons name="fire" size={20} color="#FF4757" />
-            </Pressable>
-          </NeuIconWell>
+              <NeuButton 
+                size={40} 
+                borderRadius={12} 
+                color="#150428" 
+                onPress={() => { setShowAnalysisModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }} 
+                style={{ marginLeft: 8 }}
+              >
+                <MaterialCommunityIcons name="fire" size={20} color="#FF4757" />
+              </NeuButton>
+            </View>
 
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerGame}>{game.name}</Text>
-            {session.gameId === "five_crowns" ? (
-              <View style={styles.fiveCrownsBadge}>
-                <Ionicons name="flash" size={10} color="#FFB800" />
-                <Text style={styles.wildText}>Wilds: {FIVE_CROWNS_WILDS[Math.min(session.currentRound - 1, 10)]}</Text>
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerGame}>{game.name}</Text>
+              {session.gameId === "five_crowns" ? (
+                <View style={styles.fiveCrownsBadge}>
+                  <Ionicons name="flash" size={10} color="#FFB800" />
+                  <Text style={styles.wildText}>Wilds: {FIVE_CROWNS_WILDS[Math.min(session.currentRound - 1, 10)]}</Text>
+                </View>
+              ) : (
+                <Text style={styles.headerRound}>Round {session.currentRound}</Text>
+              )}
+            </View>
+
+            <View style={styles.endBtnGap}>
+              <NeuButton 
+                color={session.gameColor} 
+                borderRadius={12} 
+                onPress={handleEndGame}
+                style={styles.endNeuBtn}
+              >
+                <Text style={styles.endBtnText}>END</Text>
+              </NeuButton>
+            </View>
+          </View>
+
+          {/* Info strip */}
+          <View style={styles.infoStrip}>
+            <Pressable onPress={toggleDirection} style={{ flex: 1 }}>
+              <NeuTrench color="#150428" borderRadius={12} padding={8} style={styles.infoChip}>
+                <Ionicons name={session.direction === "CW" ? "refresh" : "refresh-outline"} size={14} color={session.gameColor} />
+                <Text style={[styles.infoChipText, { color: session.gameColor }]}>{session.direction}</Text>
+              </NeuTrench>
+            </Pressable>
+
+            <View style={{ flex: 1.5 }}>
+              <NeuTrench color="#150428" borderRadius={12} padding={8} style={styles.infoChip}>
+                <Ionicons name="person-outline" size={14} color="rgba(255,255,255,0.5)" />
+                <Text style={styles.infoChipText} numberOfLines={1}>{dealer?.name ?? "—"}</Text>
+              </NeuTrench>
+            </View>
+
+            {hasTargetScore && (
+              <View style={{ flex: 1.5 }}>
+                <NeuTrench color="#150428" borderRadius={12} padding={8} style={styles.infoChip}>
+                  <Ionicons name="flag-outline" size={14} color="#FFB800" />
+                  <Text style={[styles.infoChipText, { color: "#FFB800" }]}>{game.targetScore?.toLocaleString()}</Text>
+                </NeuTrench>
               </View>
-            ) : (
-              <Text style={styles.headerRound}>Round {session.currentRound}</Text>
             )}
           </View>
 
-          {/* Clay End button — danger pink */}
-          <View style={[styles.endBtnShadow, { borderRadius: 14, shadowColor: session.gameColor }]}>
-            <Pressable onPress={handleEndGame} style={[styles.endBtnClay, { borderRadius: 14, backgroundColor: session.gameColor }]}>
-              <Text style={styles.endBtnText}>End</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Info strip — neumorphic trench chips */}
-        <View style={styles.infoStrip}>
-          <Pressable onPress={toggleDirection}>
-            <NeuTrench color="#150428" borderRadius={10} padding={6} style={styles.infoChip}>
-              <Ionicons name={session.direction === "CW" ? "refresh" : "refresh-outline"} size={11} color={session.gameColor} />
-              <Text style={[styles.infoChipText, { color: session.gameColor }]}>{session.direction}</Text>
-            </NeuTrench>
-          </Pressable>
-
-          <NeuTrench color="#150428" borderRadius={10} padding={6} style={styles.infoChip}>
-            <Ionicons name="person-outline" size={11} color="rgba(255,255,255,0.5)" />
-            <Text style={styles.infoChipText}>{dealer?.name ?? "—"} deals</Text>
-          </NeuTrench>
-
-          {hasTargetScore && (
-            <NeuTrench color="#150428" borderRadius={10} padding={6} style={styles.infoChip}>
-              <Ionicons name="flag-outline" size={11} color="#FFB800" />
-              <Text style={[styles.infoChipText, { color: "#FFB800" }]}>Goal: {game.targetScore?.toLocaleString()}</Text>
+          {/* Progress track */}
+          {hasTargetScore && game.targetScore && (
+            <NeuTrench color="#150428" borderRadius={10} padding={2} style={styles.progressTrack}>
+              <View
+                style={[styles.progressFill, { width: `${leaderProgress * 100}%` as any, backgroundColor: session.gameColor, borderRadius: 8 }]}
+              />
             </NeuTrench>
           )}
-        </View>
-
-        {/* Neumorphic progress track */}
-        {hasTargetScore && game.targetScore && (
-          <NeuTrench color="#150428" borderRadius={8} padding={0} style={styles.progressTrack}>
-            <View
-              style={[styles.progressFill, { width: `${leaderProgress * 100}%` as any, backgroundColor: session.gameColor, borderRadius: 8 }]}
-            />
-          </NeuTrench>
-        )}
+        </PolymerCard>
       </View>
 
       <ScrollView
@@ -291,91 +311,98 @@ export default function GameScreen() {
         </View>
 
         {session.currentRound > 1 && (
-          <Pressable onPress={() => setShowHistory(!showHistory)}>
-            <NeuTrench color="#150428" borderRadius={14} padding={12} style={styles.historyToggle}>
-              <Text style={styles.historyToggleText}>
-                {showHistory ? "Hide" : "Show"} Score History
-              </Text>
-              <Ionicons
-                name={showHistory ? "chevron-up" : "chevron-down"}
-                size={14}
-                color="rgba(255,255,255,0.4)"
-              />
-            </NeuTrench>
-          </Pressable>
-        )}
+          <>
+            <Pressable onPress={() => { setShowHistory(!showHistory); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+              <NeuTrench color="#150428" borderRadius={16} padding={12} style={styles.historyToggle}>
+                <Text style={styles.historyToggleText}>
+                  {showHistory ? "HIDE" : "SHOW"} SCORE HISTORY
+                </Text>
+                <Ionicons
+                  name={showHistory ? "chevron-up" : "chevron-down"}
+                  size={14}
+                  color="rgba(255,255,255,0.4)"
+                />
+              </NeuTrench>
+            </Pressable>
 
-        {showHistory && session.currentRound > 1 && (
-          <NeuTrench color="#150428" borderRadius={16} padding={0} style={styles.historyTable}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View>
-                <View style={styles.historyHeader}>
-                  <Text style={[styles.historyHeaderText, { width: 100 }]}>Player</Text>
-                  {Array.from({ length: session.currentRound - 1 }).map((_, r) => (
-                    <Pressable key={r} onPress={() => handleEditRound(r)} style={styles.historyHeaderRoundBtn}>
-                      <Text style={styles.historyHeaderRound}>R{r + 1}</Text>
-                      <Feather name="edit-2" size={8} color="rgba(255,255,255,0.3)" />
-                    </Pressable>
-                  ))}
-                </View>
-                {session.players.map((p) => (
-                  <View key={p.id} style={styles.historyRow}>
-                    <View style={[styles.historyNameCell, { width: 100 }]}>
-                      <View style={[styles.historyDot, { backgroundColor: p.color }]} />
-                      <Text style={styles.historyName} numberOfLines={1}>{p.name}</Text>
-                    </View>
-                    {Array.from({ length: session.currentRound - 1 }).map((_, r) => {
-                      const score = p.scores[r];
-                      const log = p.roundLogs[r] || [];
-                      const bid = p.bids?.[r];
-                      const won = p.tricksWon?.[r];
-                      const isSpades = session.gameId.startsWith("spades");
+            {showHistory && (
+              <PolymerCard color="rgba(255,255,255,0.02)" borderRadius={24} padding={0} style={styles.historyTableCard}>
+                <NeuTrench color="#150428" borderRadius={24} padding={0} style={styles.historyTable}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View>
+                      <View style={styles.historyHeader}>
+                        <Text style={[styles.historyHeaderText, { width: 100 }]}>Player</Text>
+                        {Array.from({ length: session.currentRound - 1 }).map((_, r) => (
+                          <Pressable key={r} onPress={() => handleEditRound(r)} style={styles.historyHeaderRoundBtn}>
+                            <Text style={styles.historyHeaderRound}>R{r + 1}</Text>
+                            <Feather name="edit-2" size={8} color="rgba(255,255,255,0.3)" />
+                          </Pressable>
+                        ))}
+                      </View>
+                      {session.players.map((p) => (
+                        <View key={p.id} style={styles.historyRow}>
+                          <View style={[styles.historyNameCell, { width: 100 }]}>
+                            <View style={[styles.historyDot, { backgroundColor: p.color }]} />
+                            <Text style={styles.historyName} numberOfLines={1}>{p.name}</Text>
+                          </View>
+                          {Array.from({ length: session.currentRound - 1 }).map((_, r) => {
+                            const score = p.scores[r];
+                            const log = p.roundLogs[r] || [];
+                            const bid = p.bids?.[r];
+                            const won = p.tricksWon?.[r];
+                            const isSpades = session.gameId.startsWith("spades");
 
-                      return (
-                        <View key={r} style={styles.historyDetailCell}>
-                          <Text style={[styles.historyScore, { color: p.color }]}>
-                            {score >= 0 ? "+" : ""}{score}
-                          </Text>
-                          {isSpades && bid !== undefined && won !== undefined && (
-                            <Text style={styles.historyLogText}>
-                              {bid} / {won}
-                            </Text>
-                          )}
-                          {!isSpades && log.length > 0 && (
-                            <Text style={styles.historyLogText}>
-                              ({log.join(",")})
-                            </Text>
-                          )}
+                            return (
+                              <View key={r} style={styles.historyDetailCell}>
+                                <Text style={[styles.historyScore, { color: p.color }]}>
+                                  {score >= 0 ? "+" : ""}{score}
+                                </Text>
+                                {isSpades && bid !== undefined && won !== undefined && (
+                                  <Text style={styles.historyLogText}>
+                                    {bid} / {won}
+                                  </Text>
+                                )}
+                                {!isSpades && log.length > 0 && (
+                                  <Text style={styles.historyLogText}>
+                                    ({log.join(",")})
+                                  </Text>
+                                )}
+                              </View>
+                            );
+                          })}
                         </View>
-                      );
-                    })}
-                  </View>
-                ))}
-              </View>
-            </ScrollView>
-          </NeuTrench>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </NeuTrench>
+              </PolymerCard>
+            )}
+          </>
         )}
       </ScrollView>
 
       <View
         style={[
           styles.bottomBar,
-          { paddingBottom: Math.max(insets.bottom, 36) + 12 },
+          { paddingBottom: Math.max(insets.bottom, 20) + 12 },
         ]}
       >
-        <PolymerButton
-          label={editingRoundIndex !== null ? "Apply Changes" : `Enter Round ${session.currentRound} Scores`}
+        <NeuButton
+          borderRadius={20}
           onPress={() => setShowScoreModal(true)}
           color="#00F5A0"
-          textColor="#1A0533"
-          size="lg"
-          style={{ flex: 1 }}
-          icon={<Feather name={editingRoundIndex !== null ? "check" : "plus"} size={16} color="#1A0533" />}
-        />
+          style={{ flex: 1, height: 60 }}
+        >
+          <View style={styles.bottomBtnInner}>
+            <Feather name={editingRoundIndex !== null ? "check" : "plus"} size={20} color="#1A0533" />
+            <Text style={styles.bottomBtnText}>
+              {editingRoundIndex !== null ? "APPLY CHANGES" : `ROUND ${session.currentRound}`}
+            </Text>
+          </View>
+        </NeuButton>
       </View>
 
       <ScoreInputModal
-        key={`modal_${id}_${editingRoundIndex !== null ? `edit_${editingRoundIndex}` : session.currentRound}`}
         visible={showScoreModal}
         players={session.players}
         game={game}
@@ -445,85 +472,72 @@ const styles = StyleSheet.create({
     color: "#1A0533",
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 16,
+  },
+  headerCard: {
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   headerTop: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 14,
+    justifyContent: "space-between",
+    marginBottom: 16,
   },
-  iconBtnPressable: {
-    width: 40,
-    height: 40,
+  headerActionRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
   },
   headerCenter: {
     flex: 1,
     alignItems: "center",
+    paddingHorizontal: 8,
   },
   headerGame: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 18,
+    fontFamily: "Inter_900Black",
+    fontSize: 16,
     color: "#FFFFFF",
+    textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   headerRound: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.5)",
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 10,
+    color: "rgba(255,255,255,0.4)",
+    textTransform: "uppercase",
   },
-  // Clay End button
-  endBtnShadow: {
-    shadowColor: "#FF2D78",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  endBtnClay: {
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    backgroundColor: "#FF2D78",
-    overflow: "hidden",
-    position: "relative",
-  },
-  endBtnGloss: {
-    position: "absolute",
-    top: 2,
-    left: 5,
-    width: "50%",
-    height: "55%",
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderBottomRightRadius: 20,
+  endNeuBtn: {
+    paddingHorizontal: 12,
+    height: 40,
   },
   endBtnText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 13,
+    fontFamily: "Inter_900Black",
+    fontSize: 12,
     color: "#FFFFFF",
-    zIndex: 2,
   },
-  // Neumorphic info chips
+  endBtnGap: {
+    marginLeft: 8,
+  },
   infoStrip: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 16,
   },
   infoChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    justifyContent: "center",
+    gap: 6,
   },
   infoChipText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_800ExtraBold",
     fontSize: 11,
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(255,255,255,0.6)",
   },
-  // Neumorphic progress track
   progressTrack: {
-    height: 8,
-    overflow: "hidden",
-    justifyContent: "center",
+    height: 12,
   },
   progressFill: {
     height: 8,
@@ -533,111 +547,118 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
   },
   playersSection: {
-    gap: 2,
-    marginBottom: 16,
+    gap: 4,
+    marginBottom: 20,
   },
   historyToggle: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: 12,
+    height: 44,
   },
   historyToggleText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.5)",
-    flex: 1,
-    textAlign: "center",
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.4)",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  historyTableCard: {
+    marginBottom: 24,
   },
   historyTable: {
     overflow: "hidden",
-    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
   },
   historyHeader: {
     flexDirection: "row",
-    padding: 10,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    padding: 12,
+    backgroundColor: "rgba(255,255,255,0.03)",
   },
   historyHeaderText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
-    color: "rgba(255,255,255,0.5)",
-    flex: 1,
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 10,
+    color: "rgba(255,255,255,0.3)",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   historyHeaderRoundBtn: {
-    width: 60,
+    width: 64,
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
+    gap: 4,
   },
   historyHeaderRound: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
-    color: "rgba(255,255,255,0.5)",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 10,
+    color: "rgba(255,255,255,0.3)",
   },
   historyRow: {
     flexDirection: "row",
-    padding: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
   },
   historyNameCell: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   historyDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   historyName: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_700Bold",
     fontSize: 13,
-    color: "rgba(255,255,255,0.7)",
+    color: "#FFFFFF",
   },
   historyScore: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
+    fontFamily: "Inter_900Black",
+    fontSize: 14,
     textAlign: "center",
   },
   historyDetailCell: {
-    width: 60,
+    width: 64,
     alignItems: "center",
     justifyContent: "center",
   },
   historyLogText: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Inter_600SemiBold",
     fontSize: 8,
-    color: "rgba(255,255,255,0.3)",
-    textAlign: "center",
+    color: "rgba(255,255,255,0.2)",
+    marginTop: 2,
   },
   bottomBar: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    backgroundColor: "rgba(26,5,51,0.98)",
-    borderTopWidth: 1,
+    paddingHorizontal: 30,
+    paddingTop: 16,
+    backgroundColor: "#1A0533",
+    borderTopWidth: 1.5,
     borderTopColor: "rgba(255,255,255,0.08)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 20,
-    minHeight: 110,
+  },
+  bottomBtnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  bottomBtnText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 14,
+    color: "#1A0533",
+    letterSpacing: 1,
   },
   fiveCrownsBadge: {
     flexDirection: "row",

@@ -7,6 +7,7 @@ import {
   Text,
   View,
   Alert,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,13 +16,14 @@ import Animated, {
   useSharedValue, 
   useAnimatedStyle, 
   withSpring, 
+  withTiming,
   runOnJS,
+  interpolate,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
-import { PolymerButton } from "./PolymerButton";
-import { NeuIconWell } from "./PolymerCard";
+import { PolymerCard, NeuTrench, NeuButton, NeuIconWell } from "./PolymerCard";
 
 // Game Calculators
 import { SkyjoCalculator } from "./game_calculators/SkyjoCalculator";
@@ -40,6 +42,8 @@ import { BilliardsCalculator } from "./game_calculators/BilliardsCalculator";
 import { HandAndFootCalculator } from "./game_calculators/HandAndFootCalculator";
 import { SkipBoCalculator } from "./game_calculators/SkipBoCalculator";
 import { DutchBlitzCalculator } from "./game_calculators/DutchBlitzCalculator";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface ScoreInputModalProps {
   visible: boolean;
@@ -78,49 +82,76 @@ export function ScoreInputModal({
   const insets = useSafeAreaInsets();
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   
-  // Gesture State
-  const translateY = useSharedValue(0);
-
-  const gesture = Gesture.Pan()
-    .onUpdate((event) => {
-      translateY.value = Math.max(0, event.translationY);
-    })
-    .onEnd((event) => {
-      if (event.translationY > 150 || event.velocityY > 500) {
-        translateY.value = withSpring(1000, { damping: 50, stiffness: 100 });
-        runOnJS(onClose)();
-      } else {
-        translateY.value = withSpring(0);
-      }
-    });
+  // Animation State
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
 
-  // Reset translateY when modal opens
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const handleDismiss = useCallback(() => {
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+      runOnJS(onClose)();
+    });
+  }, [onClose]);
+
+  const gesture = Gesture.Pan()
+    .onUpdate((event) => {
+      translateY.value = Math.max(0, event.translationY);
+      backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
+    })
+    .onEnd((event) => {
+      if (event.translationY > 150 || event.velocityY > 500) {
+        handleDismiss();
+      } else {
+        translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    });
+
+  // Entrance Animation
   useEffect(() => {
     if (visible) {
-      translateY.value = 0;
+      translateY.value = withSpring(0, { damping: 25, stiffness: 120 });
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+    } else {
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
     }
   }, [visible]);
 
   // Unified Session State for the Modal
-  const [allLogs, setAllLogs] = useState<Record<string, any[]>>(initialLogs || {});
-  const [allCleared, setAllCleared] = useState<Record<string, boolean>>(initialCleared || {});
-  const [allScores, setAllScores] = useState<Record<string, number>>(() => {
-    const scores: Record<string, number> = {};
-    if (initialLogs) {
-      Object.keys(initialLogs).forEach(pid => {
-        scores[pid] = (initialLogs[pid] || []).reduce((a, b: number) => a + b, 0);
-      });
-    }
-    return scores;
-  });
-  const [allBids, setAllBids] = useState<Record<string, number>>(initialBids || {});
-  const [allTricksWon, setAllTricksWon] = useState<Record<string, number>>(initialTricksWon || {});
+  const [allLogs, setAllLogs] = useState<Record<string, any[]>>({});
+  const [allCleared, setAllCleared] = useState<Record<string, boolean>>({});
+  const [allScores, setAllScores] = useState<Record<string, number>>({});
+  const [allBids, setAllBids] = useState<Record<string, number>>({});
+  const [allTricksWon, setAllTricksWon] = useState<Record<string, number>>({});
   const [allMetadata, setAllMetadata] = useState<Record<string, any>>({});
   const [resetCounters, setResetCounters] = useState<Record<string, number>>({});
+
+  // Initialize state when initial values change or modal opens
+  useEffect(() => {
+    if (visible) {
+      setAllLogs(initialLogs || {});
+      setAllCleared(initialCleared || {});
+      setAllBids(initialBids || {});
+      setAllTricksWon(initialTricksWon || {});
+      
+      const scores: Record<string, number> = {};
+      if (initialLogs) {
+        Object.keys(initialLogs).forEach(pid => {
+          scores[pid] = (initialLogs[pid] || []).reduce((a, b: number) => a + b, 0);
+        });
+      }
+      setAllScores(scores);
+    }
+  }, [visible, initialLogs, initialCleared, initialBids, initialTricksWon]);
 
   const activePlayer = players[activePlayerIndex];
 
@@ -138,8 +169,8 @@ export function ScoreInputModal({
 
   const handleSubmit = useCallback(() => {
     onSubmit(allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata);
-    onClose();
-  }, [allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata, onSubmit, onClose]);
+    handleDismiss();
+  }, [allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata, onSubmit, handleDismiss]);
 
   const handleReset = useCallback(() => {
     Alert.alert(
@@ -234,97 +265,248 @@ export function ScoreInputModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal 
+      visible={visible} 
+      animationType="none" 
+      transparent
+      onRequestClose={handleDismiss}
+    >
       <View style={styles.overlay}>
-        <GestureDetector gesture={gesture}>
-          <Animated.View style={[styles.sheet, animatedStyle]}>
-            <View style={styles.grabBarContainer}>
-              <View style={styles.grabBar} />
-            </View>
-            <View style={styles.sheetHeader}>
-              <View>
-                <Text style={styles.title}>{isEditing ? "Edit Round" : `Round ${round}`}</Text>
-                <Text style={styles.subtitle}>Enter cards for {activePlayer.name}</Text>
-              </View>
-              <View style={styles.headerActions}>
-                <Pressable onPress={handleReset} style={styles.resetPressable}>
-                  <NeuIconWell color="#150428" size={38} borderRadius={12}>
-                    <Ionicons name="trash-outline" size={18} color="#FF4757" />
-                  </NeuIconWell>
-                </Pressable>
-                <Pressable onPress={onClose} style={styles.closePressable}>
-                  <NeuIconWell color="#150428" size={38} borderRadius={12}>
-                    <Ionicons name="close" size={20} color="rgba(255,255,255,0.6)" />
-                  </NeuIconWell>
-                </Pressable>
-              </View>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.playerStrip}>
-              {players.map((p, i) => (
-                <Pressable
-                  key={p.id}
-                  onPress={() => {
-                    setActivePlayerIndex(i);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                  style={[
-                    styles.playerTab,
-                    activePlayerIndex === i && { backgroundColor: p.color + "33", borderColor: p.color }
-                  ]}
-                >
-                  <View style={[styles.tabDot, { backgroundColor: p.color }]} />
-                  <Text style={[styles.tabText, activePlayerIndex === i && { color: "#FFF" }]}>{p.name}</Text>
-                  {allScores[p.id] !== undefined && (
-                    <Text style={[styles.tabScore, { color: p.color }]}>{allScores[p.id]}</Text>
-                  )}
-                </Pressable>
-              ))}
-            </ScrollView>
-
-            <View style={styles.calcArea}>
-              {renderCalculator()}
-            </View>
-
-            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
-              <PolymerButton
-                label={activePlayerIndex < players.length - 1 ? "Next Player" : (isEditing ? "Save Changes" : "Submit All Scores")}
-                onPress={() => {
-                  if (activePlayerIndex < players.length - 1) {
-                    setActivePlayerIndex(idx => idx + 1);
-                  } else {
-                    handleSubmit();
-                  }
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                }}
-                color={activePlayerIndex < players.length - 1 ? "rgba(255,255,255,0.1)" : "#00F5A0"}
-                textColor={activePlayerIndex < players.length - 1 ? "#FFF" : "#1A0533"}
-                size="lg"
-              />
-            </View>
+          <Animated.View style={[styles.backdrop, backdropStyle]}>
+            <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
           </Animated.View>
-        </GestureDetector>
+
+          <Animated.View 
+            style={[styles.sheet, animatedStyle]}
+          >
+          <PolymerCard 
+            color="#1A0533" 
+            borderRadius={32} 
+            padding={0} 
+            style={styles.sheetContent}
+          >
+            <GestureDetector gesture={gesture}>
+              <View style={styles.gestureHeader}>
+                <View style={styles.grabBarContainer}>
+                  <View style={styles.grabBar} />
+                </View>
+                
+                <View style={styles.sheetHeader}>
+                  <View>
+                    <Text style={styles.title}>{isEditing ? "Edit Round" : `Round ${round}`}</Text>
+                    <Text style={styles.subtitle}>Enter cards for {activePlayer.name}</Text>
+                  </View>
+                  <View style={styles.headerActions}>
+                    <NeuButton 
+                      size={40} 
+                      borderRadius={12} 
+                      color="#150428" 
+                      onPress={handleReset}
+                    >
+                      <Ionicons name="trash-outline" size={18} color="#FF4757" />
+                    </NeuButton>
+                    
+                    <NeuButton 
+                      size={40} 
+                      borderRadius={12} 
+                      color="#150428" 
+                      onPress={handleDismiss}
+                      style={{ marginLeft: 8 }}
+                    >
+                      <Ionicons name="close" size={20} color="rgba(255,255,255,0.6)" />
+                    </NeuButton>
+                  </View>
+                </View>
+              </View>
+            </GestureDetector>
+
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                style={styles.playerStrip}
+                contentContainerStyle={styles.playerStripContent}
+              >
+                {players.map((p, i) => (
+                  <Pressable
+                    key={p.id}
+                    onPress={() => {
+                      setActivePlayerIndex(i);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
+                    style={styles.playerTabWrapper}
+                  >
+                    <NeuTrench 
+                      color={activePlayerIndex === i ? p.color + "20" : "#150428"} 
+                      borderRadius={16} 
+                      padding={10}
+                      style={[
+                        styles.playerTab,
+                        activePlayerIndex === i ? { borderColor: p.color + "40", borderWidth: 1 } : {}
+                      ]}
+                    >
+                      <View style={[styles.tabDot, { backgroundColor: p.color }]} />
+                      <Text style={[styles.tabText, activePlayerIndex === i && { color: "#FFF" }]}>{p.name}</Text>
+                      {allScores[p.id] !== undefined && (
+                        <Text style={[styles.tabScore, { color: p.color }]}>{allScores[p.id]}</Text>
+                      )}
+                    </NeuTrench>
+                  </Pressable>
+                ))}
+              </ScrollView>
+
+              <View style={styles.calcArea}>
+                {renderCalculator()}
+              </View>
+
+              <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
+                <NeuButton
+                  borderRadius={20}
+                  onPress={() => {
+                    if (activePlayerIndex < players.length - 1) {
+                      setActivePlayerIndex(idx => idx + 1);
+                    } else {
+                      handleSubmit();
+                    }
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  }}
+                  color={activePlayerIndex < players.length - 1 ? "rgba(255,255,255,0.08)" : "#00F5A0"}
+                  style={{ flex: 1, height: 60 }}
+                >
+                  <View style={styles.footerBtnInner}>
+                    <Text style={[
+                      styles.footerBtnText, 
+                      { color: activePlayerIndex < players.length - 1 ? "#FFF" : "#1A0533" }
+                    ]}>
+                      {activePlayerIndex < players.length - 1 ? "NEXT PLAYER" : (isEditing ? "SAVE CHANGES" : "SUBMIT ALL")}
+                    </Text>
+                    <Ionicons 
+                      name={activePlayerIndex < players.length - 1 ? "arrow-forward" : "checkmark-circle"} 
+                      size={20} 
+                      color={activePlayerIndex < players.length - 1 ? "rgba(255,255,255,0.5)" : "#1A0533"} 
+                    />
+                  </View>
+                </NeuButton>
+            </View>
+          </PolymerCard>
+        </Animated.View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#1A0533", borderTopLeftRadius: 32, borderTopRightRadius: 32, flex: 1, maxHeight: "94%" },
-  grabBarContainer: { width: "100%", height: 24, alignItems: "center", justifyContent: "center" },
-  grabBar: { width: 40, height: 5, borderRadius: 2.5, backgroundColor: "rgba(255,255,255,0.15)" },
-  sheetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: 24, marginBottom: 16 },
-  title: { fontFamily: "Inter_900Black", fontSize: 22, color: "#FFFFFF" },
-  subtitle: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: "rgba(255,255,255,0.4)" },
-  closePressable: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  headerActions: { flexDirection: "row", gap: 12 },
-  resetPressable: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  playerStrip: { flexGrow: 0, paddingHorizontal: 20, marginBottom: 16 },
-  playerTab: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.05)", marginRight: 8, backgroundColor: "rgba(255,255,255,0.02)" },
-  tabDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  tabText: { fontFamily: "Inter_700Bold", fontSize: 13, color: "rgba(255,255,255,0.4)" },
-  tabScore: { fontFamily: "Inter_800ExtraBold", fontSize: 10, marginLeft: 6 },
-  calcArea: { paddingHorizontal: 20, flex: 1 },
-  footer: { paddingHorizontal: 20, paddingTop: 10 },
+  overlay: { 
+    flex: 1, 
+    justifyContent: "flex-end" 
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.85)",
+  },
+  sheet: { 
+    height: "94%",
+    backgroundColor: "transparent",
+  },
+  sheetContent: {
+    flex: 1,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  grabBarContainer: { 
+    width: "100%", 
+    height: 32, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+  grabBar: { 
+    width: 44, 
+    height: 6, 
+    borderRadius: 3, 
+    backgroundColor: "rgba(255,255,255,0.15)" 
+  },
+  sheetHeader: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "flex-start", 
+    paddingHorizontal: 24, 
+    paddingBottom: 20
+  },
+  gestureHeader: {
+    backgroundColor: "transparent",
+    paddingTop: 8,
+  },
+  title: { 
+    fontFamily: "Inter_900Black", 
+    fontSize: 24, 
+    color: "#FFFFFF",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  subtitle: { 
+    fontFamily: "Inter_700Bold", 
+    fontSize: 13, 
+    color: "rgba(255,255,255,0.4)",
+    marginTop: 2,
+  },
+  headerActions: { 
+    flexDirection: "row", 
+    alignItems: "center" 
+  },
+  playerStrip: { 
+    flexGrow: 0, 
+    marginBottom: 20 
+  },
+  playerStripContent: {
+    paddingHorizontal: 20,
+    gap: 10,
+  },
+  playerTabWrapper: {
+    minWidth: 100,
+  },
+  playerTab: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center",
+  },
+  tabDot: { 
+    width: 10, 
+    height: 10, 
+    borderRadius: 5, 
+    marginRight: 10 
+  },
+  tabText: { 
+    fontFamily: "Inter_800ExtraBold", 
+    fontSize: 14, 
+    color: "rgba(255,255,255,0.4)" 
+  },
+  tabScore: { 
+    fontFamily: "Inter_900Black", 
+    fontSize: 12, 
+    marginLeft: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: 6,
+  },
+  calcArea: { 
+    paddingHorizontal: 20, 
+    flex: 1 
+  },
+  footer: { 
+    paddingHorizontal: 20, 
+    paddingTop: 16 
+  },
+  footerBtnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  footerBtnText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 14,
+    letterSpacing: 1.5,
+  },
 });

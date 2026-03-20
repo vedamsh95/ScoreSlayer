@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,20 +10,23 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polyline, Circle, G } from 'react-native-svg';
 import Animated, { 
-  FadeInDown, 
-  FadeInRight, 
-  SlideInDown 
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+  interpolate,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { GameSession } from '@/context/GameContext';
 import { useSessionAnalysis } from '@/hooks/useSessionAnalysis';
-import { NeuTrench } from './PolymerCard';
+import { PolymerCard, NeuTrench, NeuButton } from './PolymerCard';
 
-const { width } = Dimensions.get('window');
+const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface AnalysisModalProps {
   visible: boolean;
@@ -34,6 +37,50 @@ interface AnalysisModalProps {
 export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps) {
   const insets = useSafeAreaInsets();
   const { roasts, stats, chartData } = useSessionAnalysis(session);
+
+  // Animation State
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const handleDismiss = useCallback(() => {
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+      runOnJS(onClose)();
+    });
+  }, [onClose]);
+
+  const gesture = Gesture.Pan()
+    .onUpdate((event) => {
+      translateY.value = Math.max(0, event.translationY);
+      backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
+    })
+    .onEnd((event) => {
+      if (event.translationY > 150 || event.velocityY > 500) {
+        handleDismiss();
+      } else {
+        translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    });
+
+  // Entrance Animation
+  useEffect(() => {
+    if (visible) {
+      translateY.value = withSpring(0, { damping: 25, stiffness: 120 });
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+    } else {
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
+    }
+  }, [visible]);
 
   const maxScore = useMemo(() => {
     let max = 10;
@@ -52,7 +99,7 @@ export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps)
     const stepX = chartWidth / (rounds > 1 ? rounds - 1 : 1);
 
     return (
-      <View style={styles.chartContainer}>
+      <NeuTrench color="#150428" borderRadius={24} padding={16} style={styles.chartContainer}>
         <Text style={styles.sectionTitle}>SCORE TRENDS</Text>
         <View style={{ height: chartHeight + 20 }}>
           <Svg height={chartHeight} width={chartWidth}>
@@ -93,7 +140,7 @@ export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps)
             <Text key={i} style={styles.chartLabelText}>R{i+1}</Text>
           ))}
         </View>
-      </View>
+      </NeuTrench>
     );
   };
 
@@ -102,48 +149,64 @@ export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps)
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={handleDismiss}
     >
-      <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
-        <Animated.View 
-          entering={SlideInDown.springify().damping(25).stiffness(120)}
-          style={[styles.modalContent, { paddingTop: insets.top + 20 }]}
-        >
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>ROAST ROOM</Text>
-              <Text style={styles.headerSub}>Real-time metrics & emotional damage</Text>
-            </View>
-            <Pressable 
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                onClose();
-              }}
-              style={styles.closeBtn}
-            >
-              <Ionicons name="close" size={24} color="#FFF" />
-            </Pressable>
-          </View>
+      <View style={styles.overlay}>
+          <Animated.View style={[styles.backdrop, backdropStyle]}>
+            <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
+          </Animated.View>
 
-          <ScrollView 
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+          <Animated.View 
+            style={[styles.modalContent, animatedStyle]}
           >
-            {renderChart()}
+            <PolymerCard 
+              color="#1A0533" 
+              borderRadius={32} 
+              padding={0} 
+              style={styles.sheetContent}
+            >
+              <GestureDetector gesture={gesture}>
+                <View style={styles.gestureHeader}>
+                  <View style={styles.grabBarContainer}>
+                    <View style={styles.grabBar} />
+                  </View>
+                  
+                  <View style={styles.header}>
+                    <View>
+                      <Text style={styles.headerTitle}>ROAST ROOM</Text>
+                      <Text style={styles.headerSub}>Real-time metrics & emotional damage</Text>
+                    </View>
+                    <NeuButton 
+                      size={40} 
+                      borderRadius={12} 
+                      color="#150428" 
+                      onPress={handleDismiss}
+                    >
+                      <Ionicons name="close" size={20} color="#FFF" />
+                    </NeuButton>
+                  </View>
+                </View>
+              </GestureDetector>
 
-            <Text style={styles.sectionTitle}>THE ROASTS</Text>
-            <View style={styles.roastList}>
+              <ScrollView 
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+              >
+                {renderChart()}
+
+                <Text style={styles.sectionTitle}>THE ROASTS</Text>
+                <View style={styles.roastList}>
               {roasts.length === 0 ? (
                 <Text style={styles.emptyText}>Not enough data to roast yet. Play more rounds!</Text>
               ) : (
                 roasts.map((roast, i) => (
                   <Animated.View 
                     key={i} 
-                    entering={FadeInRight.delay(i * 100)}
-                    style={styles.roastCard}
                   >
-                    <MaterialCommunityIcons name="fire" size={18} color="#FF4757" />
-                    <Text style={styles.roastText}>{roast}</Text>
+                    <PolymerCard color="rgba(255, 71, 87, 0.08)" borderRadius={16} padding={16} style={styles.roastCard}>
+                      <MaterialCommunityIcons name="fire" size={18} color="#FF4757" />
+                      <Text style={styles.roastText}>{roast}</Text>
+                    </PolymerCard>
                   </Animated.View>
                 ))
               )}
@@ -154,9 +217,8 @@ export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps)
               {session.players.map((p, i) => {
                 const s = stats[p.id];
                 return (
-                  <Animated.View 
+                  <View 
                     key={p.id}
-                    entering={FadeInDown.delay(i * 100)}
                   >
                     <NeuTrench color="#150428" borderRadius={20} padding={16} style={styles.playerStatCard}>
                       <View style={styles.playerHeader}>
@@ -179,31 +241,63 @@ export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps)
                         </View>
                       </View>
                     </NeuTrench>
-                  </Animated.View>
+                  </View>
                 );
               })}
             </View>
-          </ScrollView>
-        </Animated.View>
-      </BlurView>
+              </ScrollView>
+            </PolymerCard>
+          </Animated.View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: { 
+    flex: 1, 
+    justifyContent: "flex-end" 
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.85)",
+  },
   modalContent: {
+    height: "94%",
+    backgroundColor: "transparent",
+  },
+  sheetContent: {
     flex: 1,
-    backgroundColor: 'rgba(21, 4, 40, 0.9)',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    marginTop: 60,
-    paddingHorizontal: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
+    alignItems: 'flex-start',
+    paddingHorizontal: 24,
+    paddingBottom: 20
+  },
+  gestureHeader: {
+    backgroundColor: "transparent",
+    paddingTop: 8,
+  },
+  grabBarContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  grabBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
   },
   headerTitle: {
     fontFamily: 'Inter_900Black',
@@ -215,14 +309,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     fontSize: 12,
     color: 'rgba(255,255,255,0.4)',
-  },
-  closeBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   sectionTitle: {
     fontFamily: 'Inter_800ExtraBold',
@@ -238,24 +324,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.02)',
     padding: 16,
     borderRadius: 24,
-  },
-  chartSvg: {
-    height: 150,
-    position: 'relative',
-    borderLeftWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  chartDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    position: 'absolute',
-    marginLeft: -3,
-    marginTop: -3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
   },
   chartLabels: {
     flexDirection: 'row',
@@ -275,11 +343,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(255, 71, 87, 0.08)',
-    padding: 16,
-    borderRadius: 16,
     borderLeftWidth: 3,
     borderLeftColor: '#FF4757',
+    marginBottom: 12,
   },
   roastText: {
     fontFamily: 'Inter_600SemiBold',

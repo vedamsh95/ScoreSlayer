@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Player } from "@/context/GameContext";
-import { NeuTrench } from "./PolymerCard";
+import { PolymerCard, NeuTrench } from "./PolymerCard";
 
 interface PlayerScoreRowProps {
   player: Player;
@@ -26,35 +26,22 @@ export function PlayerScoreRow({
 }: PlayerScoreRowProps) {
 
   return (
-    // Each row is a clay card colored by player, with neumorphic rank badge + score well
-    <View style={[styles.cardShadow, { borderRadius: 20 }, isLeader && styles.leaderShadow]}>
-      <View
-        style={[
-          styles.cardBody,
-          {
-            backgroundColor: player.color + "22",
-            borderRadius: 20,
-            borderWidth: 1.5,
-            borderColor: player.color + "44",
-          },
-        ]}
-      >
-        {/* No gloss/shadow - clean primary color */}
-
+    <PolymerCard 
+      color={player.color + "22"} 
+      borderRadius={24} 
+      padding={12} 
+      style={[styles.cardContainer, { borderColor: player.color + "44", borderWidth: 2 }]}
+    >
+      <View style={styles.rowInner}>
         {/* Neumorphic rank well */}
         <NeuTrench
           color="#150428"
-          borderRadius={12}
+          borderRadius={14}
           padding={0}
-          style={[styles.rankWell, { width: 38, height: 38 }]}
+          style={styles.rankWell}
         >
-          <View style={styles.rankContent}>
-            <Text style={[styles.rankText, { color: player.color }]}>#{rank}</Text>
-          </View>
+          <Text style={[styles.rankText, { color: player.color }]}>#{rank}</Text>
         </NeuTrench>
-
-        {/* Color dot */}
-        <View style={[styles.colorDot, { backgroundColor: player.color }]} />
 
         <View style={styles.nameSection}>
           <Text style={styles.playerName} numberOfLines={1}>
@@ -73,19 +60,18 @@ export function PlayerScoreRow({
           </View>
         </View>
 
-        {/* Score display — neumorphic well for the number */}
         <View style={styles.scoreArea}>
           {showRoundScore && roundScore !== undefined && (
-            <View style={[styles.deltaChip, { backgroundColor: player.color + "22", borderColor: player.color + "44" }]}>
+            <NeuTrench color="#150428" borderRadius={10} padding={6} style={styles.deltaChip}>
               <Text style={[styles.deltaText, { color: player.color }]}>
                 {roundScore >= 0 ? "+" : ""}{roundScore}
               </Text>
-            </View>
+            </NeuTrench>
           )}
 
           <NeuTrench
             color="#150428"
-            borderRadius={14}
+            borderRadius={16}
             padding={0}
             style={styles.scoreWell}
           >
@@ -95,62 +81,37 @@ export function PlayerScoreRow({
           </NeuTrench>
         </View>
       </View>
-    </View>
+    </PolymerCard>
   );
 }
 
 const styles = StyleSheet.create({
-  cardShadow: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 5,
-    marginBottom: 10,
+  cardContainer: {
+    marginBottom: 12,
   },
-  leaderShadow: {
-    shadowOpacity: 0.5,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 9,
-  },
-  cardBody: {
+  rowInner: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    gap: 10,
-    overflow: "hidden",
-    position: "relative",
+    gap: 12,
   },
   rankWell: {
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-  },
-  rankContent: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
   },
   rankText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 12,
-  },
-  colorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    zIndex: 2,
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 14,
   },
   nameSection: {
     flex: 1,
-    zIndex: 2,
   },
   playerName: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 16,
     color: "#FFFFFF",
+    letterSpacing: 0.5,
   },
   phaseText: {
     fontFamily: "Inter_700Bold",
@@ -177,30 +138,27 @@ const styles = StyleSheet.create({
   scoreArea: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    zIndex: 2,
+    gap: 10,
   },
   deltaChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
+    minWidth: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   deltaText: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_700Bold",
     fontSize: 12,
   },
   scoreWell: {
-    minWidth: 64,
-    height: 40,
+    minWidth: 70,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
   },
   totalScore: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 20,
+    fontFamily: "Inter_900Black",
+    fontSize: 22,
     color: "#FFFFFF",
     textAlign: "center",
-    minWidth: 50,
   },
 });

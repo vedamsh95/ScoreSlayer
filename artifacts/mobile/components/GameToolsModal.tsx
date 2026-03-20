@@ -1,22 +1,29 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Modal,
   View,
   Text,
   StyleSheet,
   Pressable,
-  Animated,
   Dimensions,
-  Easing,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+  interpolate,
+} from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { PolymerButton } from "./PolymerButton";
-import { NeuIconWell, NeuTrench } from "./PolymerCard";
+import { NeuIconWell, NeuTrench, PolymerCard } from "./PolymerCard";
 
-const { width } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface GameToolsModalProps {
   visible: boolean;
@@ -29,19 +36,75 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<"seating" | "first" | "timer">("seating");
 
+  // Animation State
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
   // --- Seating Randomizer State ---
   const [localPlayers, setLocalPlayers] = useState(players);
-  const shuffleAnim = useRef(new Animated.Value(0)).current;
+  const shuffleScale = useSharedValue(1);
 
   // --- Who Goes First State ---
   const [spinning, setSpinning] = useState(false);
-  const spinAnim = useRef(new Animated.Value(0)).current;
+  const spinRotation = useSharedValue(0);
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
 
   // --- Timer State ---
   const [timeLeft, setTimeLeft] = useState(60);
   const [timerActive, setTimerActive] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    setLocalPlayers(players);
+  }, [players]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const handleDismiss = useCallback(() => {
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+      runOnJS(onClose)();
+    });
+  }, [onClose]);
+
+  const gesture = Gesture.Pan()
+    .onUpdate((event) => {
+      translateY.value = Math.max(0, event.translationY);
+      backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
+    })
+    .onEnd((event) => {
+      if (event.translationY > 150 || event.velocityY > 500) {
+        handleDismiss();
+      } else {
+        translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    });
+
+  // Entrance Animation
+  useEffect(() => {
+    if (visible) {
+      translateY.value = withSpring(0, { damping: 25, stiffness: 120 });
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+    } else {
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
+    }
+  }, [visible]);
+
+  const shuffleAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: shuffleScale.value }],
+  }));
+
+  const spinAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spinRotation.value}deg` }],
+  }));
 
   const startTimer = (seconds: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -54,7 +117,7 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
       timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
     } else if (timeLeft === 0) {
       setTimerActive(false);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      if (timerActive) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -63,10 +126,9 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
 
   const handleShuffle = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Animated.sequence([
-      Animated.timing(shuffleAnim, { toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.out(Easing.back(1)) }),
-      Animated.timing(shuffleAnim, { toValue: 0, duration: 0, useNativeDriver: true }),
-    ]).start();
+    shuffleScale.value = withSpring(1.2, { damping: 10, stiffness: 200 }, () => {
+      shuffleScale.value = withSpring(1);
+    });
 
     const shuffled = [...localPlayers].sort(() => Math.random() - 0.5);
     setLocalPlayers(shuffled);
@@ -80,30 +142,23 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const randomSpins = 3 + Math.random() * 5;
-    const finalAngle = randomSpins * 360;
+    const finalAngle = spinRotation.value + (randomSpins * 360);
 
-    Animated.timing(spinAnim, {
-      toValue: finalAngle,
-      duration: 3500,
-      useNativeDriver: true,
-      easing: Easing.out(Easing.cubic),
-    }).start(() => {
-      setSpinning(false);
-      const totalDegrees = finalAngle % 360;
-      const playerAngleStep = 360 / players.length;
-      // Adjust winner calculation to match the visual pointing
-      // The bottle points to (rotation - 0) degrees. 
-      // Since players are at (i * 360 / N) - 90, 
-      // and rotation is (angle + 90), it should match perfectly.
-      const idx = Math.round(totalDegrees / playerAngleStep) % players.length;
-      setWinnerIndex(idx);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    spinRotation.value = withSpring(finalAngle, { damping: 40, stiffness: 80 }, (finished) => {
+      if (finished) {
+        runOnJS(setSpinning)(false);
+        const totalDegrees = finalAngle % 360;
+        const playerAngleStep = 360 / players.length;
+        const idx = Math.round(totalDegrees / playerAngleStep) % players.length;
+        runOnJS(setWinnerIndex)(idx);
+        runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
+      }
     });
   };
 
   const renderSeating = () => {
     const radius = 100;
-    const center = { x: (width - 40) / 2, y: 150 };
+    const center = { x: (SCREEN_WIDTH - 48) / 2, y: 150 };
 
     return (
       <View style={styles.seatingArea}>
@@ -118,7 +173,8 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
                 key={p.id}
                 style={[
                   styles.playerAvatar,
-                  { left: x, top: y, backgroundColor: p.color, transform: [{ scale: shuffleAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.2] }) }] }
+                  { left: x, top: y, backgroundColor: p.color },
+                  shuffleAnimatedStyle
                 ]}
               >
                 <Text style={styles.avatarText}>{p.name[0]}</Text>
@@ -134,8 +190,7 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
 
   const renderWhoFirst = () => {
     const radius = 100;
-    const center = { x: (width - 48) / 2, y: 150 };
-    const spin = spinAnim.interpolate({ inputRange: [0, 360], outputRange: ["0deg", "360deg"] });
+    const center = { x: (SCREEN_WIDTH - 48) / 2, y: 150 };
 
     return (
       <View style={styles.seatingArea}>
@@ -159,7 +214,7 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
             );
           })}
           <View style={[styles.bottleWrapper, { left: center.x - 20, top: center.y - 45 }]}>
-            <Animated.View style={{ transform: [{ rotate: spin }] }}>
+            <Animated.View style={spinAnimatedStyle}>
               <MaterialCommunityIcons name="bottle-wine" size={60} color="#FF2D78" />
             </Animated.View>
           </View>
@@ -229,51 +284,114 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="none" transparent onRequestClose={handleDismiss}>
       <View style={styles.overlay}>
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Game Night Tools</Text>
-            <Pressable onPress={onClose}>
-              <NeuIconWell color="#150428" size={36} borderRadius={12}>
-                <Ionicons name="close" size={20} color="rgba(255,255,255,0.6)" />
-              </NeuIconWell>
-            </Pressable>
-          </View>
+          <Animated.View style={[styles.backdrop, backdropStyle]}>
+            <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
+          </Animated.View>
 
-          <View style={styles.tabs}>
-            {[
-              { id: "seating", label: "Seating", icon: "people" },
-              { id: "first", label: "Who First?", icon: "flash" },
-              { id: "timer", label: "Timer", icon: "timer" },
-            ].map(tab => (
-              <Pressable
-                key={tab.id}
-                onPress={() => { setActiveTab(tab.id as any); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                style={[styles.tab, activeTab === tab.id && styles.tabActive]}
-              >
-                <Ionicons name={tab.icon as any} size={18} color={activeTab === tab.id ? "#00F5A0" : "rgba(255,255,255,0.3)"} />
-                <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>{tab.label}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Animated.View 
+            style={[styles.modalContent, animatedStyle]}
+          >
+            <PolymerCard 
+              color="#1A0533" 
+              borderRadius={32} 
+              padding={0} 
+              style={styles.sheetContent}
+            >
+              <GestureDetector gesture={gesture}>
+                <View style={styles.gestureHeader}>
+                  <View style={styles.grabBarContainer}>
+                    <View style={styles.grabBar} />
+                  </View>
+                  
+                  <View style={styles.header}>
+                    <View>
+                      <Text style={styles.title}>Game Night Tools</Text>
+                      <Text style={styles.subtitle}>Handy utilities for the table</Text>
+                    </View>
+                    <Pressable onPress={handleDismiss}>
+                      <NeuIconWell color="#150428" size={36} borderRadius={12}>
+                        <Ionicons name="close" size={20} color="rgba(255,255,255,0.6)" />
+                      </NeuIconWell>
+                    </Pressable>
+                  </View>
+                </View>
+              </GestureDetector>
 
-          <View style={styles.content}>
-            {activeTab === "seating" && renderSeating()}
-            {activeTab === "first" && renderWhoFirst()}
-            {activeTab === "timer" && renderTimer()}
-          </View>
-        </View>
+              <View style={styles.tabs}>
+                {[
+                  { id: "seating", label: "Seating", icon: "people" },
+                  { id: "first", label: "Who First?", icon: "flash" },
+                  { id: "timer", label: "Timer", icon: "timer" },
+                ].map(tab => (
+                  <Pressable
+                    key={tab.id}
+                    onPress={() => { setActiveTab(tab.id as any); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                    style={[styles.tab, activeTab === tab.id && styles.tabActive]}
+                  >
+                    <Ionicons name={tab.icon as any} size={18} color={activeTab === tab.id ? "#00F5A0" : "rgba(255,255,255,0.3)"} />
+                    <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>{tab.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.content}>
+                {activeTab === "seating" && renderSeating()}
+                {activeTab === "first" && renderWhoFirst()}
+                {activeTab === "timer" && renderTimer()}
+              </View>
+            </PolymerCard>
+          </Animated.View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#1A0533", borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingTop: 24 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 24, marginBottom: 20 },
+  overlay: { 
+    flex: 1, 
+    justifyContent: "flex-end" 
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.85)",
+  },
+  modalContent: {
+    height: "94%",
+    backgroundColor: "transparent",
+  },
+  sheetContent: {
+    flex: 1,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  gestureHeader: {
+    backgroundColor: "transparent",
+    paddingTop: 8,
+  },
+  grabBarContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  grabBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  header: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "flex-start", 
+    paddingHorizontal: 24, 
+    paddingBottom: 20 
+  },
   title: { fontFamily: "Inter_900Black", fontSize: 24, color: "#FFF" },
+  subtitle: { fontFamily: "Inter_500Medium", fontSize: 12, color: "rgba(255,255,255,0.4)" },
   tabs: { flexDirection: "row", paddingHorizontal: 24, gap: 10, marginBottom: 24 },
   tab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
   tabActive: { backgroundColor: "rgba(0,245,160,0.1)", borderColor: "rgba(0,245,160,0.2)" },
