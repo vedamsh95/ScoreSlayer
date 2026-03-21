@@ -6,7 +6,7 @@ import React, {
   useEffect,
   useReducer,
 } from "react";
-import { GameDefinition, HouseRuleOverride } from "@/constants/games";
+import { GameDefinition, HouseRuleOverride, getGameById } from "@/constants/games";
 
 export interface Player {
   id: string;
@@ -147,6 +147,12 @@ interface GameContextType {
   endSession: (sessionId: string) => void;
   getActiveSession: () => GameSession | null;
   getSession: (sessionId: string) => GameSession | null;
+  /** Join mid-session with optional total carried into completed rounds (last round holds catch-up). */
+  addPlayerMidGame: (
+    sessionId: string,
+    name: string,
+    catchUpTotalScore: number
+  ) => boolean;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -515,6 +521,64 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     [state.sessions]
   );
 
+  const addPlayerMidGame = useCallback(
+    (sessionId: string, name: string, catchUpTotalScore: number): boolean => {
+      const session = state.sessions.find((s) => s.id === sessionId);
+      if (!session || session.isComplete) return false;
+
+      const gameDef = getGameById(session.gameId);
+      if (!gameDef) return false;
+      if (session.players.length >= gameDef.maxPlayers) return false;
+
+      const trimmed = name.trim();
+      if (!trimmed) return false;
+
+      const scoreNum = Number.isFinite(catchUpTotalScore) ? catchUpTotalScore : 0;
+      const completedRounds = Math.max(0, session.currentRound - 1);
+      const colorIndex = session.players.length;
+      const newId = `p_${colorIndex}_${Date.now()}`;
+
+      const scores =
+        completedRounds > 0
+          ? Array.from({ length: completedRounds }, (_, i) =>
+              i === completedRounds - 1 ? scoreNum : 0
+            )
+          : [];
+
+      const totalScore =
+        completedRounds > 0
+          ? scores.reduce((sum, s) => sum + s, 0)
+          : scoreNum;
+
+      const hasPhases = !!gameDef.phases?.length;
+      const newPlayer: Player = {
+        id: newId,
+        name: trimmed,
+        color: PLAYER_COLORS[colorIndex % PLAYER_COLORS.length],
+        scores,
+        roundLogs: {},
+        currentPhase: hasPhases ? 1 : undefined,
+        currentPhaseCleared: false,
+        clearedHistory: Array(completedRounds).fill(false),
+        bids: Array(completedRounds).fill(null),
+        tricksWon: Array(completedRounds).fill(null),
+        bagsHistory: Array(completedRounds).fill(0),
+        totalScore,
+        totalBags: 0,
+        isEliminated: false,
+        roundRoasts: {},
+        roundMetadata: {},
+      };
+
+      dispatch({
+        type: "UPDATE_SESSION",
+        session: { ...session, players: [...session.players, newPlayer] },
+      });
+      return true;
+    },
+    [state.sessions]
+  );
+
   return (
     <GameContext.Provider
       value={{
@@ -530,6 +594,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         endSession,
         getActiveSession,
         getSession,
+        addPlayerMidGame,
       }}
     >
       {children}
