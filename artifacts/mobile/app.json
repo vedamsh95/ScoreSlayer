@@ -17,7 +17,8 @@
       "supportsTablet": false
     },
     "android": {
-      "backgroundColor": "#1A0533"
+      "backgroundColor": "#1A0533",
+      "package": "com.anonymous.mobile"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -35,6 +36,14 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
+      "eas": {
+        "projectId": "e554e32d-6e5a-4954-a381-244ee07da6e0"
+      }
     }
   }
 }
