@@ -22,6 +22,7 @@ import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { PolymerButton } from "./PolymerButton";
 import { NeuIconWell, NeuTrench, PolymerCard } from "./PolymerCard";
+import { UnifiedToolsCore } from "./UnifiedToolsCore";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -34,29 +35,10 @@ interface GameToolsModalProps {
 
 export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToolsModalProps) {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<"seating" | "first" | "timer">("seating");
 
   // Animation State
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
-
-  // --- Seating Randomizer State ---
-  const [localPlayers, setLocalPlayers] = useState(players);
-  const shuffleScale = useSharedValue(1);
-
-  // --- Who Goes First State ---
-  const [spinning, setSpinning] = useState(false);
-  const spinRotation = useSharedValue(0);
-  const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
-
-  // --- Timer State ---
-  const [timeLeft, setTimeLeft] = useState(60);
-  const [timerActive, setTimerActive] = useState(false);
-  const timerRef = useRef<any>(null);
-
-  useEffect(() => {
-    setLocalPlayers(players);
-  }, [players]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -98,191 +80,6 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
     }
   }, [visible]);
 
-  const shuffleAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: shuffleScale.value }],
-  }));
-
-  const spinAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${spinRotation.value}deg` }],
-  }));
-
-  const startTimer = (seconds: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setTimeLeft(seconds);
-    setTimerActive(true);
-  };
-
-  useEffect(() => {
-    if (timerActive && timeLeft > 0) {
-      timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
-    } else if (timeLeft === 0) {
-      setTimerActive(false);
-      if (timerActive) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    }
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [timerActive, timeLeft]);
-
-  const handleShuffle = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    shuffleScale.value = withSpring(1.2, { damping: 10, stiffness: 200 }, () => {
-      shuffleScale.value = withSpring(1);
-    });
-
-    const shuffled = [...localPlayers].sort(() => Math.random() - 0.5);
-    setLocalPlayers(shuffled);
-    onShuffle(shuffled);
-  };
-
-  const handleSpin = () => {
-    if (spinning) return;
-    setSpinning(true);
-    setWinnerIndex(null);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    const randomSpins = 3 + Math.random() * 5;
-    const finalAngle = spinRotation.value + (randomSpins * 360);
-
-    spinRotation.value = withSpring(finalAngle, { damping: 40, stiffness: 80 }, (finished) => {
-      if (finished) {
-        runOnJS(setSpinning)(false);
-        const totalDegrees = finalAngle % 360;
-        const playerAngleStep = 360 / players.length;
-        const idx = Math.round(totalDegrees / playerAngleStep) % players.length;
-        runOnJS(setWinnerIndex)(idx);
-        runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
-      }
-    });
-  };
-
-  const renderSeating = () => {
-    const radius = 100;
-    const center = { x: (SCREEN_WIDTH - 48) / 2, y: 150 };
-
-    return (
-      <View style={styles.seatingArea}>
-        <View style={styles.circleContainer}>
-          {localPlayers.map((p, i) => {
-            const angle = (i * 360) / players.length - 90;
-            const x = center.x + radius * Math.cos((angle * Math.PI) / 180) - 20;
-            const y = center.y + radius * Math.sin((angle * Math.PI) / 180) - 20;
-
-            return (
-              <Animated.View
-                key={p.id}
-                style={[
-                  styles.playerAvatar,
-                  { left: x, top: y, backgroundColor: p.color },
-                  shuffleAnimatedStyle
-                ]}
-              >
-                <Text style={styles.avatarText}>{p.name[0]}</Text>
-              </Animated.View>
-            );
-          })}
-          <View style={[styles.centerMark, { left: center.x - 2, top: center.y - 2 }]} />
-        </View>
-        <PolymerButton label="Randomize Seating" onPress={handleShuffle} color="#00F5A0" textColor="#1A0533" size="md" />
-      </View>
-    );
-  };
-
-  const renderWhoFirst = () => {
-    const radius = 100;
-    const center = { x: (SCREEN_WIDTH - 48) / 2, y: 150 };
-
-    return (
-      <View style={styles.seatingArea}>
-        <View style={styles.circleContainer}>
-          {players.map((p, i) => {
-            const angle = (i * 360) / players.length - 90;
-            const x = center.x + radius * Math.cos((angle * Math.PI) / 180) - 20;
-            const y = center.y + radius * Math.sin((angle * Math.PI) / 180) - 20;
-
-            return (
-              <View
-                key={p.id}
-                style={[
-                  styles.playerAvatar,
-                  { left: x, top: y, backgroundColor: p.color },
-                  winnerIndex === i && styles.winnerHighlight
-                ]}
-              >
-                <Text style={styles.avatarText}>{p.name[0]}</Text>
-              </View>
-            );
-          })}
-          <View style={[styles.bottleWrapper, { left: center.x - 20, top: center.y - 45 }]}>
-            <Animated.View style={spinAnimatedStyle}>
-              <MaterialCommunityIcons name="bottle-wine" size={60} color="#FF2D78" />
-            </Animated.View>
-          </View>
-        </View>
-        <PolymerButton label={spinning ? "Spinning..." : "Spin the Bottle"} onPress={handleSpin} color="#FF2D78" textColor="#FFF" size="md" />
-      </View>
-    );
-  };
-
-  const renderTimer = () => {
-    const formatTime = (s: number) => {
-      const m = Math.floor(s / 60);
-      const rs = s % 60;
-      return `${m}:${rs < 10 ? "0" : ""}${rs}`;
-    };
-
-    return (
-      <View style={styles.timerArea}>
-        <View style={styles.timerRow}>
-          <Pressable onPress={() => { setTimeLeft(Math.max(0, timeLeft - 10)); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.adjustBtn}>
-            <Text style={styles.adjustText}>-10s</Text>
-          </Pressable>
-          <Pressable onPress={() => { setTimeLeft(Math.max(0, timeLeft - 1)); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.adjustBtn}>
-            <Text style={styles.adjustText}>-1s</Text>
-          </Pressable>
-
-          <NeuTrench color="#150428" borderRadius={25} padding={20} style={styles.timerDisplay}>
-            <Text style={[styles.timerText, timeLeft < 10 && { color: "#FF2D78" }]}>{formatTime(timeLeft)}</Text>
-          </NeuTrench>
-
-          <Pressable onPress={() => { setTimeLeft(timeLeft + 1); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.adjustBtn}>
-            <Text style={styles.adjustText}>+1s</Text>
-          </Pressable>
-          <Pressable onPress={() => { setTimeLeft(timeLeft + 10); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.adjustBtn}>
-            <Text style={styles.adjustText}>+10s</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.presets}>
-          {[30, 60, 120, 300].map(s => (
-            <Pressable key={s} onPress={() => startTimer(s)} style={styles.presetChip}>
-              <Text style={styles.presetText}>{s < 60 ? `${s}s` : `${s / 60}m`}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <View style={styles.timerActions}>
-          <PolymerButton 
-            label={timerActive ? "Pause" : "Resume"} 
-            onPress={() => setTimerActive(!timerActive)} 
-            color="#00F5A0" 
-            textColor="#1A0533" 
-            size="md" 
-            style={{ flex: 1 }}
-          />
-          <PolymerButton 
-            label="Reset" 
-            onPress={() => { setTimeLeft(60); setTimerActive(false); }} 
-            color="rgba(255,255,255,0.1)" 
-            textColor="#FFF" 
-            size="md" 
-            style={{ flex: 1 }}
-          />
-        </View>
-      </View>
-    );
-  };
-
   return (
     <Modal visible={visible} animationType="none" transparent onRequestClose={handleDismiss}>
       <View style={styles.overlay}>
@@ -319,27 +116,11 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
                 </View>
               </GestureDetector>
 
-              <View style={styles.tabs}>
-                {[
-                  { id: "seating", label: "Seating", icon: "people" },
-                  { id: "first", label: "Who First?", icon: "flash" },
-                  { id: "timer", label: "Timer", icon: "timer" },
-                ].map(tab => (
-                  <Pressable
-                    key={tab.id}
-                    onPress={() => { setActiveTab(tab.id as any); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                    style={[styles.tab, activeTab === tab.id && styles.tabActive]}
-                  >
-                    <Ionicons name={tab.icon as any} size={18} color={activeTab === tab.id ? "#00F5A0" : "rgba(255,255,255,0.3)"} />
-                    <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>{tab.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
-
               <View style={styles.content}>
-                {activeTab === "seating" && renderSeating()}
-                {activeTab === "first" && renderWhoFirst()}
-                {activeTab === "timer" && renderTimer()}
+                <UnifiedToolsCore 
+                  initialPlayers={players.map(p => ({ id: p.id, name: p.name, color: p.color }))}
+                  onShuffleSeating={(shuffled: any[]) => onShuffle(shuffled.map(s => players.find(p => p.id === s.id)!))}
+                />
               </View>
             </PolymerCard>
           </Animated.View>

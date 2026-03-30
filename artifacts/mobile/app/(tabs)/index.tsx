@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useGame } from "@/context/GameContext";
 import { MAIN_GAMES, GAME_CATEGORIES, GameCategory, GameDefinition, UNO_VARIANTS, PHASE10_VARIANTS, RUMMY_VARIANTS } from "@/constants/games";
@@ -27,10 +27,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   trick: "#6B21E8",
   dice: "#00F5A0",
   tile: "#00BFFF",
-  uno: "#FF2D78",
 };
 
-// Extracted animated game card component (to avoid hook-in-loop)
+// Extracted animated game game card (to avoid hook-in-loop)
 function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void }) {
   const scale = useSharedValue(1);
 
@@ -39,7 +38,7 @@ function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void
   }));
 
   return (
-    <Animated.View style={[animStyle, { marginRight: 10 }]}>
+    <Animated.View style={[animStyle, styles.gameCardWrapper]}>
       <Pressable
         onPress={onPress}
         onPressIn={() => {
@@ -48,46 +47,91 @@ function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void
         onPressOut={() => {
           scale.value = withSpring(1, { damping: 14, stiffness: 380 });
         }}
+        style={{ width: '100%' }}
       >
         <PolymerCard 
           color={game.color} 
-          borderRadius={22} 
-          padding={18} 
+          borderRadius={18} 
+          padding={12} 
           style={styles.gameCard}
         >
-          {/* Neumorphic icon well carved into the clay */}
-          <NeuIconWell
-            color="rgba(0,0,0,0.25)"
-            size={48}
-            borderRadius={16}
-            style={styles.iconWell}
-          >
-            <Feather name={game.icon as any} size={22} color="#FFFFFF" />
-          </NeuIconWell>
-
           <Text style={styles.gameName} numberOfLines={2}>{game.name}</Text>
-          {game.hasVariants ? (
-            <NeuTrench
-              color="rgba(0,0,0,0.2)"
-              borderRadius={8}
-              padding={4}
-              style={{ alignSelf: "flex-start" }}
-            >
-              <Text style={{ fontFamily: "Inter_700Bold", fontSize: 8, color: "rgba(255,255,255,0.9)", letterSpacing: 0.8 }}>
+          
+          <View style={styles.gameCardFooter}>
+            {game.hasVariants ? (
+              <Text style={styles.variantCountText}>
                 {game.id === "uno" ? UNO_VARIANTS.length : 
                  game.id === "phase10" ? PHASE10_VARIANTS.length : 
-                 game.id === "rummy" ? RUMMY_VARIANTS.length : 0} VARIANTS
+                 game.id === "rummy" ? RUMMY_VARIANTS.length : 0} VARS
               </Text>
-            </NeuTrench>
-          ) : (
-            <Text style={styles.gamePlayerCount}>{game.minPlayers}–{game.maxPlayers}p</Text>
-          )}
+            ) : (
+              <Text style={styles.gamePlayerCount}>{game.minPlayers}–{game.maxPlayers}p</Text>
+            )}
+          </View>
         </PolymerCard>
       </Pressable>
     </Animated.View>
   );
 }
 
+
+// Collapsible Category Section
+function CollapsibleSection({ 
+  category, 
+  games, 
+  isExpanded, 
+  onToggle 
+}: { 
+  category: typeof GAME_CATEGORIES[0]; 
+  games: GameDefinition[]; 
+  isExpanded: boolean; 
+  onToggle: () => void;
+}) {
+  return (
+    <View style={styles.categoryContainer}>
+      <Pressable 
+        style={styles.categoryHeader} 
+        onPress={onToggle}
+      >
+        <View style={styles.categoryHeaderLeft}>
+          <NeuIconWell color={CATEGORY_COLORS[category.id] || "#6B21E8"} size={36} borderRadius={12}>
+            <Ionicons name={category.icon as any} size={20} color="#FFFFFF" />
+          </NeuIconWell>
+          <View style={{ marginLeft: 12 }}>
+            <Text style={styles.categoryTitle}>{category.label}</Text>
+            <Text style={styles.categorySubtitle}>{games.length} Games</Text>
+          </View>
+        </View>
+        <Ionicons 
+          name={isExpanded ? "chevron-up" : "chevron-down"} 
+          size={20} 
+          color="rgba(255,255,255,0.3)" 
+        />
+      </Pressable>
+
+      {isExpanded && (
+        <View style={styles.gameGrid}>
+          {games.map((game) => (
+            <GameCard
+              key={game.id}
+              game={game}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                if (game.id === "game_tools") {
+                  router.push("/tools" as any);
+                } else if (game.hasVariants) {
+                  router.push(`/${game.id}` as any);
+                } else {
+                  router.push({ pathname: "/setup/[gameId]", params: { gameId: game.id } });
+                }
+              }}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -102,6 +146,27 @@ export default function HomeScreen() {
     () => state.sessions.filter((s) => s.isComplete).slice(0, 3),
     [state.sessions]
   );
+
+  const [expandedCategories, setExpandedCategories] = React.useState<Record<string, boolean>>({
+    card: true, // Default open
+  });
+
+  const toggleCategory = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setExpandedCategories(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const gamesByCategory = useMemo(() => {
+    const groups: Record<string, GameDefinition[]> = {};
+    MAIN_GAMES.forEach(game => {
+      if (!groups[game.category]) groups[game.category] = [];
+      groups[game.category].push(game);
+    });
+    return groups;
+  }, []);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
@@ -183,86 +248,34 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
-      <Text style={styles.sectionTitle}>Choose a Game</Text>
+      <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>Explore Library</Text>
 
       {GAME_CATEGORIES.map((cat) => {
-        const catGames = MAIN_GAMES.filter((g) => g.category === cat.id);
-        if (catGames.length === 0) return null;
+        const games = gamesByCategory[cat.id] || [];
+        if (games.length === 0) return null;
         return (
-          <View key={cat.id} style={styles.categorySection}>
-            <View style={styles.catHeader}>
-              {/* Small neumorphic badge for category icon */}
-              <NeuIconWell color="rgba(0,0,0,0.2)" size={28} borderRadius={9} style={styles.catIconBadge}>
-                <Feather name={cat.icon as any} size={13} color={CATEGORY_COLORS[cat.id]} />
-              </NeuIconWell>
-              <Text style={[styles.catLabel, { color: CATEGORY_COLORS[cat.id] }]}>
-                {cat.label.toUpperCase()}
-              </Text>
-            </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 6, paddingLeft: 2 }}
-            >
-              {catGames.map((game) => (
-                <GameCard
-                  key={game.id}
-                  game={game}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    if (game.hasVariants) {
-                      router.push(`/${game.id}` as any);
-                    } else {
-                      router.push({ pathname: "/setup/[gameId]", params: { gameId: game.id } });
-                    }
-                  }}
-                />
-              ))}
-            </ScrollView>
-          </View>
+          <CollapsibleSection
+            key={cat.id}
+            category={cat}
+            games={games}
+            isExpanded={!!expandedCategories[cat.id]}
+            onToggle={() => toggleCategory(cat.id)}
+          />
         );
       })}
 
-      {recentCompleted.length > 0 && (
-        <View style={styles.recentSection}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Recent Games</Text>
-            <Pressable onPress={() => router.push("/history")}>
-              <Text style={styles.seeAllText}>See All</Text>
-            </Pressable>
-          </View>
-          {recentCompleted.map((s) => (
-            <Pressable
-              key={s.id}
-              onPress={() => router.push({ pathname: "/results/[id]", params: { id: s.id } })}
-            >
-              <NeuTrench
-                color="rgba(0,0,0,0.2)"
-                borderRadius={16}
-                padding={14}
-                style={styles.recentRow}
-              >
-                <View style={[styles.recentColorBar, { backgroundColor: s.gameColor }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.recentGame}>{s.gameName}</Text>
-                  <Text style={styles.recentWinner}>
-                    {s.winnerName} won · {s.players.length} players
-                  </Text>
-                </View>
-                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.25)" />
-              </NeuTrench>
-            </Pressable>
-          ))}
-        </View>
-      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#1A0533" },
-  content: { paddingHorizontal: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: "#0F172A",
+  },
+  content: {
+    paddingHorizontal: 20,
+  },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -270,38 +283,17 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   greeting: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 10,
+    fontFamily: "Bungee_400Regular",
+    fontSize: 12,
     color: "rgba(255,255,255,0.4)",
-    letterSpacing: 3,
+    letterSpacing: 2,
+    marginBottom: 4,
   },
   appName: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 34,
+    fontFamily: "Bungee_400Regular",
+    fontSize: 38,
     color: "#FFFFFF",
-    letterSpacing: -0.5,
-  },
-  historyBtn: {
-    width: 44,
-    height: 44,
-    backgroundColor: "#150428",
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 6,
-    // Neumorphic history button
-    shadowColor: "#000",
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.4)",
-  },
-  // Active game card internals
-  activeCard: {
-    marginBottom: 0,
-    borderWidth: 2,
+    letterSpacing: -1,
   },
   activeBadgeRow: {
     flexDirection: "row",
@@ -320,12 +312,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#FFFFFF",
     letterSpacing: 2,
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   activeGameName: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Bungee_400Regular",
     fontSize: 22,
     color: "#FFFFFF",
     marginBottom: 3,
@@ -371,51 +360,86 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "rgba(255,255,255,0.55)",
   },
-  // Section
   sectionTitle: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Bungee_400Regular",
     fontSize: 20,
     color: "#FFFFFF",
-    marginBottom: 16,
+    marginTop: 8,
   },
-  categorySection: { marginBottom: 26 },
-  catHeader: {
+  categoryContainer: {
+    marginBottom: 16,
+    width: "100%",
+  },
+  activeCard: {
+    marginBottom: 0,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  categoryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    padding: 12,
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+  categoryHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 14,
   },
-  catIconBadge: {},
-  catLabel: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 11,
-    letterSpacing: 1.5,
-  },
-  // Clay game card
-  gameCard: {
-    width: 130,
-    height: 148,
-  },
-  iconWell: { marginBottom: 10, zIndex: 2 },
-  gameName: {
-    fontFamily: "Inter_900Black",
-    fontSize: 13,
+  categoryTitle: {
+    fontFamily: "Bungee_400Regular",
+    fontSize: 16,
     color: "#FFFFFF",
-    marginBottom: 3,
-    lineHeight: 17,
-    zIndex: 2,
-    textShadowColor: "rgba(0,0,0,0.2)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+  },
+  categorySubtitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+    color: "rgba(255,255,255,0.4)",
+    textTransform: "uppercase",
+    marginTop: -2,
+  },
+  gameGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+    gap: 12,
+    paddingHorizontal: 4,
+  },
+  gameCardWrapper: {
+    width: "30.5%", // Slightly adjusted for better gap alignment
+    marginBottom: 12,
+  },
+  gameCard: {
+    aspectRatio: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  gameName: {
+    fontFamily: "Bungee_400Regular",
+    fontSize: 12,
+    color: "#000000",
+    textAlign: "center",
+  },
+  gameCardFooter: {
+    position: "absolute",
+    bottom: 8,
+  },
+  variantCountText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 7,
+    color: "rgba(0,0,0,0.6)",
   },
   gamePlayerCount: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 11,
-    color: "rgba(255,255,255,0.7)",
-    zIndex: 2,
+    fontFamily: "Inter_900Black",
+    fontSize: 7,
+    color: "rgba(0,0,0,0.6)",
   },
   // Recent games
-  recentSection: { marginTop: 4 },
+  recentSection: { marginTop: 24 },
   sectionHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -439,14 +463,28 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   recentGame: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
+    fontFamily: "Bungee_400Regular",
+    fontSize: 16,
     color: "#FFFFFF",
   },
   recentWinner: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Inter_500Medium",
     fontSize: 12,
     color: "rgba(255,255,255,0.4)",
-    marginTop: 2,
+  },
+  historyEmpty: {
+    padding: 24,
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 20,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  historyEmptyText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
+    color: "rgba(255,255,255,0.3)",
+    marginTop: 8,
   },
 });

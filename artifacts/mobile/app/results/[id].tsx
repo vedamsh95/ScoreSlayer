@@ -29,12 +29,22 @@ function formatDuration(ms: number): string {
 
 function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] {
   if (!game) return players;
-  const isLowestWins = game.winCondition === "lowest";
-  return [...players].sort((a, b) =>
-    isLowestWins
+  const isPhase10 = game.id.startsWith("phase10") || game.parentId === "phase10";
+
+  return [...players].sort((a, b) => {
+    if (isPhase10) {
+      // Phase 10: Highest phase first, then lowest score
+      if ((b.currentPhase || 1) !== (a.currentPhase || 1)) {
+        return (b.currentPhase || 1) - (a.currentPhase || 1);
+      }
+      return a.totalScore - b.totalScore;
+    }
+
+    const isLowestWins = game.winCondition === "lowest";
+    return isLowestWins
       ? a.totalScore - b.totalScore
-      : b.totalScore - a.totalScore
-  );
+      : b.totalScore - a.totalScore;
+  });
 }
 
 export default function ResultsScreen() {
@@ -116,58 +126,6 @@ export default function ResultsScreen() {
           </Pressable>
         </NeuIconWell>
       </View>
-
-      <PolymerCard color={session.gameColor + "44"} borderRadius={32} padding={28} style={styles.winnerBanner}>
-        <View style={[styles.crownCircleShadow, { borderRadius: 40 }]}>
-          <View style={[styles.crownCircleBody, { backgroundColor: session.gameColor, borderRadius: 40 }]}>
-            <View style={styles.crownGloss} pointerEvents="none" />
-            <Text style={styles.crownEmoji}>👑</Text>
-          </View>
-        </View>
-        <Text style={[styles.winnerLabel, { color: session.gameColor }]}>WINNER</Text>
-        <Text style={styles.winnerName}>{winner?.name}</Text>
-        <Text style={styles.winnerScore}>
-          {winner?.totalScore.toLocaleString()} points
-        </Text>
-        <Text style={styles.gameMeta}>
-          {session.currentRound - 1} rounds · {duration}
-        </Text>
-      </PolymerCard>
-
-      <PolymerCard color="rgba(255,255,255,0.03)" borderRadius={24} padding={20} style={styles.scoreChart}>
-        <Text style={styles.chartTitle}>Final Standings</Text>
-        <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={20} padding={12} style={styles.chartTrench}>
-          {sortedPlayers.map((player, i) => {
-            const barWidth = Math.abs(player.totalScore) / maxScore;
-            return (
-              <View key={player.id} style={[styles.chartRow, i < sortedPlayers.length - 1 && styles.chartRowBorder]}>
-                <Text style={styles.chartRank}>#{i + 1}</Text>
-                <View style={styles.chartNameCol}>
-                  <View style={styles.chartNameRow}>
-                    <View style={[styles.chartDot, { backgroundColor: player.color }]} />
-                    <Text style={styles.chartName}>{player.name}</Text>
-                  </View>
-                  <View style={styles.barTrack}>
-                    <View
-                      style={[
-                        styles.barFill,
-                        {
-                          width: `${barWidth * 100}%` as any,
-                          backgroundColor: player.color,
-                          opacity: i === 0 ? 1 : 0.6,
-                        },
-                      ]}
-                    />
-                  </View>
-                </View>
-                <Text style={[styles.chartScore, i === 0 && { color: player.color }]}>
-                  {player.totalScore.toLocaleString()}
-                </Text>
-              </View>
-            );
-          })}
-        </NeuTrench>
-      </PolymerCard>
 
       <View style={styles.nerdCardWrap}>
         <Text style={styles.nerdCardHeading}>Your Nerd Card</Text>

@@ -35,8 +35,12 @@ export default function SetupScreen() {
   const game = getGameById(gameId ?? "");
   const [playerNames, setPlayerNames] = useState<string[]>(["", ""]);
   const [houseRules, setHouseRules] = useState<HouseRuleOverride[]>(game?.houseRules ?? []);
+  const [scoreRules, setScoreRules] = useState<any[]>(game?.scoreRules ?? []);
   const [dealerMethod, setDealerMethod] = useState<"first" | "random">("random");
   const [showRules, setShowRules] = useState(false);
+  const [showScoreRules, setShowScoreRules] = useState(false);
+  const [newRuleLabel, setNewRuleLabel] = useState("");
+  const [newRuleValue, setNewRuleValue] = useState("");
 
   if (!game) {
     return (
@@ -75,14 +79,36 @@ export default function SetupScreen() {
     );
   }, []);
 
+  const updateScoreRule = useCallback((ruleId: string, val: string) => {
+    const numVal = parseFloat(val) || 0;
+    setScoreRules((prev) =>
+      prev.map((r) => (r.id === ruleId ? { ...r, points: numVal } : r))
+    );
+  }, []);
+
+  const addCustomScoreRule = useCallback(() => {
+    if (!newRuleLabel.trim()) return;
+    const points = parseFloat(newRuleValue) || 0;
+    const newId = `custom_${Date.now()}`;
+    setScoreRules((prev) => [...prev, { id: newId, label: newRuleLabel.trim(), points }]);
+    setNewRuleLabel("");
+    setNewRuleValue("");
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [newRuleLabel, newRuleValue]);
+
+  const removeScoreRule = useCallback((id: string) => {
+    setScoreRules((prev) => prev.filter(r => r.id !== id));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
   const startGame = useCallback(() => {
     const validNames = playerNames.map((n, i) =>
       n.trim() || PLAYER_SUGGESTIONS[i] || `Player ${i + 1}`
     );
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const session = createSession(game, validNames, houseRules);
+    const session = createSession(game, validNames, houseRules, scoreRules);
     router.replace({ pathname: "/game/[id]", params: { id: session.id } });
-  }, [playerNames, houseRules, dealerMethod, game, createSession]);
+  }, [playerNames, houseRules, scoreRules, game, createSession]);
 
   const canStart = playerNames.length >= game.minPlayers && playerNames.length <= game.maxPlayers;
 
@@ -107,7 +133,7 @@ export default function SetupScreen() {
           <View style={[styles.gameChipShadow, { borderRadius: 14 }]}>
             <View style={[styles.gameChipBody, { backgroundColor: game.color, borderRadius: 14 }]}>
               <View style={styles.gameChipGloss} pointerEvents="none" />
-              <Feather name={game.icon as any} size={14} color="#1A0533" />
+              <Ionicons name={game.icon as any} size={14} color="#1A0533" />
               <Text style={styles.gameChipText}>{game.name}</Text>
             </View>
           </View>
@@ -123,6 +149,112 @@ export default function SetupScreen() {
             <Text style={styles.objectiveText}>{game.objective}</Text>
           </View>
         </NeuTrench>
+
+        {/* Action Row for Rules */}
+        {(houseRules.length > 0 || scoreRules.length > 0) && (
+          <View style={styles.rulesActionRow}>
+            <BrandButton
+              onPress={() => setShowRules(!showRules)}
+              color={showRules ? "#FFB800" : "rgba(255,255,255,0.1)"}
+              borderRadius={16}
+              style={{ flex: 1, height: 48 }}
+            >
+              <View style={styles.rulesBtnContent}>
+                <Ionicons name="options-outline" size={18} color={showRules ? "#1A0533" : "#FFFFFF"} />
+                <Text style={[styles.rulesBtnText, { color: showRules ? "#1A0533" : "#FFFFFF" }]}>HOUSE RULES</Text>
+              </View>
+            </BrandButton>
+          </View>
+        )}
+
+        {/* Expandable House Rules Section */}
+        {showRules && (
+          <View style={styles.expandedRulesSection}>
+            {houseRules.length > 0 && (
+              <View style={{ marginBottom: 16 }}>
+                <Text style={styles.rulesSubLabel}>Gameplay Modifiers</Text>
+                <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={20} padding={12}>
+                  {houseRules.map((rule) => (
+                    <View key={rule.ruleId} style={styles.ruleRow}>
+                      <Text style={styles.ruleLabel}>{rule.label}</Text>
+                      <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={12} padding={0} style={styles.ruleInputTrench}>
+                        <TextInput
+                          style={styles.ruleInput}
+                          value={String(rule.currentValue)}
+                          onChangeText={(v) => updateHouseRule(rule.ruleId, v)}
+                          keyboardType="numbers-and-punctuation"
+                          selectTextOnFocus
+                        />
+                      </NeuTrench>
+                    </View>
+                  ))}
+                </NeuTrench>
+              </View>
+            )}
+
+            {scoreRules.length > 0 && (
+              <View>
+                <Text style={styles.rulesSubLabel}>Calculator Buttons</Text>
+                <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={20} padding={12}>
+                  <View style={styles.scoreRulesGrid}>
+                    {scoreRules.map((rule) => (
+                      <View key={rule.id} style={styles.scoreRuleItem}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.scoreRuleLabel} numberOfLines={1}>{rule.label}</Text>
+                        </View>
+                        <View style={styles.ruleInputActions}>
+                          <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={12} padding={0} style={styles.scoreInputTrench}>
+                            <TextInput
+                              style={styles.scoreInput}
+                              value={String(rule.points)}
+                              onChangeText={(v) => updateScoreRule(rule.id, v)}
+                              keyboardType="numeric"
+                              selectTextOnFocus
+                            />
+                          </NeuTrench>
+                          {game.id === 'custom_game' && (
+                            <Pressable onPress={() => removeScoreRule(rule.id)} style={styles.miniX}>
+                              <Ionicons name="close-circle" size={16} color="rgba(255,80,80,0.4)" />
+                            </Pressable>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+
+                  {game.id === 'custom_game' && (
+                    <View style={styles.addRuleRow}>
+                      <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={12} padding={0} style={[styles.inputTrench, { flex: 2, height: 38 }]}>
+                        <TextInput
+                          placeholder="Button Name"
+                          placeholderTextColor="rgba(255,255,255,0.2)"
+                          style={styles.ruleMiniInput}
+                          value={newRuleLabel}
+                          onChangeText={setNewRuleLabel}
+                        />
+                      </NeuTrench>
+                      <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={12} padding={0} style={[styles.inputTrench, { flex: 1, height: 38 }]}>
+                        <TextInput
+                          placeholder="Pts"
+                          placeholderTextColor="rgba(255,255,255,0.2)"
+                          style={[styles.ruleMiniInput, { textAlign: 'center' }]}
+                          value={newRuleValue}
+                          onChangeText={setNewRuleValue}
+                          keyboardType="numeric"
+                        />
+                      </NeuTrench>
+                      <Pressable onPress={addCustomScoreRule} style={styles.addBtnContainer}>
+                        <NeuIconWell color="rgba(0,245,160,0.15)" size={38} borderRadius={10}>
+                          <Ionicons name="add" size={20} color="#00F5A0" />
+                        </NeuIconWell>
+                      </Pressable>
+                    </View>
+                  )}
+                </NeuTrench>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Players section */}
         <View style={styles.section}>
@@ -210,35 +342,6 @@ export default function SetupScreen() {
           </View>
         </View>
 
-        {/* House Rules */}
-        {houseRules.length > 0 && (
-          <View style={styles.section}>
-            <Pressable style={styles.rulesHeader} onPress={() => setShowRules(!showRules)}>
-              <View>
-                <Text style={styles.sectionLabel}>House Rules</Text>
-                <Text style={styles.sectionHint}>Customize scoring</Text>
-              </View>
-              <NeuIconWell color="rgba(0,0,0,0.2)" size={32} borderRadius={10}>
-                <Ionicons name={showRules ? "chevron-up" : "chevron-down"} size={14} color="rgba(255,255,255,0.5)" />
-              </NeuIconWell>
-            </Pressable>
-
-            {showRules && houseRules.map((rule) => (
-              <View key={rule.ruleId} style={styles.ruleRow}>
-                <Text style={styles.ruleLabel}>{rule.label}</Text>
-                <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={12} padding={0} style={styles.ruleInputTrench}>
-                  <TextInput
-                    style={styles.ruleInput}
-                    value={String(rule.currentValue)}
-                    onChangeText={(v) => updateHouseRule(rule.ruleId, v)}
-                    keyboardType="numbers-and-punctuation"
-                    selectTextOnFocus
-                  />
-                </NeuTrench>
-              </View>
-            ))}
-          </View>
-        )}
 
         <BrandButton
           onPress={startGame}
@@ -274,18 +377,24 @@ const styles = StyleSheet.create({
     position: "absolute", top: 2, left: 5, width: "50%", height: "55%",
     backgroundColor: "rgba(255,255,255,0.22)", borderBottomRightRadius: 20,
   },
-  gameChipText: { fontFamily: "Inter_700Bold", fontSize: 13, color: "#1A0533", zIndex: 2 },
-  heading: { fontFamily: "Inter_700Bold", fontSize: 30, color: "#FFFFFF", marginBottom: 6 },
-  subheading: { fontFamily: "Inter_400Regular", fontSize: 14, color: "rgba(255,255,255,0.45)", marginBottom: 16, lineHeight: 20 },
+  gameChipText: { fontFamily: "Bungee_400Regular", fontSize: 11, color: "#1A0533", zIndex: 2, paddingTop: 2 },
+  heading: { fontFamily: "Bungee_400Regular", fontSize: 24, color: "#FFFFFF", marginBottom: 6 },
+  subheading: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 16, lineHeight: 18 },
   // Objective
-  objectiveCard: { marginBottom: 28 },
+  objectiveCard: { marginBottom: 20 },
   objectiveRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  objectiveText: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.65)", flex: 1, lineHeight: 18 },
+  objectiveText: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.55)", flex: 1, lineHeight: 18 },
+  // Rules Action
+  rulesActionRow: { marginBottom: 24 },
+  rulesBtnContent: { flexDirection: "row", alignItems: "center", gap: 8 },
+  rulesBtnText: { fontFamily: "Bungee_400Regular", fontSize: 12, paddingTop: 3 },
+  expandedRulesSection: { marginBottom: 24 },
+  rulesSubLabel: { fontFamily: "Bungee_400Regular", fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 8, marginLeft: 4 },
   // Section
   section: { marginBottom: 26 },
   sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 },
-  sectionLabel: { fontFamily: "Inter_700Bold", fontSize: 16, color: "#FFFFFF" },
-  sectionHint: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.35)" },
+  sectionLabel: { fontFamily: "Bungee_400Regular", fontSize: 14, color: "#FFFFFF" },
+  sectionHint: { fontFamily: "Inter_400Regular", fontSize: 11, color: "rgba(255,255,255,0.3)" },
   // Player rows
   playerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   colorDotShadow: {
@@ -304,7 +413,7 @@ const styles = StyleSheet.create({
   },
   removeBtn: {},
   addPlayerRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
-  addPlayerText: { fontFamily: "Inter_600SemiBold", fontSize: 14, color: "#00F5A0" },
+  addPlayerText: { fontFamily: "Bungee_400Regular", fontSize: 12, color: "#00F5A0", paddingTop: 2 },
   // Dealer options
   dealerRow: { flexDirection: "row", gap: 10 },
   dealerOptionShadow: {
@@ -319,20 +428,20 @@ const styles = StyleSheet.create({
     position: "absolute", top: 2, left: 6, width: "45%", height: "55%",
     backgroundColor: "rgba(255,255,255,0.28)", borderBottomRightRadius: 20,
   },
-  dealerTextActive: { fontFamily: "Inter_700Bold", fontSize: 13, color: "#1A0533", zIndex: 2 },
+  dealerTextActive: { fontFamily: "Bungee_400Regular", fontSize: 11, color: "#1A0533", zIndex: 2, paddingTop: 3 },
   dealerOptionNeu: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
-  dealerTextInactive: { fontFamily: "Inter_500Medium", fontSize: 13, color: "rgba(255,255,255,0.4)" },
+  dealerTextInactive: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.3)", textTransform: "uppercase" },
   // House rules
   rulesHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   ruleRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingVertical: 8, gap: 12,
   },
-  ruleLabel: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.65)", flex: 1 },
-  ruleInputTrench: { minWidth: 75, height: 40, justifyContent: "center" },
+  ruleLabel: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.6)", flex: 1 },
+  ruleInputTrench: { minWidth: 70, height: 36, justifyContent: "center" },
   ruleInput: {
-    fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#FFB800",
-    textAlign: "center", paddingHorizontal: 12, height: 40,
+    fontFamily: "Bungee_400Regular", fontSize: 12, color: "#FFB800",
+    textAlign: "center", paddingHorizontal: 10, height: 36, paddingTop: 4
   },
   startBtn: { marginTop: 10 },
   startBtnContent: {
@@ -341,12 +450,74 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   brandBtnText: {
-    fontFamily: "Inter_900Black",
+    fontFamily: "Bungee_400Regular",
     fontSize: 16,
     color: "#FFFFFF",
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     textShadowColor: "rgba(0,0,0,0.2)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+    paddingTop: 4,
   },
+  // Card rules
+  scoreRulesGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  scoreRuleItem: {
+    width: "48%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  scoreRuleLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    color: "rgba(255,255,255,0.5)",
+    flex: 1,
+    marginRight: 4,
+  },
+  scoreInputTrench: {
+    width: 46,
+    height: 32,
+    justifyContent: "center",
+  },
+  scoreInput: {
+    fontFamily: "Bungee_400Regular",
+    fontSize: 11,
+    color: "#00F5A0",
+    textAlign: "center",
+    paddingHorizontal: 2,
+    height: 32,
+    paddingTop: 3
+  },
+  ruleMiniInput: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    color: "#FFFFFF",
+    paddingHorizontal: 10,
+    height: 38,
+  },
+  addRuleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+  },
+  addBtnContainer: {
+    marginLeft: 4,
+  },
+  ruleInputActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  miniX: {
+    padding: 2,
+  }
 });

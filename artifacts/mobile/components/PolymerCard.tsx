@@ -114,21 +114,25 @@ export const BrandButton = ({
   color = "#8B5CF6",
   highlight = "#A78BFA",
   shadow = "#6D28D9",
-  glowColor = "rgba(139, 92, 246, 0.4)"
-}: Props & { onPress?: () => void, highlight?: string, shadow?: string, glowColor?: string }) => (
+  glowColor = "rgba(139, 92, 246, 0.4)",
+  disabled = false
+}: Props & { onPress?: () => void, highlight?: string, shadow?: string, glowColor?: string, disabled?: boolean }) => (
   <Pressable 
+    disabled={disabled}
     onPress={() => {
+      if (disabled) return;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onPress?.();
     }}
     style={({ pressed }) => [
       {
         shadowColor: glowColor,
-        shadowOffset: { width: 0, height: pressed ? 4 : 20 },
-        shadowOpacity: pressed ? 0.2 : 0.4,
-        shadowRadius: pressed ? 10 : 40,
-        elevation: pressed ? 4 : 20,
+        shadowOffset: { width: 0, height: (pressed && !disabled) ? 4 : 20 },
+        shadowOpacity: (pressed && !disabled) ? 0.2 : 0.4,
+        shadowRadius: (pressed && !disabled) ? 10 : 40,
+        elevation: (pressed && !disabled) ? 4 : 20,
         borderRadius,
+        opacity: disabled ? 0.5 : 1,
       },
       style as ViewStyle
     ]}
@@ -139,21 +143,21 @@ export const BrandButton = ({
         { 
           borderRadius,
           backgroundColor: color,
-          transform: [{ translateY: pressed ? 4 : 0 }]
+          transform: [{ translateY: (pressed && !disabled) ? 4 : 0 }]
         }
       ]}>
         <View 
           pointerEvents="none"
           style={[
             styles.brandInnerHighlight, 
-            { borderRadius, borderColor: pressed ? shadow : highlight },
+            { borderRadius, borderColor: (pressed && !disabled) ? shadow : highlight },
           ]} 
         />
         <View 
           pointerEvents="none"
           style={[
             styles.brandInnerShadow, 
-            { borderRadius, borderColor: pressed ? highlight : shadow },
+            { borderRadius, borderColor: (pressed && !disabled) ? highlight : shadow },
           ]} 
         />
         {children}

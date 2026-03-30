@@ -48,6 +48,7 @@ export default function HistoryScreen() {
 
   const [showDeleteAllAlert, setShowDeleteAllAlert] = React.useState(false);
   const [sessionToDelete, setSessionToDelete] = React.useState<{id: string, name: string} | null>(null);
+  const [activeTab, setActiveTab] = React.useState<"live" | "completed">("live");
 
   const completedSessions = sortedSessions.filter((s) => s.isComplete);
   const activeSessions = sortedSessions.filter((s) => !s.isComplete);
@@ -82,36 +83,58 @@ export default function HistoryScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.topRow}>
-        <BrandButton 
-          style={{ width: 44, height: 44 }}
-          borderRadius={14} 
-          color="#150428"
-          highlight="rgba(255,255,255,0.1)"
-          shadow="rgba(0,0,0,0.5)"
-          glowColor="rgba(0,0,0,0.3)"
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
-        </BrandButton>
         <Text style={styles.heading}>Game History</Text>
         
         {state.sessions.length > 0 && (
-          <BrandButton
-            onPress={() => setShowDeleteAllAlert(true)}
-            color="#FF2D78"
-            shadow="#C2004D"
-            highlight="#FF70A5"
-            borderRadius={12}
-            style={{ width: 40, height: 40, marginRight: 8 }}
-          >
-            <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-          </BrandButton>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <BrandButton
+              onPress={() => setShowDeleteAllAlert(true)}
+              color="#FF2D78"
+              shadow="#C2004D"
+              highlight="#FF70A5"
+              borderRadius={12}
+              style={{ width: 40, height: 40 }}
+            >
+              <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+            </BrandButton>
+            
+            <NeuTrench color="rgba(255,255,255,0.1)" borderRadius={10} padding={4} style={styles.countBadge}>
+              <Text style={styles.countText}>{state.sessions.length}</Text>
+            </NeuTrench>
+          </View>
         )}
-        
-        <NeuTrench color="rgba(255,255,255,0.1)" borderRadius={10} padding={4} style={styles.countBadge}>
-          <Text style={styles.countText}>{state.sessions.length}</Text>
-        </NeuTrench>
       </View>
+
+      {state.sessions.length > 0 && (
+        <View style={styles.tabSwitcherWrapper}>
+          <NeuTrench color="rgba(255,255,255,0.05)" borderRadius={16} padding={4} style={styles.tabSwitcher}>
+            <Pressable 
+              onPress={() => {
+                setActiveTab("live");
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              style={[styles.tabItem, activeTab === "live" && styles.activeTabItem]}
+            >
+              <View style={[styles.tabBg, activeTab === "live" && { backgroundColor: "rgba(255,255,255,0.1)" }]} />
+              <Text style={[styles.tabLabel, activeTab === "live" && styles.activeTabLabel]}>
+                Live ({activeSessions.length})
+              </Text>
+            </Pressable>
+            <Pressable 
+              onPress={() => {
+                setActiveTab("completed");
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              style={[styles.tabItem, activeTab === "completed" && styles.activeTabItem]}
+            >
+              <View style={[styles.tabBg, activeTab === "completed" && { backgroundColor: "rgba(255,255,255,0.1)" }]} />
+              <Text style={[styles.tabLabel, activeTab === "completed" && styles.activeTabLabel]}>
+                Completed ({completedSessions.length})
+              </Text>
+            </Pressable>
+          </NeuTrench>
+        </View>
+      )}
 
       {state.sessions.length === 0 && (
         <View style={styles.emptyState}>
@@ -134,9 +157,8 @@ export default function HistoryScreen() {
         </View>
       )}
 
-      {activeSessions.length > 0 && (
+      {activeTab === "live" && activeSessions.length > 0 && (
         <View style={styles.group}>
-          <Text style={styles.groupLabel}>Active</Text>
           {activeSessions.map((s) => (
             <Pressable
               key={s.id}
@@ -144,7 +166,7 @@ export default function HistoryScreen() {
                 router.push({ pathname: "/game/[id]", params: { id: s.id } })
               }
               onLongPress={() => handleDelete(s.id, s.gameName)}
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: 16 }}
             >
               <PolymerCard 
                 color={s.gameColor + "CC"} 
@@ -168,18 +190,8 @@ export default function HistoryScreen() {
                       Round {s.currentRound} · {s.players.length} players
                     </Text>
                     <Text style={styles.sessionDate}>
-                      {formatDate(s.startedAt)}
+                      Started {formatDate(s.startedAt)}
                     </Text>
-                    <View style={styles.playerChips}>
-                      {s.players.map((p) => (
-                        <NeuTrench key={p.id} color="rgba(0,0,0,0.15)" borderRadius={8} padding={4} style={styles.playerChip}>
-                          <View
-                            style={[styles.chipDot, { backgroundColor: p.color }]}
-                          />
-                          <Text style={styles.chipName}>{p.name}</Text>
-                        </NeuTrench>
-                      ))}
-                    </View>
                   </View>
                   <View style={styles.sessionRight}>
                     <BrandButton
@@ -205,9 +217,8 @@ export default function HistoryScreen() {
         </View>
       )}
 
-      {completedSessions.length > 0 && (
+      {activeTab === "completed" && completedSessions.length > 0 && (
         <View style={styles.group}>
-          <Text style={styles.groupLabel}>Completed</Text>
           {completedSessions.map((s) => (
             <Pressable
               key={s.id}
@@ -271,6 +282,22 @@ export default function HistoryScreen() {
         </View>
       )}
 
+      {activeTab === "live" && activeSessions.length === 0 && state.sessions.length > 0 && (
+         <View style={styles.emptyState}>
+           <Feather name="play-circle" size={48} color="rgba(255,255,255,0.1)" />
+           <Text style={styles.emptyTitle}>No Live Games</Text>
+           <Text style={styles.emptySubtitle}>All your games are currently finished.</Text>
+         </View>
+      )}
+
+      {activeTab === "completed" && completedSessions.length === 0 && state.sessions.length > 0 && (
+         <View style={styles.emptyState}>
+           <Feather name="award" size={48} color="rgba(255,255,255,0.1)" />
+           <Text style={styles.emptyTitle}>No Completed Games</Text>
+           <Text style={styles.emptySubtitle}>Your first victory is waiting!</Text>
+         </View>
+      )}
+
       {state.sessions.length > 0 && (
         <Text style={styles.longPressHint}>
           Long-press any session to delete
@@ -313,16 +340,37 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 28,
+    justifyContent: "space-between",
+    marginBottom: 20,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 13,
+  tabSwitcherWrapper: {
+    marginBottom: 24,
+  },
+  tabSwitcher: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  tabItem: {
+    flex: 1,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
+  },
+  tabBg: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 12,
+  },
+  activeTabItem: {
+    // optional shadow or border
+  },
+  tabLabel: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.4)",
+  },
+  activeTabLabel: {
+    color: "#00F5A0",
   },
   heading: {
     fontFamily: "Inter_700Bold",
@@ -360,13 +408,6 @@ const styles = StyleSheet.create({
     maxWidth: 260,
     lineHeight: 20,
   },
-  emptyBtn: {
-    marginTop: 16,
-    backgroundColor: "#00F5A0",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 14,
-  },
   emptyBtnText: {
     fontFamily: "Inter_700Bold",
     fontSize: 14,
@@ -382,16 +423,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 2,
     marginBottom: 12,
-  },
-  sessionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 16,
-    marginBottom: 10,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
   },
   sessionPolyCard: {
     borderWidth: 1.5,

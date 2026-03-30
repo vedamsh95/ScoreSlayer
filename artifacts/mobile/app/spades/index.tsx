@@ -39,38 +39,19 @@ export default function SpadesVariantPicker() {
           </View>
         </View>
 
-        <View style={styles.variantList}>
+        <View style={styles.variantsGrid}>
           {SPADES_VARIANTS.map((v) => (
             <Pressable
               key={v.id}
               onPress={() => {
-                Haptics.selectionAsync();
-                router.push({ pathname: "/spades/[variantId]", params: { variantId: v.id } });
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push({ pathname: "/setup/[gameId]", params: { gameId: v.id } });
               }}
+              style={styles.cardWrapper}
             >
-              <PolymerCard color={v.color} style={styles.variantCard}>
-                <View style={styles.cardContent}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardMeta}>
-                      <Text style={styles.cardName}>{v.name}</Text>
-                      {v.badge && (
-                        <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={8} padding={4} style={styles.badge}>
-                          <Text style={[styles.badgeText, { color: v.color }]}>{v.badge}</Text>
-                        </NeuTrench>
-                      )}
-                    </View>
-                    <View style={[styles.iconWell, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-                      <Feather name={v.icon as any} size={18} color="#FFFFFF" />
-                    </View>
-                  </View>
-                  <Text style={styles.tagline}>{v.tagline}</Text>
-                  <View style={styles.footer}>
-                    <Text style={styles.description} numberOfLines={2}>{v.description}</Text>
-                    <View style={styles.arrowContainer}>
-                      <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
-                    </View>
-                  </View>
-                </View>
+            <PolymerCard color={v.color} borderRadius={20} padding={12} style={styles.variantCard}>
+                <Text style={styles.variantName} numberOfLines={1}>{v.name}</Text>
+                <Text style={styles.variantTagline} numberOfLines={2}>{v.tagline}</Text>
               </PolymerCard>
             </Pressable>
           ))}
@@ -91,24 +72,29 @@ export default function SpadesVariantPicker() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { paddingHorizontal: 20 },
-  header: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 32 },
-  headerIcon: { marginBottom: 0 },
-  title: { fontSize: 28, fontWeight: "bold", color: "#FFFFFF", letterSpacing: -0.5 },
-  subtitle: { fontSize: 16, color: "rgba(255,255,255,0.5)", marginTop: 2 },
-  variantList: { gap: 16 },
-  variantCard: { width: "100%" },
-  cardContent: { padding: 18 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  cardMeta: { flex: 1, marginRight: 12 },
-  cardName: { fontSize: 20, fontWeight: "bold", color: "#FFFFFF", marginBottom: 8 },
-  badge: { alignSelf: "flex-start" },
-  badgeText: { fontSize: 9, fontWeight: "bold", letterSpacing: 1.2 },
-  iconWell: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  tagline: { fontSize: 14, fontWeight: "600", color: "rgba(255,255,255,0.9)", marginBottom: 12 },
-  footer: { flexDirection: "row", alignItems: "center", gap: 12 },
-  description: { flex: 1, fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 18 },
-  arrowContainer: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
+  container: { flex: 1, backgroundColor: "#150428" },
+  content: { paddingHorizontal: 18 },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
+  headerIcon: { width: 42, height: 42, alignItems: "center", justifyContent: "center" },
+  title: { fontFamily: "Bungee_400Regular", fontSize: 22, color: "#FFFFFF", letterSpacing: -0.3 },
+  subtitle: { fontFamily: "Inter_700Bold", fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: 2, textTransform: "uppercase", marginTop: -2 },
+  variantsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  cardWrapper: {
+    width: "31.2%",
+    marginBottom: 8,
+  },
+  variantCard: {
+    padding: 8,
+    height: 72,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  variantName: { fontFamily: "Bungee_400Regular", fontSize: 10, color: "#1A0533", textAlign: "center", paddingTop: 2 },
+  variantTagline: { fontFamily: "Inter_900Black", fontSize: 6, color: "rgba(26,5,51,0.5)", lineHeight: 8, marginTop: 4, textAlign: "center", textTransform: "uppercase" },
+  tapRow: { display: "none" },
   backFab: { position: "absolute", alignSelf: "center", width: "80%" },
 });

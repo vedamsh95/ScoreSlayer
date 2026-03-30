@@ -14,6 +14,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }} />
         <Label>Games</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="history">
+        <Icon sf={{ default: "clock", selected: "clock.fill" }} />
+        <Label>History</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -59,6 +63,18 @@ function ClassicTabLayout() {
               <SymbolView name="gamecontroller.fill" tintColor={color} size={22} />
             ) : (
               <Feather name="grid" size={20} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="clock.fill" tintColor={color} size={19} />
+            ) : (
+              <Feather name="clock" size={18} color={color} />
             ),
         }}
       />

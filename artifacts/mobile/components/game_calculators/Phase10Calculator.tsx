@@ -12,10 +12,11 @@ interface Phase10CalculatorProps {
   initialLogs?: number[];
   initialCleared?: boolean;
   initialPhase?: number;
+  customScoreRules?: any[];
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
-export function Phase10Calculator({ player, game, initialLogs, initialCleared, onUpdate }: Phase10CalculatorProps) {
+export function Phase10Calculator({ player, game, initialLogs, initialCleared, initialPhase, customScoreRules, onUpdate }: Phase10CalculatorProps) {
   const [logs, setLogs] = useState<number[]>(initialLogs || []);
   const [cleared, setCleared] = useState<boolean>(initialCleared !== undefined ? initialCleared : false);
 
@@ -44,39 +45,39 @@ export function Phase10Calculator({ player, game, initialLogs, initialCleared, o
     setCleared(prev => !prev);
   };
 
-  const handlePhaseWin = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setCleared(true);
-    setLogs([]);
-  };
 
-  const actionCards = [
-    { label: "Skip", value: 15, icon: "block-helper", color: "#FF9F43" },
-    { label: "Wild", value: 25, icon: "star-circle", color: "#FFB800" }
-  ];
+  const actionCards = useMemo(() => {
+    if (customScoreRules && customScoreRules.length > 0) {
+      // Look for Skip and Wild specifically
+      const skip = customScoreRules.find(r => r.label.toLowerCase().includes("skip") || r.id?.includes("skip"));
+      const wild = customScoreRules.find(r => r.label.toLowerCase().includes("wild") || r.id?.includes("wild"));
+      
+      return [
+        { label: "Skip", value: skip?.points ?? 15, icon: "block-helper", color: "#FF9F43" },
+        { label: "Wild", value: wild?.points ?? 25, icon: "star-circle", color: "#FFB800" }
+      ];
+    }
+    return [
+      { label: "Skip", value: 15, icon: "block-helper", color: "#FF9F43" },
+      { label: "Wild", value: 25, icon: "star-circle", color: "#FFB800" }
+    ];
+  }, [customScoreRules]);
+
+  const getNumberPoints = useCallback((num: number) => {
+    if (customScoreRules && customScoreRules.length > 0) {
+      if (num <= 9) {
+        const low = customScoreRules.find(r => r.label.toLowerCase().includes("1–9") || r.label.toLowerCase().includes("low") || r.id?.includes("low"));
+        return low?.points ?? 5;
+      } else {
+        const high = customScoreRules.find(r => r.label.toLowerCase().includes("10–12") || r.label.toLowerCase().includes("high") || r.id?.includes("high"));
+        return high?.points ?? 10;
+      }
+    }
+    return num <= 9 ? 5 : 10;
+  }, [customScoreRules]);
 
   return (
     <View style={styles.container}>
-      <View style={{ marginBottom: 16 }}>
-        <NeuButton 
-          onPress={handlePhaseWin}
-          color="#00F5A0"
-          borderRadius={18}
-          style={styles.winNeuBtn}
-        >
-          <View style={styles.btnInner}>
-            <MaterialCommunityIcons 
-              name="trophy-outline" 
-              size={18} 
-              color={cleared && logs.length === 0 ? "#1A0533" : "rgba(26,5,51,0.5)"} 
-            />
-            <Text style={[
-              styles.winText, 
-              { color: cleared && logs.length === 0 ? "#1A0533" : "rgba(26,5,51,0.5)" }
-            ]}>FINISHED PHASE / 0 PTS</Text>
-          </View>
-        </NeuButton>
-      </View>
 
       <NeuTrench color="#150428" borderRadius={20} padding={16} style={styles.displayArea}>
         <View style={styles.displayTextRow}>
@@ -136,7 +137,7 @@ export function Phase10Calculator({ player, game, initialLogs, initialCleared, o
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
         <View style={styles.grid}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => {
-            const pts = num <= 9 ? 5 : 10;
+            const pts = getNumberPoints(num);
             return (
               <NeuButton
                 key={num}

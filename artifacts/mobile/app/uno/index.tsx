@@ -22,129 +22,31 @@ import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 // ─── Clay Variant Card ───────────────────────────────────────────────────────
 function VariantCard({ variant }: { variant: UnoVariantDef }) {
   const scale = useSharedValue(1);
-  const shadowOpacity = useSharedValue(0.55);
-  const shadowOffset = useSharedValue(12);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    shadowOpacity: shadowOpacity.value,
-    shadowRadius: shadowOffset.value,
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.94, { damping: 18, stiffness: 500 });
-    shadowOpacity.value = withSpring(0.2, { damping: 18, stiffness: 500 });
-    shadowOffset.value = withSpring(4, { damping: 18, stiffness: 500 });
+    scale.value = withSpring(0.96, { damping: 18, stiffness: 500 });
   };
   const handlePressOut = () => {
     scale.value = withSpring(1, { damping: 14, stiffness: 380 });
-    shadowOpacity.value = withSpring(0.55, { damping: 14, stiffness: 380 });
-    shadowOffset.value = withSpring(12, { damping: 14, stiffness: 380 });
   };
 
-  // Build number preview chips — show first 5 numbers
-  const numMin = variant.numberRange.min;
-  const numMax = variant.numberRange.max;
-  const previewNums = variant.hasAllWild
-    ? []
-    : Array.from({ length: Math.min(numMax - numMin + 1, 6) }, (_, i) => numMin + i);
-
-  // All unique point values across cards
-  const allPoints = Array.from(
-    new Set(variant.scoringGroups.flatMap((g) => g.cards.map((c) => c.points)))
-  ).sort((a, b) => a - b);
-
   return (
-    <Animated.View
-      style={[
-        styles.cardShadow,
-        animStyle,
-        { shadowColor: variant.color, borderRadius: 26 },
-      ]}
-    >
+    <Animated.View style={[styles.cardWrapper, animStyle]}>
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push({ pathname: "/uno/[variantId]", params: { variantId: variant.id } });
+          router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
         }}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={[styles.cardBody, { backgroundColor: variant.color, borderRadius: 26 }]}
+        style={[styles.cardBody, { backgroundColor: variant.color, borderRadius: 16 }]}
       >
-        {/* Top row: icon well + badge */}
-        <View style={styles.cardTop}>
-          <NeuIconWell color={darken(variant.color, 0.45)} size={44} borderRadius={14}>
-            <Feather name={variant.icon as any} size={20} color={variant.color} />
-          </NeuIconWell>
-          {variant.badge && (
-            <NeuTrench
-              color={darken(variant.color, 0.4)}
-              borderRadius={8}
-              padding={0}
-              style={styles.badge}
-            >
-              <Text style={[styles.badgeText, { color: variant.color }]}>{variant.badge}</Text>
-            </NeuTrench>
-          )}
-        </View>
-
-        {/* Name + tagline */}
-        <Text style={styles.variantName}>{variant.name}</Text>
+        <Text style={styles.variantName} numberOfLines={2}>{variant.name}</Text>
         <Text style={styles.variantTagline} numberOfLines={2}>{variant.tagline}</Text>
-
-        {/* Neumorphic stat row */}
-        <View style={styles.statRow}>
-          <NeuTrench color={darken(variant.color, 0.4)} borderRadius={10} padding={7} style={styles.statChip}>
-            <Ionicons name="albums-outline" size={11} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statText}>{variant.deckSize} cards</Text>
-          </NeuTrench>
-          <NeuTrench color={darken(variant.color, 0.4)} borderRadius={10} padding={7} style={styles.statChip}>
-            <Ionicons name="flag-outline" size={11} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statText}>{variant.targetScore} pts</Text>
-          </NeuTrench>
-        </View>
-
-        {/* Number preview chips */}
-        {variant.hasAllWild ? (
-          <NeuTrench color={darken(variant.color, 0.4)} borderRadius={10} padding={8} style={styles.allWildChip}>
-            <Ionicons name="star" size={12} color="#FFB800" />
-            <Text style={styles.allWildText}>All Wild — No Number Cards</Text>
-          </NeuTrench>
-        ) : (
-          <View style={styles.numPreviewRow}>
-            {previewNums.map((n) => (
-              <NeuTrench
-                key={n}
-                color={darken(variant.color, 0.45)}
-                borderRadius={8}
-                padding={0}
-                style={styles.numChip}
-              >
-                <Text style={[styles.numChipText, { color: "#fff" }]}>{n}</Text>
-              </NeuTrench>
-            ))}
-            {numMax - numMin + 1 > 6 && (
-              <NeuTrench color={darken(variant.color, 0.45)} borderRadius={8} padding={0} style={styles.numChip}>
-                <Text style={[styles.numChipText, { color: "rgba(255,255,255,0.5)" }]}>…{numMax}</Text>
-              </NeuTrench>
-            )}
-          </View>
-        )}
-
-        {/* Point value pills */}
-        <View style={styles.pointRow}>
-          {allPoints.map((pts) => (
-            <View key={pts} style={[styles.pointPill, { backgroundColor: "rgba(0,0,0,0.25)" }]}>
-              <Text style={styles.pointPillText}>{pts === 0 ? "FV" : `+${pts}`}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Tap hint */}
-        <View style={styles.tapRow}>
-          <Text style={styles.tapText}>View cards & play</Text>
-          <Feather name="arrow-right" size={13} color="rgba(255,255,255,0.6)" />
-        </View>
       </Pressable>
     </Animated.View>
   );
@@ -187,7 +89,7 @@ export default function UnoVariantsScreen() {
 
         {/* Big clay UNO badge */}
         <View style={styles.unoBadgeShadow}>
-          <View style={styles.unoBadgeBody}>
+          <View style={[styles.unoBadgeBody, { backgroundColor: "#FF5A05" }]}>
             <View style={styles.unoBadgeGloss} pointerEvents="none" />
             <Text style={styles.unoBadgeText}>UNO</Text>
           </View>
@@ -210,10 +112,12 @@ export default function UnoVariantsScreen() {
         <View style={styles.countDivider} />
       </View>
 
-      {/* Variant cards */}
-      {UNO_VARIANTS.map((variant) => (
-        <VariantCard key={variant.id} variant={variant} />
-      ))}
+      {/* Variant cards grid */}
+      <View style={styles.variantsGrid}>
+        {UNO_VARIANTS.map((variant) => (
+          <VariantCard key={variant.id} variant={variant} />
+        ))}
+      </View>
     </ScrollView>
   );
 }
@@ -226,70 +130,51 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
   backPressable: { width: 42, height: 42, alignItems: "center", justifyContent: "center" },
   titleBlock: { flex: 1 },
-  headerEyebrow: { fontFamily: "Inter_700Bold", fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: 3 },
-  headerTitle: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#FFFFFF", letterSpacing: -0.3 },
+  headerEyebrow: { fontFamily: "Bungee_400Regular", fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: 2 },
+  headerTitle: { fontFamily: "Bungee_400Regular", fontSize: 22, color: "#FFFFFF", letterSpacing: -0.3, marginTop: 2 },
 
   // UNO badge
   unoBadgeShadow: {
-    shadowColor: "#FF2D78", shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.7, shadowRadius: 14, elevation: 10,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4, shadowRadius: 10, elevation: 8,
   },
   unoBadgeBody: {
-    backgroundColor: "#FF2D78", borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 9,
+    borderRadius: 14,
+    paddingHorizontal: 12, paddingVertical: 8,
     overflow: "hidden", position: "relative",
   },
   unoBadgeGloss: {
     position: "absolute", top: 2, left: 5, width: "55%", height: "55%",
     backgroundColor: "rgba(255,255,255,0.25)", borderBottomRightRadius: 18,
   },
-  unoBadgeText: { fontFamily: "Inter_700Bold", fontSize: 15, color: "#FFFFFF", letterSpacing: 2, zIndex: 2 },
+  unoBadgeText: { fontFamily: "Bungee_400Regular", fontSize: 13, color: "#1A0533", letterSpacing: 1, zIndex: 2, paddingTop: 2 },
 
   // Intro
-  introCard: { marginBottom: 24 },
+  introCard: { marginBottom: 20 },
   introRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  introText: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.65)", flex: 1, lineHeight: 19 },
+  introText: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.5)", flex: 1, lineHeight: 17 },
 
   // Count strip
-  countStrip: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 },
-  countLabel: { fontFamily: "Inter_700Bold", fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: 2 },
+  countStrip: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  countLabel: { fontFamily: "Bungee_400Regular", fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: 1 },
   countDivider: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.07)" },
 
-  // Variant clay card
-  cardShadow: {
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 12,
-    marginBottom: 18,
+  // Variant cards grid
+  variantsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  cardWrapper: {
+    width: "31.2%",
+    marginBottom: 8,
   },
   cardBody: {
-    padding: 18,
-    overflow: "hidden",
-    position: "relative",
+    padding: 8,
+    height: 72,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, zIndex: 2 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { fontFamily: "Inter_700Bold", fontSize: 9, letterSpacing: 1.5 },
-  variantName: { fontFamily: "Inter_700Bold", fontSize: 20, color: "#FFFFFF", marginBottom: 4, zIndex: 2 },
-  variantTagline: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.65)", marginBottom: 14, lineHeight: 17, zIndex: 2 },
-
-  // Stats
-  statRow: { flexDirection: "row", gap: 8, marginBottom: 14, zIndex: 2 },
-  statChip: { flexDirection: "row", alignItems: "center", gap: 5 },
-  statText: { fontFamily: "Inter_500Medium", fontSize: 11, color: "rgba(255,255,255,0.8)" },
-
-  // Number preview
-  numPreviewRow: { flexDirection: "row", gap: 6, marginBottom: 12, zIndex: 2, flexWrap: "wrap" },
-  numChip: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
-  numChipText: { fontFamily: "Inter_700Bold", fontSize: 13 },
-  allWildChip: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 12, zIndex: 2 },
-  allWildText: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#FFB800" },
-
-  // Point pills
-  pointRow: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginBottom: 12, zIndex: 2 },
-  pointPill: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
-  pointPillText: { fontFamily: "Inter_700Bold", fontSize: 11, color: "rgba(255,255,255,0.9)" },
-
-  // Tap hint
-  tapRow: { flexDirection: "row", alignItems: "center", gap: 4, zIndex: 2 },
-  tapText: { fontFamily: "Inter_500Medium", fontSize: 12, color: "rgba(255,255,255,0.5)" },
+  variantName: { fontFamily: "Bungee_400Regular", fontSize: 11, color: "#1A0533", textAlign: "center", paddingTop: 2 },
+  variantTagline: { fontFamily: "Inter_900Black", fontSize: 6, color: "rgba(26,5,51,0.5)", lineHeight: 8, marginTop: 4, textAlign: "center", textTransform: "uppercase" },
 });

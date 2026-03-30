@@ -21,77 +21,31 @@ import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 
 function VariantCard({ variant }: { variant: RummyVariantDef }) {
   const scale = useSharedValue(1);
-  const shadowOpacity = useSharedValue(0.55);
-  const shadowOffset = useSharedValue(12);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    shadowOpacity: shadowOpacity.value,
-    shadowRadius: shadowOffset.value,
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.94, { damping: 18, stiffness: 500 });
-    shadowOpacity.value = withSpring(0.2, { damping: 18, stiffness: 500 });
-    shadowOffset.value = withSpring(4, { damping: 18, stiffness: 500 });
+    scale.value = withSpring(0.96, { damping: 18, stiffness: 500 });
   };
   const handlePressOut = () => {
     scale.value = withSpring(1, { damping: 14, stiffness: 380 });
-    shadowOpacity.value = withSpring(0.55, { damping: 14, stiffness: 380 });
-    shadowOffset.value = withSpring(12, { damping: 14, stiffness: 380 });
   };
 
   return (
-    <Animated.View
-      style={[
-        styles.cardShadow,
-        animStyle,
-        { shadowColor: variant.color, borderRadius: 26 },
-      ]}
-    >
+    <Animated.View style={[styles.cardWrapper, animStyle]}>
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push({ pathname: "/rummy/[variantId]", params: { variantId: variant.id } });
+          router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
         }}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={[styles.cardBody, { backgroundColor: variant.color, borderRadius: 26 }]}
+        style={[styles.cardBody, { backgroundColor: variant.color, borderRadius: 16 }]}
       >
-        <View style={styles.cardTop}>
-          <NeuIconWell color={darken(variant.color, 0.45)} size={44} borderRadius={14}>
-            <MaterialCommunityIcons name={variant.icon as any} size={22} color={variant.color} />
-          </NeuIconWell>
-          {variant.badge && (
-            <NeuTrench
-              color={darken(variant.color, 0.4)}
-              borderRadius={8}
-              padding={0}
-              style={styles.badge}
-            >
-              <Text style={[styles.badgeText, { color: variant.color }]}>{variant.badge}</Text>
-            </NeuTrench>
-          )}
-        </View>
-
-        <Text style={styles.variantName}>{variant.name}</Text>
+        <Text style={styles.variantName} numberOfLines={2}>{variant.name}</Text>
         <Text style={styles.variantTagline} numberOfLines={2}>{variant.tagline}</Text>
-
-        <View style={styles.statRow}>
-          <NeuTrench color={darken(variant.color, 0.4)} borderRadius={10} padding={7} style={styles.statChip}>
-            <Ionicons name="flag-outline" size={11} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statText}>{variant.targetScore} pts</Text>
-          </NeuTrench>
-          <NeuTrench color={darken(variant.color, 0.4)} borderRadius={10} padding={7} style={styles.statChip}>
-            <Ionicons name="alert-circle-outline" size={11} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statText}>Max {variant.maxPenalty} penalty</Text>
-          </NeuTrench>
-        </View>
-
-        <View style={styles.tapRow}>
-          <Text style={styles.tapText}>Check rules & play</Text>
-          <Feather name="arrow-right" size={13} color="rgba(255,255,255,0.6)" />
-        </View>
       </Pressable>
     </Animated.View>
   );
@@ -153,9 +107,11 @@ export default function RummyVariantsScreen() {
         <View style={styles.countDivider} />
       </View>
 
-      {RUMMY_VARIANTS.map((variant) => (
-        <VariantCard key={variant.id} variant={variant} />
-      ))}
+      <View style={styles.variantsGrid}>
+        {RUMMY_VARIANTS.map((variant) => (
+          <VariantCard key={variant.id} variant={variant} />
+        ))}
+      </View>
     </ScrollView>
   );
 }
@@ -166,27 +122,35 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
   backPressable: { width: 42, height: 42, alignItems: "center", justifyContent: "center" },
   titleBlock: { flex: 1 },
-  headerEyebrow: { fontFamily: "Inter_700Bold", fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: 3 },
-  headerTitle: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#FFFFFF", letterSpacing: -0.3 },
-  badgeShadow: { shadowColor: "#F39C12", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.7, shadowRadius: 14, elevation: 10 },
-  badgeBody: { backgroundColor: "#F39C12", borderRadius: 14, width: 42, height: 42, alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" },
+  headerEyebrow: { fontFamily: "Bungee_400Regular", fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: 2 },
+  headerTitle: { fontFamily: "Bungee_400Regular", fontSize: 22, color: "#FFFFFF", letterSpacing: -0.3, marginTop: 2 },
+  badgeShadow: { shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 8 },
+  badgeBody: { backgroundColor: "#FFB800", borderRadius: 14, width: 42, height: 42, alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" },
   badgeGloss: { position: "absolute", top: 2, left: 5, width: "55%", height: "55%", backgroundColor: "rgba(255,255,255,0.25)", borderBottomRightRadius: 18 },
-  introCard: { marginBottom: 24 },
+  introCard: { marginBottom: 20 },
   introRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  introText: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.65)", flex: 1, lineHeight: 19 },
-  countStrip: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 },
-  countLabel: { fontFamily: "Inter_700Bold", fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: 2 },
+  introText: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.5)", flex: 1, lineHeight: 17 },
+  countStrip: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  countLabel: { fontFamily: "Bungee_400Regular", fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: 1 },
   countDivider: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.07)" },
-  cardShadow: { shadowOffset: { width: 0, height: 12 }, elevation: 12, marginBottom: 18 },
-  cardBody: { padding: 18, overflow: "hidden", position: "relative" },
-  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, zIndex: 2 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { fontFamily: "Inter_700Bold", fontSize: 9, letterSpacing: 1.5 },
-  variantName: { fontFamily: "Inter_700Bold", fontSize: 20, color: "#FFFFFF", marginBottom: 4, zIndex: 2 },
-  variantTagline: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.65)", marginBottom: 14, lineHeight: 17, zIndex: 2 },
-  statRow: { flexDirection: "row", gap: 8, marginBottom: 14, zIndex: 2 },
-  statChip: { flexDirection: "row", alignItems: "center", gap: 5 },
-  statText: { fontFamily: "Inter_500Medium", fontSize: 11, color: "rgba(255,255,255,0.8)" },
-  tapRow: { flexDirection: "row", alignItems: "center", gap: 4, zIndex: 2 },
-  tapText: { fontFamily: "Inter_500Medium", fontSize: 12, color: "rgba(255,255,255,0.5)" },
+  // Variant cards grid
+  variantsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  cardWrapper: {
+    width: "31.2%",
+    marginBottom: 8,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  cardBody: {
+    padding: 8,
+    height: 72,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  variantName: { fontFamily: "Bungee_400Regular", fontSize: 10, color: "#1A0533", textAlign: "center", paddingTop: 2 },
+  variantTagline: { fontFamily: "Inter_900Black", fontSize: 6, color: "rgba(26,5,51,0.5)", lineHeight: 8, marginTop: 4, textAlign: "center", textTransform: "uppercase" },
 });

@@ -55,6 +55,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "@expo-google-fonts/bungee": "^0.4.1",
     "expo": "~54.0.33",
     "react": "catalog:",
     "react-dom": "catalog:",

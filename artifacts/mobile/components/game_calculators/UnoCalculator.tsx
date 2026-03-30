@@ -10,18 +10,20 @@ interface UnoCalculatorProps {
   player: Player;
   game: GameDefinition;
   initialLogs?: number[];
+  customScoreRules?: any[];
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
-export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalculatorProps) {
+export function UnoCalculator({ player, game, initialLogs, customScoreRules, onUpdate }: UnoCalculatorProps) {
   const [logs, setLogs] = useState<number[]>(initialLogs || []);
   const [cardLabels, setCardLabels] = useState<string[]>([]);
   const [caughtWithUno, setCaughtWithUno] = useState(false);
+  const [isWinner, setIsWinner] = useState(false); // Track if player declared Uno (winner)
 
   const unoVariant = useMemo(() => UNO_VARIANTS.find(v => v.id === game.id), [game.id]);
   
   const numberKeys = useMemo(() => {
-    if (!unoVariant) return [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+    if (!unoVariant || !unoVariant.numberRange) return [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
     const { min, max } = unoVariant.numberRange;
     const keys = Array.from({ length: max - min + 1 }, (_, i) => min + i);
     if (keys.includes(0)) return [...keys.filter(k => k !== 0), 0];
@@ -39,6 +41,15 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
   };
 
   const actionCards = useMemo(() => {
+    if (customScoreRules && customScoreRules.length > 0) {
+      return customScoreRules.map(c => ({
+        label: c.label,
+        value: c.points,
+        icon: c.icon || "flash",
+        type: (c.id && c.id.includes("wild")) ? "wild" : "action",
+        color: actionCardColors[c.label] || "#2D3436"
+      }));
+    }
     if (!unoVariant) return [];
     return unoVariant.scoringGroups.flatMap(g => 
       g.cards.map(c => ({
@@ -49,15 +60,16 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
         color: actionCardColors[c.name] || "#2D3436"
       }))
     );
-  }, [unoVariant]);
+  }, [unoVariant, customScoreRules]);
 
   const total = useMemo(() => logs.reduce((a, b) => a + b, 0), [logs]);
 
   useEffect(() => {
-    onUpdate(total, logs, { cardLabels, caughtWithUno });
-  }, [total, logs, cardLabels, caughtWithUno, onUpdate]);
+    onUpdate(total, logs, { cardLabels, caughtWithUno, isWinner });
+  }, [total, logs, cardLabels, caughtWithUno, isWinner, onUpdate]);
 
   const addValue = (val: number, label?: string) => {
+    if (isWinner) return; // Prevent adding scores if they already won (declared Uno)
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLogs(prev => [...prev, val]);
     setCardLabels(prev => [...prev, label || val.toString()]);
@@ -65,15 +77,24 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
 
   const removeLast = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (logs.length === 0 && isWinner) {
+      setIsWinner(false);
+      return;
+    }
     setLogs(prev => prev.slice(0, -1));
     setCardLabels(prev => prev.slice(0, -1));
   };
 
   const handleUno = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setLogs([]); 
-    setCardLabels([]);
-    setCaughtWithUno(false);
+    const newWinnerState = !isWinner;
+    setIsWinner(newWinnerState);
+    
+    if (newWinnerState) {
+      setLogs([]); 
+      setCardLabels([]);
+      setCaughtWithUno(false);
+    }
   };
 
   return (
@@ -81,7 +102,7 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
       <View style={styles.topActions}>
         <NeuButton 
           onPress={handleUno}
-          color={total === 0 && logs.length === 0 ? "#00F5A0" : "#150428"}
+          color={isWinner ? "#00F5A0" : "#150428"}
           borderRadius={18}
           style={styles.unoNeuBtn}
         >
@@ -89,12 +110,12 @@ export function UnoCalculator({ player, game, initialLogs, onUpdate }: UnoCalcul
             <MaterialCommunityIcons 
               name="cards-playing-outline" 
               size={18} 
-              color={total === 0 && logs.length === 0 ? "#1A0533" : "#00F5A0"} 
+              color={isWinner ? "#1A0533" : "#00F5A0"} 
             />
             <Text style={[
               styles.unoText, 
-              { color: total === 0 && logs.length === 0 ? "#1A0533" : "#00F5A0" }
-            ]}>DECLARE UNO / 0 PTS</Text>
+              { color: isWinner ? "#1A0533" : "#00F5A0" }
+            ]}>{isWinner ? "WINNER DECLARED!" : "DECLARE UNO / 0 PTS"}</Text>
           </View>
         </NeuButton>
 

@@ -24,12 +24,21 @@ import { AddPlayerModal } from "@/components/AddPlayerModal";
 
 function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] {
   if (!game) return players;
-  const isLowestWins = game.winCondition === "lowest";
-  return [...players].sort((a, b) =>
-    isLowestWins
+  const isPhase10 = game.id.startsWith("phase10") || game.parentId === "phase10";
+
+  return [...players].sort((a, b) => {
+    if (isPhase10) {
+      if ((b.currentPhase || 1) !== (a.currentPhase || 1)) {
+        return (b.currentPhase || 1) - (a.currentPhase || 1);
+      }
+      return a.totalScore - b.totalScore;
+    }
+
+    const isLowestWins = game.winCondition === "lowest";
+    return isLowestWins
       ? a.totalScore - b.totalScore
-      : b.totalScore - a.totalScore
-  );
+      : b.totalScore - a.totalScore;
+  });
 }
 
 export default function GameScreen() {
@@ -106,18 +115,6 @@ export default function GameScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.replace({ pathname: "/results/[id]", params: { id } });
   };
-
-  const handleViewRules = useCallback(() => {
-    if (!game) return;
-    const isPhase10 = game.parentId === "phase10" || game.id.includes("phase10");
-    const route = isPhase10 ? "/phase10/[variantId]" : "/uno/[variantId]";
-    
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push({ 
-      pathname: route as any, 
-      params: { variantId: game.id, readOnly: "true" } 
-    });
-  }, [game]);
 
   const handleResetRound = useCallback(() => {
     setShowResetAlert(true);
@@ -203,17 +200,6 @@ export default function GameScreen() {
               </BrandButton>
 
               <View style={styles.headerActionRow}>
-                <BrandButton 
-                  style={{ width: 40, height: 40 }}
-                  borderRadius={12} 
-                  color="#FF9F43"
-                  highlight="#FFB167"
-                  shadow="#EE8922"
-                  glowColor="rgba(255, 159, 67, 0.4)"
-                  onPress={handleViewRules} 
-                >
-                  <Ionicons name="book-outline" size={20} color="#FFFFFF" />
-                </BrandButton>
 
                 <BrandButton 
                   style={{ width: 40, height: 40, marginLeft: 8 }}
@@ -238,6 +224,7 @@ export default function GameScreen() {
                 >
                   <MaterialCommunityIcons name="fire" size={20} color="#FFFFFF" />
                 </BrandButton>
+
               </View>
             </View>
 
@@ -363,7 +350,7 @@ export default function GameScreen() {
         </View>
 
         {session.currentRound > 1 && (
-          <>
+          <View style={{ marginBottom: 16 }}>
             <NeuButton 
               onPress={() => { setShowHistory(!showHistory); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               color="#34495E"
@@ -380,8 +367,9 @@ export default function GameScreen() {
                   color="rgba(255,255,255,0.6)"
                 />
               </View>
-            </NeuButton>            {showHistory && (
-              <PolymerCard color={game.color + "CC"} borderRadius={24} padding={0} style={styles.historyTableCard}>
+            </NeuButton>
+            {showHistory && (
+              <PolymerCard color="#1E293B" borderRadius={24} padding={0} style={styles.historyTableCard}>
                 <View style={styles.stickyTableContainer}>
                   {/* Fixed Player Column */}
                   <View style={styles.fixedPlayerColumn}>
@@ -389,8 +377,9 @@ export default function GameScreen() {
                       <Text style={styles.stickyHeaderText}>PLAYER</Text>
                     </View>
                     {session.players.map((p) => (
-                      <View key={p.id} style={[styles.fixedNameCell, { backgroundColor: p.color }]}>
-                        <Text style={[styles.historyName, { color: "#FFF" }]} numberOfLines={1}>{p.name}</Text>
+                      <View key={p.id} style={styles.fixedNameCell}>
+                        <View style={[styles.historyDot, { backgroundColor: p.color }]} />
+                        <Text style={[styles.historyName, { color: p.color }]} numberOfLines={1}>{p.name}</Text>
                       </View>
                     ))}
                   </View>
@@ -415,32 +404,42 @@ export default function GameScreen() {
                       </View>
                       
                       {session.players.map((p) => (
-                        <View key={p.id} style={[styles.historyRow, { backgroundColor: p.color }]}>
+                        <View key={p.id} style={styles.historyRow}>
                           {Array.from({ length: session.currentRound - 1 }).map((_, r) => {
                             const score = p.scores[r];
                             const log = p.roundLogs[r] || [];
                             const bid = p.bids?.[r];
                             const won = p.tricksWon?.[r];
                             const isSpades = session.gameId.startsWith("spades");
+                            const isPhase10 = session.gameId.startsWith("phase10");
+                            const wasCleared = p.clearedHistory[r];
 
                             return (
                               <NeuTrench 
                                 key={r} 
-                                color="rgba(0,0,0,0.35)" 
+                                color="rgba(255,255,255,0.05)" 
                                 borderRadius={14} 
                                 padding={8} 
                                 style={styles.historyTrenchCell}
                               >
-                                <Text style={[styles.historyScore, { color: "#FFF" }]}>
+                                <Text style={[styles.historyScore, { color: p.color }]}>
                                   {score >= 0 ? "+" : ""}{score}
                                 </Text>
+                                {p.roundMetadata?.[r]?.isWinner && (
+                                  <Text style={{ fontSize: 10, marginTop: 2 }}>🏆 UNO</Text>
+                                )}
+                                {isPhase10 && wasCleared && (
+                                  <Text style={[styles.historyLogText, { color: p.color, fontFamily: "Inter_900Black", fontSize: 7 }]}>
+                                    ✔️ PHASE
+                                  </Text>
+                                )}
                                 {isSpades && bid !== undefined && (
-                                  <Text style={[styles.historyLogText, { color: "#FFF", opacity: 0.6 }]}>
+                                  <Text style={[styles.historyLogText, { color: "#FFF", opacity: 0.4 }]}>
                                     {bid}/{won}
                                   </Text>
                                 )}
-                                {!isSpades && log.length > 0 && (
-                                  <Text style={[styles.historyLogText, { color: "#FFF", opacity: 0.6 }]}>
+                                {!isSpades && !isPhase10 && log.length > 0 && (
+                                  <Text style={[styles.historyLogText, { color: "#FFF", opacity: 0.4 }]}>
                                     {log.join(",")}
                                   </Text>
                                 )}
@@ -454,7 +453,7 @@ export default function GameScreen() {
                 </View>
               </PolymerCard>
             )}
-          </>
+          </View>
         )}
       </ScrollView>
 
@@ -481,6 +480,7 @@ export default function GameScreen() {
         visible={showScoreModal}
         players={session.players}
         game={game}
+        customScoreRules={session.customScoreRules}
         round={editingRoundIndex !== null ? editingRoundIndex + 1 : session.currentRound}
         isEditing={editingRoundIndex !== null}
         initialLogs={editingRoundIndex !== null ? 
@@ -606,18 +606,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   headerGame: {
-    fontFamily: "Inter_900Black",
+    fontFamily: "Bungee_400Regular",
     fontSize: 14,
     color: "#FFFFFF",
     textAlign: "center",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    paddingTop: 3,
   },
   headerRound: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 10,
-    color: "rgba(255,255,255,0.7)",
+    fontFamily: "Bungee_400Regular",
+    fontSize: 9,
+    color: "rgba(255,255,255,0.6)",
     textTransform: "uppercase",
+    paddingTop: 2,
   },
   endNeuBtn: {
     paddingHorizontal: 16,
@@ -625,9 +627,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   endBtnText: {
-    fontFamily: "Inter_900Black",
-    fontSize: 12,
+    fontFamily: "Bungee_400Regular",
+    fontSize: 11,
     letterSpacing: 1,
+    paddingTop: 3,
   },
   infoStrip: {
     flexDirection: "row",
@@ -691,11 +694,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   historyToggleText: {
-    fontFamily: "Inter_900Black",
-    fontSize: 12,
+    fontFamily: "Bungee_400Regular",
+    fontSize: 10,
     color: "#FFFFFF",
     textTransform: "uppercase",
     letterSpacing: 1.5,
+    paddingTop: 3,
   },
   fiveCrownsBadge: {
     flexDirection: "row",

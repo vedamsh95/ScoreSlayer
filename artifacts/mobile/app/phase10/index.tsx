@@ -22,101 +22,31 @@ import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 // ─── Clay Variant Card ───────────────────────────────────────────────────────
 function VariantCard({ variant }: { variant: Phase10VariantDef }) {
   const scale = useSharedValue(1);
-  const shadowOpacity = useSharedValue(0.55);
-  const shadowOffset = useSharedValue(12);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    shadowOpacity: shadowOpacity.value,
-    shadowRadius: shadowOffset.value,
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.94, { damping: 18, stiffness: 500 });
-    shadowOpacity.value = withSpring(0.2, { damping: 18, stiffness: 500 });
-    shadowOffset.value = withSpring(4, { damping: 18, stiffness: 500 });
+    scale.value = withSpring(0.96, { damping: 18, stiffness: 500 });
   };
   const handlePressOut = () => {
     scale.value = withSpring(1, { damping: 14, stiffness: 380 });
-    shadowOpacity.value = withSpring(0.55, { damping: 14, stiffness: 380 });
-    shadowOffset.value = withSpring(12, { damping: 14, stiffness: 380 });
   };
 
   return (
-    <Animated.View
-      style={[
-        styles.cardShadow,
-        animStyle,
-        { shadowColor: variant.color, borderRadius: 26 },
-      ]}
-    >
+    <Animated.View style={[styles.cardWrapper, animStyle]}>
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push({ pathname: "/phase10/[variantId]", params: { variantId: variant.id } });
+          router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
         }}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={[styles.cardBody, { backgroundColor: variant.color, borderRadius: 26 }]}
+        style={[styles.cardBody, { backgroundColor: variant.color, borderRadius: 16 }]}
       >
-        {/* Top row: icon well + badge */}
-        <View style={styles.cardTop}>
-          <NeuIconWell color={darken(variant.color, 0.45)} size={44} borderRadius={14}>
-            <Feather name={variant.icon as any} size={20} color={variant.color} />
-          </NeuIconWell>
-          {variant.badge && (
-            <NeuTrench
-              color={darken(variant.color, 0.4)}
-              borderRadius={8}
-              padding={0}
-              style={styles.badge}
-            >
-              <Text style={[styles.badgeText, { color: variant.color }]}>{variant.badge}</Text>
-            </NeuTrench>
-          )}
-        </View>
-
-        {/* Name + tagline */}
-        <Text style={styles.variantName}>{variant.name}</Text>
+        <Text style={styles.variantName} numberOfLines={2}>{variant.name}</Text>
         <Text style={styles.variantTagline} numberOfLines={2}>{variant.tagline}</Text>
-
-        {/* Neumorphic stat row */}
-        <View style={styles.statRow}>
-          <NeuTrench color={darken(variant.color, 0.4)} borderRadius={10} padding={7} style={styles.statChip}>
-            <Ionicons name="layers-outline" size={11} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statText}>{variant.phases.length} Phases</Text>
-          </NeuTrench>
-          <NeuTrench color={darken(variant.color, 0.4)} borderRadius={10} padding={7} style={styles.statChip}>
-            <Ionicons name="people-outline" size={11} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statText}>2-6 Players</Text>
-          </NeuTrench>
-        </View>
-
-        {/* Phase preview chips (first 4) */}
-        <View style={styles.phasePreviewRow}>
-          {variant.phases.slice(0, 4).map((p, idx) => (
-            <NeuTrench
-              key={idx}
-              color={darken(variant.color, 0.45)}
-              borderRadius={8}
-              padding={6}
-              style={styles.phaseChip}
-            >
-              <Text style={[styles.phaseChipText, { color: "#fff" }]} numberOfLines={1}>
-                {p.number}. {p.description}
-              </Text>
-            </NeuTrench>
-          ))}
-          {variant.phases.length > 4 && (
-            <Text style={styles.morePhasesText}>+ {variant.phases.length - 4} more...</Text>
-          )}
-        </View>
-
-        {/* Tap hint */}
-        <View style={styles.tapRow}>
-          <Text style={styles.tapText}>Select phases & play</Text>
-          <Feather name="arrow-right" size={13} color="rgba(255,255,255,0.6)" />
-        </View>
       </Pressable>
     </Animated.View>
   );
@@ -182,10 +112,12 @@ export default function Phase10VariantsScreen() {
         <View style={styles.countDivider} />
       </View>
 
-      {/* Variant cards */}
-      {PHASE10_VARIANTS.map((variant) => (
-        <VariantCard key={variant.id} variant={variant} />
-      ))}
+      {/* Variant cards grid */}
+      <View style={styles.variantsGrid}>
+        {PHASE10_VARIANTS.map((variant) => (
+          <VariantCard key={variant.id} variant={variant} />
+        ))}
+      </View>
     </ScrollView>
   );
 }
@@ -198,64 +130,51 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
   backPressable: { width: 42, height: 42, alignItems: "center", justifyContent: "center" },
   titleBlock: { flex: 1 },
-  headerEyebrow: { fontFamily: "Inter_700Bold", fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: 3 },
-  headerTitle: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#FFFFFF", letterSpacing: -0.3 },
+  headerEyebrow: { fontFamily: "Bungee_400Regular", fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: 2 },
+  headerTitle: { fontFamily: "Bungee_400Regular", fontSize: 22, color: "#FFFFFF", letterSpacing: -0.3, marginTop: 2 },
 
   // P10 badge
   p10BadgeShadow: {
-    shadowColor: "#00BFFF", shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.7, shadowRadius: 14, elevation: 10,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4, shadowRadius: 10, elevation: 8,
   },
   p10BadgeBody: {
     backgroundColor: "#00BFFF", borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 9,
+    paddingHorizontal: 12, paddingVertical: 8,
     overflow: "hidden", position: "relative",
   },
   p10BadgeGloss: {
     position: "absolute", top: 2, left: 5, width: "55%", height: "55%",
     backgroundColor: "rgba(255,255,255,0.25)", borderBottomRightRadius: 18,
   },
-  p10BadgeText: { fontFamily: "Inter_700Bold", fontSize: 13, color: "#FFFFFF", letterSpacing: 1, zIndex: 2 },
+  p10BadgeText: { fontFamily: "Bungee_400Regular", fontSize: 13, color: "#1A0533", letterSpacing: 1, zIndex: 2, paddingTop: 2 },
 
   // Intro
-  introCard: { marginBottom: 24 },
+  introCard: { marginBottom: 20 },
   introRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  introText: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.65)", flex: 1, lineHeight: 19 },
+  introText: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.5)", flex: 1, lineHeight: 17 },
 
   // Count strip
-  countStrip: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 },
-  countLabel: { fontFamily: "Inter_700Bold", fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: 2 },
+  countStrip: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  countLabel: { fontFamily: "Bungee_400Regular", fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: 1 },
   countDivider: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.07)" },
 
-  // Variant clay card
-  cardShadow: {
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 12,
-    marginBottom: 20,
+  // Variant cards grid
+  variantsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  cardWrapper: {
+    width: "31.2%",
+    marginBottom: 8,
   },
   cardBody: {
-    padding: 18,
-    overflow: "hidden",
-    position: "relative",
+    padding: 8,
+    height: 72,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, zIndex: 2 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { fontFamily: "Inter_700Bold", fontSize: 9, letterSpacing: 1.5 },
-  variantName: { fontFamily: "Inter_700Bold", fontSize: 20, color: "#FFFFFF", marginBottom: 4, zIndex: 2 },
-  variantTagline: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 16, lineHeight: 18, zIndex: 2 },
-
-  // Stats
-  statRow: { flexDirection: "row", gap: 8, marginBottom: 16, zIndex: 2 },
-  statChip: { flexDirection: "row", alignItems: "center", gap: 5 },
-  statText: { fontFamily: "Inter_500Medium", fontSize: 11, color: "rgba(255,255,255,0.8)" },
-
-  // Phase preview
-  phasePreviewRow: { gap: 6, marginBottom: 16, zIndex: 2 },
-  phaseChip: { alignSelf: "flex-start" },
-  phaseChipText: { fontFamily: "Inter_500Medium", fontSize: 11 },
-  morePhasesText: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.4)", marginLeft: 4 },
-
-  // Tap hint
-  tapRow: { flexDirection: "row", alignItems: "center", gap: 4, zIndex: 2 },
-  tapText: { fontFamily: "Inter_500Medium", fontSize: 12, color: "rgba(255,255,255,0.6)" },
+  variantName: { fontFamily: "Bungee_400Regular", fontSize: 10, color: "#1A0533", textAlign: "center", paddingTop: 2 },
+  variantTagline: { fontFamily: "Inter_900Black", fontSize: 6, color: "rgba(26,5,51,0.5)", lineHeight: 8, marginTop: 4, textAlign: "center", textTransform: "uppercase" },
 });

@@ -11,6 +11,7 @@ import Animated, { FadeInDown, SlideInRight } from "react-native-reanimated";
 import { GameSession, Player } from "@/context/GameContext";
 import { useSessionAnalysis } from "@/hooks/useSessionAnalysis";
 import { PolymerCard } from "./PolymerCard";
+import { getGameById, GameDefinition } from "@/constants/games";
 
 const { width } = Dimensions.get("window");
 
@@ -28,12 +29,23 @@ function formatDuration(ms: number): string {
 }
 
 function getPlayerRankings(session: GameSession): Player[] {
+  const game = getGameById(session.gameId);
+  if (!game) return session.players;
+
+  const isPhase10 = game.id.startsWith("phase10") || game.parentId === "phase10";
+
   return [...session.players].sort((a, b) => {
-    if (session.gameId === "hearts" || session.gameId === "uno" || session.gameId === "phase10" ||
-        session.gameId === "dominoes" || session.gameId === "darts_301") {
+    if (isPhase10) {
+      if ((b.currentPhase || 1) !== (a.currentPhase || 1)) {
+        return (b.currentPhase || 1) - (a.currentPhase || 1);
+      }
       return a.totalScore - b.totalScore;
     }
-    return b.totalScore - a.totalScore;
+
+    const isLowestWins = game.winCondition === "lowest";
+    return isLowestWins
+      ? a.totalScore - b.totalScore
+      : b.totalScore - a.totalScore;
   });
 }
 

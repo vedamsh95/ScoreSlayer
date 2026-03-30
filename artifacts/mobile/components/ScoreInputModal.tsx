@@ -42,7 +42,7 @@ import { BilliardsCalculator } from "./game_calculators/BilliardsCalculator";
 import { HandAndFootCalculator } from "./game_calculators/HandAndFootCalculator";
 import { SkipBoCalculator } from "./game_calculators/SkipBoCalculator";
 import { DutchBlitzCalculator } from "./game_calculators/DutchBlitzCalculator";
-import { FarkleCalculator } from "./game_calculators/FarkleCalculator";
+import { GeneralCalculator } from "./game_calculators/GeneralCalculator";
 import { FiveCrownsCalculator } from "./game_calculators/FiveCrownsCalculator";
 import { MoelkkyCalculator } from "./game_calculators/MoelkkyCalculator";
 import { SkullKingCalculator } from "./game_calculators/SkullKingCalculator";
@@ -60,6 +60,7 @@ interface ScoreInputModalProps {
   initialCleared?: Record<string, boolean>;
   initialBids?: Record<string, number>;
   initialTricksWon?: Record<string, number>;
+  customScoreRules?: any[];
   onSubmit: (
     scores: Record<string, number>,
     logs: Record<string, number[]>,
@@ -81,6 +82,7 @@ export function ScoreInputModal({
   initialCleared,
   initialBids,
   initialTricksWon,
+  customScoreRules,
   onSubmit,
   onClose,
   isEditing = false,
@@ -217,6 +219,7 @@ export function ScoreInputModal({
         <Phase10Calculator 
           key={calcKey}
           {...common} 
+          customScoreRules={customScoreRules}
           initialPhase={allMetadata[activePlayer.id]?.phase} 
           initialLogs={allLogs[activePlayer.id]} 
           initialCleared={allCleared[activePlayer.id]} 
@@ -227,7 +230,7 @@ export function ScoreInputModal({
       return <GolfCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
     }
     if (game.id === "uno" || game.parentId === "uno") {
-      return <UnoCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+      return <UnoCalculator key={calcKey} {...common} customScoreRules={customScoreRules} initialLogs={allLogs[activePlayer.id]} />;
     }
     if (game.id === "cornhole") {
       return <CornholeCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]} />;
@@ -259,8 +262,8 @@ export function ScoreInputModal({
     if (game.id === "dutch_blitz") {
       return <DutchBlitzCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} />;
     }
-    if (game.id === "farkle") {
-      return <FarkleCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+    if (game.id === "custom_game") {
+      return <GeneralCalculator key={calcKey} {...common} customScoreRules={customScoreRules} initialLogs={allLogs[activePlayer.id]} />;
     }
     if (game.id === "five_crowns") {
       return <FiveCrownsCalculator key={calcKey} {...common} round={round} initialLogs={allLogs[activePlayer.id]} />;
@@ -360,16 +363,18 @@ export function ScoreInputModal({
                     style={styles.playerTabWrapper}
                   >
                     <NeuTrench 
-                      color={activePlayerIndex === i ? p.color + "20" : "#150428"} 
+                      color={activePlayerIndex === i ? p.color + "20" : "#1C0638"} 
                       borderRadius={16} 
-                      padding={10}
+                      padding={10} 
                       style={[
                         styles.playerTab,
-                        activePlayerIndex === i ? { borderColor: p.color + "40", borderWidth: 1 } : {}
+                        activePlayerIndex === i ? { borderColor: p.color + "50", borderWidth: 1 } : {}
                       ]}
                     >
-                      <View style={[styles.tabDot, { backgroundColor: p.color }]} />
-                      <Text style={[styles.tabText, activePlayerIndex === i && { color: "#FFF" }]}>{p.name}</Text>
+                      <View style={styles.tabContent}>
+                        <View style={[styles.tabDot, { backgroundColor: p.color }]} />
+                        <Text style={[styles.tabText, activePlayerIndex === i ? { color: "#FFF" } : { color: "rgba(255,255,255,0.9)" }]}>{p.name}</Text>
+                      </View>
                       {allScores[p.id] !== undefined && (
                         <Text style={[styles.tabScore, { color: p.color }]}>{allScores[p.id]}</Text>
                       )}
@@ -498,7 +503,11 @@ const styles = StyleSheet.create({
   tabText: { 
     fontFamily: "Inter_800ExtraBold", 
     fontSize: 14, 
-    color: "rgba(255,255,255,0.4)" 
+    color: "rgba(255,255,255,0.85)" 
+  },
+  tabContent: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   tabScore: { 
     fontFamily: "Inter_900Black", 

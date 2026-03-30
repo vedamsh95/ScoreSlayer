@@ -40,6 +40,7 @@ export interface GameSession {
   endedAt?: number;
   isComplete: boolean;
   houseRules: HouseRuleOverride[];
+  customScoreRules?: any[]; // For games like Uno/Phase10 where card values change
   winnerName?: string;
   customNotes?: string;
 }
@@ -118,7 +119,8 @@ interface GameContextType {
   createSession: (
     game: GameDefinition,
     playerNames: string[],
-    houseRules: HouseRuleOverride[]
+    houseRules: HouseRuleOverride[],
+    customScoreRules?: any[]
   ) => GameSession;
   updateSession: (session: GameSession) => void;
   deleteSession: (sessionId: string) => void;
@@ -193,28 +195,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     (
       game: GameDefinition,
       playerNames: string[],
-      houseRules: HouseRuleOverride[]
-    ): GameSession => {
+      houseRules: HouseRuleOverride[],
+      customScoreRules?: any[]
+    ) => {
+      const sessionId = Math.random().toString(36).substring(7);
       const session: GameSession = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        id: sessionId,
         gameId: game.id,
         gameName: game.name,
         gameColor: game.color,
-        players: playerNames.map((name, i) => ({
-          id: `p_${i}_${Date.now()}`,
-          name,
+        players: playerNames.map((n, i) => ({
+          id: `p${i}`,
+          name: n,
           color: PLAYER_COLORS[i % PLAYER_COLORS.length],
+          totalScore: 0,
           scores: [],
           roundLogs: {},
-          currentPhase: game.phases ? 1 : undefined,
-          currentPhaseCleared: false,
           clearedHistory: [],
           bids: [],
           tricksWon: [],
           bagsHistory: [],
-          totalScore: 0,
-          totalBags: 0,
-          isEliminated: false,
           roundRoasts: {},
           roundMetadata: {},
         })),
@@ -223,12 +223,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         direction: "CW",
         startedAt: Date.now(),
         isComplete: false,
-        houseRules,
+        houseRules: [...houseRules],
+        customScoreRules: customScoreRules ? [...customScoreRules] : undefined,
       };
+
       dispatch({ type: "CREATE_SESSION", session });
       return session;
     },
-    []
+    [state.sessions]
   );
 
   const updateSession = useCallback((session: GameSession) => {
