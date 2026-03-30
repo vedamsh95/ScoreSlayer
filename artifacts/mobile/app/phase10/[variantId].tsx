@@ -70,6 +70,9 @@ function ScoringRuleRow({ label, points, color }: { label: string; points: numbe
   );
 }
 
+/**
+ * @screen Phase10VariantDetailScreen
+ */
 export default function Phase10VariantDetailScreen() {
   const { variantId, readOnly } = useLocalSearchParams<{ variantId: string; readOnly?: string }>();
   const isReadOnly = readOnly === "true";

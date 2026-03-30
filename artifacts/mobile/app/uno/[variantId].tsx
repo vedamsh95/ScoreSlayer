@@ -192,6 +192,9 @@ function ScoringGroupCard({
   );
 }
 
+/**
+ * @screen VariantDetailScreen (Uno)
+ */
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function VariantDetailScreen() {
   const { variantId, readOnly } = useLocalSearchParams<{ variantId: string; readOnly?: string }>();

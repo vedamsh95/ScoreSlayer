@@ -24,6 +24,9 @@ function darken(hex: string, factor: number): string {
   return `rgb(${Math.floor(rr * d)},${Math.floor(gg * d)},${Math.floor(bb * d)})`;
 }
 
+/**
+ * @screen RummyVariantDetailScreen
+ */
 export default function RummyVariantDetailScreen() {
   const { variantId } = useLocalSearchParams<{ variantId: string }>();
   const insets = useSafeAreaInsets();

@@ -1,27 +1,29 @@
-# ScoreSlayer Task Tracker - Bottle Spin Fix in Unified Game Tools
+# Unified Clay Table Redesign - GameScreen
+Status: In Progress
 
-## Task: Fix missing bottle spinning animation in unified game tools
+## Plan Breakdown & Steps
 
-**Current Status:** Planning → Implementation
+### 1. ✅ Create TODO.md (done)
+### 2. ✅ Redesign PlayerScoreRow.tsx → PlayerCell for table use
+   - Compact vertical layout: rank dot, name+badges, total+progress bar, recent delta
+   - Add progress prop (0-1) for vertical NeuTrench fill (player.color)
+   - Backward compatible
 
-### Planned Steps:
-- [ ] Step 1: Create TODO.md and confirm plan
-- [x] Step 1: Create TODO.md and confirm plan
-- [x] Step 2: Improve bottle visibility in UnifiedToolsCore.tsx (size, zIndex, positioning, idle animation)
-- [x] Step 1: Create TODO.md and confirm plan
-- [x] Step 2: Improve bottle visibility in UnifiedToolsCore.tsx (size, zIndex, positioning, idle animation)
-- [x] Step 3: Update tools/index.tsx (set default tab to 'first', add demo spin)
-- [x] Step 4: Test in app (/tools screen and GameToolsModal)
-- [x] Step 5: Complete task
+### 3. ✅ Replace GameScreen.tsx sections
+   - Remove PlayersSection, history toggle, separate history card
+   - Add UnifiedClayTable PolymerCard w/ 3-col layout:
+     | Fixed Player Details (PlayerCell) | Scrollable Rounds (history cells + badges) | Fixed Total (large score)
+   - Header: PLAYER | R1..R{round-1} (BrandButton edit) | TOTAL
 
-**✅ TASK COMPLETE: Bottle spin now prominently visible and animating!**
-- [ ] Step 4: Test in app (/tools screen and GameToolsModal)
-- [ ] Step 5: Complete task
+### 4. Test & Verify
+   - Render: table shows players/history/totals correctly
+   - Edit rounds: click Ri → ScoreInputModal w/ initial data
+   - Sorting: Phase10 phases, totals
+   - Game badges: Phase10✔️, Spades bid/won/bags, UNO🏆, logs
+   - Responsive: horizontal scroll
+   - Run `npx expo start --clear`
 
-**Details:**
-- Feature already coded but icon not visible (likely positioning/zIndex issue)
-- Target files: UnifiedToolsCore.tsx, tools/index.tsx
-- No new deps needed
-
-**Next Action:** Implement visual fixes for bottle icon animation
+### 5. ✅ Completion
+   - All steps done! Unified Clay table live w/ synchronized scroll, simplified player column (rank+name), 3-col design (Player | Rounds | Total).
+   - Test: cd artifacts/mobile && npx expo start --clear
 

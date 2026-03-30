@@ -41,6 +41,9 @@ function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] 
   });
 }
 
+/**
+ * @screen GameScreen
+ */
 export default function GameScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
@@ -57,7 +60,6 @@ export default function GameScreen() {
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [showToolsModal, setShowToolsModal] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
-  const [showHistory, setShowHistory] = useState(true); // Default to true
   const [editingRoundIndex, setEditingRoundIndex] = useState<number | null>(null);
   const [showEndAlert, setShowEndAlert] = useState(false);
   const [showResetAlert, setShowResetAlert] = useState(false);
@@ -236,7 +238,7 @@ export default function GameScreen() {
                     if (game.parentId) {
                       const slug = game.parentId;
                       const varSlug = game.id.replace(`${slug}_`, '');
-                      router.push("/" + slug + "/" + varSlug);
+router.push(`/${slug}/${varSlug}` as any);
                     } else {
                       router.back();
                     }
@@ -340,141 +342,137 @@ export default function GameScreen() {
           </PolymerCard>
         )}
 
-        <View style={styles.playersSection}>
-          {sortedPlayers.map((player, i) => (
-            <PlayerScoreRow
-              key={player.id}
-              player={player}
-              rank={i + 1}
-              isDealer={player.id === dealer?.id}
-              roundScore={recentRoundScores[player.id]}
-              showRoundScore={session.currentRound > 1}
-              isLeader={i === 0}
-              isPhase10={game.parentId === "phase10" || game.id.includes("phase10")}
-              showBags={game.id.startsWith("spades")}
-            />
-          ))}
-          {canAddPlayer && (
-            <NeuButton
-              onPress={() => setShowAddPlayerModal(true)}
-              color="rgba(0,245,160,0.12)"
-              borderRadius={16}
-              style={styles.addPlayerRow}
-            >
-              <View style={styles.addPlayerRowInner}>
-                <Ionicons name="person-add-outline" size={18} color="#00F5A0" />
-                <Text style={styles.addPlayerRowText}>Add player mid-game</Text>
+        {/* Unified Clay Table */}
+        <PolymerCard color="#1E293B" borderRadius={24} padding={0} style={styles.unifiedTableCard}>
+          <View style={styles.tableHeaderRow}>
+            {/* Fixed PLAYER header */}
+            <View style={[styles.tableFixedColumn, styles.tableHeaderCell]}>
+              <Text style={styles.tableHeaderText}>PLAYER</Text>
+            </View>
+
+            {/* Scrollable Rounds headers */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tableRoundsScroll}>
+              <View style={styles.tableRoundsHeader}>
+                {Array.from({ length: Math.max(0, session.currentRound - 1) }).map((_, r) => (
+                  <BrandButton
+                    key={r}
+                    onPress={() => handleEditRound(r)}
+                    color="#2D1B4D"
+                    highlight="rgba(255,255,255,0.1)"
+                    shadow="rgba(0,0,0,0.3)"
+                    borderRadius={12}
+                    style={styles.tableRoundHeaderBtn}
+                  >
+                    <Text style={styles.tableRoundLabel}>R{r + 1}</Text>
+                  </BrandButton>
+                ))}
               </View>
-            </NeuButton>
-          )}
-        </View>
+            </ScrollView>
 
-        {session.currentRound > 1 && (
-          <View style={{ marginBottom: 16 }}>
-            <NeuButton 
-              onPress={() => { setShowHistory(!showHistory); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              color="#34495E"
-              borderRadius={16}
-              style={styles.historyToggle}
-            >
-              <View style={styles.historyToggleInner}>
-                <Text style={styles.historyToggleText}>
-                  {showHistory ? "HIDE" : "SHOW"} SCORE HISTORY
-                </Text>
-                <Ionicons
-                  name={showHistory ? "chevron-up" : "chevron-down"}
-                  size={14}
-                  color="rgba(255,255,255,0.6)"
-                />
-              </View>
-            </NeuButton>
-            {showHistory && (
-              <PolymerCard color="#1E293B" borderRadius={24} padding={0} style={styles.historyTableCard}>
-                <View style={styles.stickyTableContainer}>
-                  {/* Fixed Player Column */}
-                  <View style={styles.fixedPlayerColumn}>
-                    <View style={styles.stickyHeaderCell}>
-                      <Text style={styles.stickyHeaderText}>PLAYER</Text>
-                    </View>
-                    {session.players.map((p) => (
-                      <View key={p.id} style={styles.fixedNameCell}>
-                        <View style={[styles.historyDot, { backgroundColor: p.color }]} />
-                        <Text style={[styles.historyName, { color: p.color }]} numberOfLines={1}>{p.name}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  {/* Scrollable Rounds Column */}
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View>
-                      <View style={styles.historyHeader}>
-                        {Array.from({ length: session.currentRound - 1 }).map((_, r) => (
-                          <BrandButton 
-                            key={r} 
-                            onPress={() => handleEditRound(r)} 
-                            color="#2D1B4D"
-                            highlight="rgba(255,255,255,0.1)"
-                            shadow="rgba(0,0,0,0.3)"
-                            borderRadius={12}
-                            style={styles.roundLabelBtn}
-                          >
-                            <Text style={styles.roundLabelText}>R{r + 1}</Text>
-                          </BrandButton>
-                        ))}
-                      </View>
-                      
-                      {session.players.map((p) => (
-                        <View key={p.id} style={styles.historyRow}>
-                          {Array.from({ length: session.currentRound - 1 }).map((_, r) => {
-                            const score = p.scores[r];
-                            const log = p.roundLogs[r] || [];
-                            const bid = p.bids?.[r];
-                            const won = p.tricksWon?.[r];
-                            const isSpades = session.gameId.startsWith("spades");
-                            const isPhase10 = session.gameId.startsWith("phase10");
-                            const wasCleared = p.clearedHistory[r];
-
-                            return (
-                              <NeuTrench 
-                                key={r} 
-                                color="rgba(255,255,255,0.05)" 
-                                borderRadius={14} 
-                                padding={8} 
-                                style={styles.historyTrenchCell}
-                              >
-                                <Text style={[styles.historyScore, { color: p.color }]}>
-                                  {score >= 0 ? "+" : ""}{score}
-                                </Text>
-                                {p.roundMetadata?.[r]?.isWinner && (
-                                  <Text style={{ fontSize: 10, marginTop: 2 }}>🏆 UNO</Text>
-                                )}
-                                {isPhase10 && wasCleared && (
-                                  <Text style={[styles.historyLogText, { color: p.color, fontFamily: "Inter_900Black", fontSize: 7 }]}>
-                                    ✔️ PHASE
-                                  </Text>
-                                )}
-                                {isSpades && bid !== undefined && (
-                                  <Text style={[styles.historyLogText, { color: "#FFF", opacity: 0.4 }]}>
-                                    {bid}/{won}
-                                  </Text>
-                                )}
-                                {!isSpades && !isPhase10 && log.length > 0 && (
-                                  <Text style={[styles.historyLogText, { color: "#FFF", opacity: 0.4 }]}>
-                                    {log.join(",")}
-                                  </Text>
-                                )}
-                              </NeuTrench>
-                            );
-                          })}
-                        </View>
-                      ))}
-                    </View>
-                  </ScrollView>
-                </View>
-              </PolymerCard>
-            )}
+            {/* Fixed TOTAL header */}
+            <View style={[styles.tableTotalColumn, styles.tableHeaderCell]}>
+              <Text style={styles.tableHeaderText}>TOTAL</Text>
+            </View>
           </View>
-        )}
+
+          {sortedPlayers.map((player: Player, i: number) => {
+            const playerProgress = hasTargetScore && game.targetScore 
+              ? Math.min(player.totalScore / game.targetScore!, 1) 
+              : 0;
+            const isPlayerDealer = player.id === dealer?.id;
+            const playerRecentScore = recentRoundScores[player.id];
+
+            return (
+              <View key={player.id} style={styles.tableRow}>
+                {/* Fixed Player Details */}
+                <View style={styles.tableFixedColumn}>
+                  <PlayerScoreRow
+                    player={player}
+                    rank={i + 1}
+                    isDealer={isPlayerDealer}
+                    roundScore={playerRecentScore}
+                    showRoundScore={session.currentRound > 1}
+                    isPhase10={game.parentId === "phase10" || game.id.includes("phase10")}
+                    showBags={game.id.startsWith("spades")}
+                    progress={playerProgress}
+                    tableMode={true}
+                  />
+                </View>
+
+                {/* Scrollable Rounds History */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tableRoundsScroll}>
+                  <View style={styles.tableRoundsRow}>
+                    {Array.from({ length: Math.max(0, session.currentRound - 1) }).map((_, r) => {
+                      const score = player.scores[r];
+                      const log = player.roundLogs[r] || [];
+                      const bid = player.bids?.[r];
+                      const won = player.tricksWon?.[r];
+                      const isSpades = session.gameId.startsWith("spades");
+                      const isPhase10 = session.gameId.startsWith("phase10");
+                      const wasCleared = player.clearedHistory[r];
+
+                      return (
+                        <NeuTrench 
+                          key={r}
+                          color="rgba(255,255,255,0.05)"
+                          borderRadius={14}
+                          padding={8}
+                          style={styles.tableHistoryCell}
+                        >
+                          <Text style={[styles.tableHistoryScore, { color: player.color }]}>
+                            {score !== undefined ? (score >= 0 ? "+" : "") + score : "—"}
+                          </Text>
+                          {player.roundMetadata?.[r]?.isWinner && (
+                            <Text style={styles.tableHistoryBadge}>🏆 UNO</Text>
+                          )}
+                          {isPhase10 && wasCleared && (
+                            <Text style={[styles.tableHistoryBadge, { color: player.color, fontFamily: "Inter_900Black", fontSize: 7 }]}>
+                              ✔️ PHASE
+                            </Text>
+                          )}
+                          {isSpades && bid !== undefined && (
+                            <Text style={[styles.tableHistoryLog, { color: "#FFF", opacity: 0.6 }]}>
+                              {bid}/{won ?? 0}
+                            </Text>
+                          )}
+                          {!isSpades && !isPhase10 && log.length > 0 && (
+                            <Text style={[styles.tableHistoryLog, { color: "#FFF", opacity: 0.6 }]}>
+                              {log.join(",")}
+                            </Text>
+                          )}
+                        </NeuTrench>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+
+                {/* Fixed Total Column */}
+                <View style={styles.tableTotalColumn}>
+                  <NeuTrench color="rgba(255,255,255,0.05)" borderRadius={16} padding={12} style={styles.tableTotalCell}>
+                    <Text style={styles.tableTotalScore}>{player.totalScore.toLocaleString()}</Text>
+                  </NeuTrench>
+                </View>
+              </View>
+            );
+          })}
+
+          {/* Footer for add player */}
+          {canAddPlayer && (
+            <View style={styles.tableFooter}>
+              <NeuButton
+                onPress={() => setShowAddPlayerModal(true)}
+                color="rgba(0,245,160,0.12)"
+                borderRadius={16}
+                style={styles.tableAddPlayerBtn}
+              >
+                <View style={styles.addPlayerRowInner}>
+                  <Ionicons name="person-add-outline" size={18} color="#00F5A0" />
+                  <Text style={styles.addPlayerRowText}>Add player</Text>
+                </View>
+              </NeuButton>
+            </View>
+          )}
+        </PolymerCard>
       </ScrollView>
 
       <View
@@ -565,7 +563,7 @@ export default function GameScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1A0533",
@@ -576,6 +574,109 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#1A0533",
     gap: 16,
+  },
+  // Unified Table Styles
+  unifiedTableCard: {
+    marginTop: 20,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  tableHeaderRow: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderBottomWidth: 1.5,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.2)",
+  },
+  tableFixedColumn: {
+    width: 140,
+    borderRightWidth: 1.5,
+    borderRightColor: "rgba(255,255,255,0.1)",
+  },
+  tableTotalColumn: {
+    width: 80,
+    borderLeftWidth: 1.5,
+    borderLeftColor: "rgba(255,255,255,0.1)",
+  },
+  tableHeaderCell: {
+    height: 54,
+    justifyContent: "center",
+    paddingLeft: 12,
+    alignItems: "center",
+  },
+  tableHeaderText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.5)",
+    letterSpacing: 1.5,
+  },
+  tableRoundsScroll: {
+    flex: 1,
+  },
+  tableRoundsHeader: {
+    flexDirection: "row",
+    height: 54,
+    alignItems: "center",
+    paddingHorizontal: 8,
+  },
+  tableRoundHeaderBtn: {
+    width: 64,
+    height: 38,
+    marginHorizontal: 4,
+  },
+  tableRoundLabel: {
+    fontFamily: "Inter_900Black",
+    fontSize: 12,
+    color: "#FFFFFF",
+  },
+  tableRoundsRow: {
+    flexDirection: "row",
+    height: 84,
+    alignItems: "center",
+    paddingHorizontal: 8,
+  },
+  tableHistoryCell: {
+    width: 64,
+    height: 60,
+    marginHorizontal: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tableHistoryScore: {
+    fontFamily: "Inter_900Black",
+    fontSize: 15,
+  },
+  tableHistoryBadge: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  tableHistoryLog: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 9,
+    marginTop: 2,
+  },
+  tableTotalCell: {
+    height: 84,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tableTotalScore: {
+    fontFamily: "Inter_900Black",
+    fontSize: 20,
+    color: "#FFFFFF",
+  },
+  tableFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+  tableAddPlayerBtn: {
+    height: 48,
   },
   errText: {
     color: "#FFFFFF",

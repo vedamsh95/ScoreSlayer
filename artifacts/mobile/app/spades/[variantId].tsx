@@ -15,6 +15,9 @@ import { SPADES_VARIANTS } from "@/constants/games";
 import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
 
+/**
+ * @screen SpadesVariantDetailScreen
+ */
 export default function SpadesVariantDetail() {
   const { variantId, readOnly } = useLocalSearchParams<{ variantId: string; readOnly?: string }>();
   const isReadOnly = readOnly === "true";

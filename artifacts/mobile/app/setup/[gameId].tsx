@@ -27,6 +27,9 @@ const PLAYER_SUGGESTIONS = [
   "Frankie", "Gray", "Harper", "Indie", "Jamie",
 ];
 
+/**
+ * @screen SetupScreen
+ */
 export default function SetupScreen() {
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
   const insets = useSafeAreaInsets();
