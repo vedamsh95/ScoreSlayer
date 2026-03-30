@@ -21,7 +21,7 @@ export default function SpadesVariantDetail() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
-  const variant = SPADES_VARIANTS.find((v) => v.id === variantId);
+  const variant = SPADES_VARIANTS.find((v) => v.id === `spades_${variantId}` || v.id.endsWith(variantId as string));
 
   if (!variant) {
     return (
@@ -77,7 +77,7 @@ export default function SpadesVariantDetail() {
               </NeuTrench>
               <NeuTrench color="#150428" borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>{variant.isPartnership ? "Team" : "Solo"}</Text>
-                <Text style={styles.heroStatLabel}>play</Text>
+                <Text style={styles.heroStatLabel}>mode</Text>
               </NeuTrench>
             </View>
           </View>

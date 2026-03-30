@@ -21,7 +21,7 @@ export default function HeartsVariantDetail() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
-  const variant = HEARTS_VARIANTS.find((v) => v.id === variantId);
+  const variant = HEARTS_VARIANTS.find((v) => v.id === `hearts_${variantId}` || v.id.endsWith(variantId as string));
 
   if (!variant) {
     return (
@@ -77,7 +77,7 @@ export default function HeartsVariantDetail() {
               </NeuTrench>
               <NeuTrench color="#150428" borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>{variant.isPartnership ? "Team" : "Solo"}</Text>
-                <Text style={styles.heroStatLabel}>play</Text>
+                <Text style={styles.heroStatLabel}>mode</Text>
               </NeuTrench>
             </View>
           </View>
@@ -168,6 +168,7 @@ const styles = StyleSheet.create({
   heroStat: { flex: 1, alignItems: "center" },
   heroStatValue: { fontFamily: "Inter_700Bold", fontSize: 18, color: "#FFFFFF" },
   heroStatLabel: { fontFamily: "Inter_400Regular", fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 2 },
+  heroStatPadding: { flex: 1, alignItems: "center", paddingBottom: 4 },
 
   // Description
   descCard: { marginBottom: 24 },

@@ -292,7 +292,7 @@ export default function HistoryScreen() {
 
       {activeTab === "completed" && completedSessions.length === 0 && state.sessions.length > 0 && (
          <View style={styles.emptyState}>
-           <Feather name="award" size={48} color="rgba(255,255,255,0.1)" />
+           <Feather name="trophy" size={48} color="rgba(255,255,255,0.1)" />
            <Text style={styles.emptyTitle}>No Completed Games</Text>
            <Text style={styles.emptySubtitle}>Your first victory is waiting!</Text>
          </View>

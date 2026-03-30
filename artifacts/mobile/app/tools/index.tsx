@@ -41,7 +41,7 @@ export default function GameToolsScreen() {
       </View>
 
       <View style={styles.main}>
-        <UnifiedToolsCore initialPlayers={playerNames.map((n, i) => ({ id: i.toString(), name: n, color: ["#00F5A0", "#FF2D78", "#8B5CF6", "#FFB800"][i % 4] }))} showPlayerInput={true} />
+        <UnifiedToolsCore initialPlayers={playerNames.map((n, i) => ({ id: i.toString(), name: n, color: ["#00F5A0", "#FF2D78", "#8B5CF6", "#FFB800"][i % 4] }))} showPlayerInput={true} initialTab="first" />
       </View>
     </View>
   );

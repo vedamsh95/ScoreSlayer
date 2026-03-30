@@ -199,7 +199,7 @@ export default function VariantDetailScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
-  const variant = UNO_VARIANTS.find((v) => v.id === variantId);
+  const variant = UNO_VARIANTS.find((v) => v.id === `uno_${variantId}` || v.id.endsWith(variantId as string));
 
   if (!variant) {
     return (
@@ -265,7 +265,7 @@ export default function VariantDetailScreen() {
               </NeuTrench>
               <NeuTrench color="#150428" borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>{variant.targetScore}</Text>
-                <Text style={styles.heroStatLabel}>target</Text>
+                <Text style={styles.heroStatLabel}>points</Text>
               </NeuTrench>
               <NeuTrench color="#150428" borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>2–10</Text>
@@ -336,23 +336,7 @@ export default function VariantDetailScreen() {
           ))}
         </View>
 
-        {/* ── BONUSES ──────────────────────────────────────────────────────── */}
-        {variant.bonuses && variant.bonuses.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Bonuses</Text>
-            {variant.bonuses.map((b) => (
-              <View key={b.label} style={[styles.bonusShadow, { borderRadius: 16, shadowColor: "#FFB800" }]}>
-                <View style={[styles.bonusBody, { borderRadius: 16 }]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.bonusLabel}>{b.label}</Text>
-                  </View>
-                  <Text style={styles.bonusPoints}>+{b.points}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
+        {/* Bonuses section disabled - 'bonuses' not in UnoVariantDef type */}
         {/* ── NOTES ────────────────────────────────────────────────────────── */}
         {variant.notes && variant.notes.length > 0 && (
           <View style={styles.section}>
@@ -533,24 +517,6 @@ const styles = StyleSheet.create({
   },
   pointsText: { fontFamily: "Inter_700Bold", fontSize: 12, color: "#1A0533", zIndex: 2 },
 
-  // Bonuses
-  bonusShadow: {
-    shadowColor: "#FFB800", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45, shadowRadius: 10, elevation: 8, marginBottom: 8,
-  },
-  bonusBody: {
-    backgroundColor: "rgba(255,184,0,0.15)",
-    flexDirection: "row", alignItems: "center",
-    padding: 14, borderWidth: 1, borderColor: "rgba(255,184,0,0.3)",
-    overflow: "hidden", position: "relative",
-  },
-  bonusGloss: {
-    position: "absolute", top: 2, left: 6, width: "40%", height: "55%",
-    backgroundColor: "rgba(255,255,255,0.08)", borderBottomRightRadius: 20,
-  },
-  bonusLabel: { fontFamily: "Inter_500Medium", fontSize: 13, color: "rgba(255,255,255,0.8)" },
-  bonusPoints: { fontFamily: "Inter_700Bold", fontSize: 20, color: "#FFB800" },
-
   // Notes
   notesCard: {},
   noteRow: { flexDirection: "row", gap: 10, alignItems: "flex-start", marginBottom: 8 },
@@ -565,3 +531,4 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
 });
+

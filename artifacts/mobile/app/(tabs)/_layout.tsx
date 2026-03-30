@@ -18,6 +18,14 @@ function NativeTabLayout() {
         <Icon sf={{ default: "clock", selected: "clock.fill" }} />
         <Label>History</Label>
       </NativeTabs.Trigger>
+      <Tabs.Screen name="history" options={{ title: "History", tabBarIcon: ({ color }) =>
+
+            Platform.OS === "ios" ? (
+              <SymbolView name="clock.fill" tintColor={color} size={19} />
+            ) : (
+              <Feather name="clock" size={18} color={color} />
+            ) }} />
+
     </NativeTabs>
   );
 }

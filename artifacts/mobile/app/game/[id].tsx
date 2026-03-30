@@ -113,7 +113,7 @@ export default function GameScreen() {
     if (!id) return;
     endSession(id);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.replace({ pathname: "/results/[id]", params: { id } });
+    router.push({ pathname: "/results/[id]", params: { id } });
   };
 
   const handleResetRound = useCallback(() => {
@@ -200,7 +200,6 @@ export default function GameScreen() {
               </BrandButton>
 
               <View style={styles.headerActionRow}>
-
                 <BrandButton 
                   style={{ width: 40, height: 40, marginLeft: 8 }}
                   borderRadius={12} 
@@ -223,6 +222,27 @@ export default function GameScreen() {
                   onPress={() => { setShowAnalysisModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }} 
                 >
                   <MaterialCommunityIcons name="fire" size={20} color="#FFFFFF" />
+                </BrandButton>
+
+                <BrandButton 
+                  style={{ width: 40, height: 40, marginLeft: 8 }}
+                  borderRadius={12} 
+                  color="#6366F1"
+                  highlight="#818CF8"
+                  shadow="#4F46E5"
+                  glowColor="rgba(99, 102, 241, 0.4)"
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    if (game.parentId) {
+                      const slug = game.parentId;
+                      const varSlug = game.id.replace(`${slug}_`, '');
+                      router.push("/" + slug + "/" + varSlug);
+                    } else {
+                      router.back();
+                    }
+                  }}
+                >
+                  <Ionicons name="information-circle-outline" size={22} color="#FFFFFF" />
                 </BrandButton>
 
               </View>

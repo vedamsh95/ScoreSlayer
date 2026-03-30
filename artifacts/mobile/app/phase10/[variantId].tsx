@@ -76,7 +76,7 @@ export default function Phase10VariantDetailScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
-  const variant = PHASE10_VARIANTS.find((v) => v.id === variantId);
+  const variant = PHASE10_VARIANTS.find((v) => v.id === `phase10_${variantId}` || v.id.endsWith(variantId as string));
 
   if (!variant) {
     return (
@@ -145,7 +145,7 @@ export default function Phase10VariantDetailScreen() {
               </NeuTrench>
               <NeuTrench color={darken(variant.color, 0.4)} borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>Low</Text>
-                <Text style={styles.heroStatLabel}>score wins</Text>
+                <Text style={styles.heroStatLabel}>complexity</Text>
               </NeuTrench>
             </View>
           </View>
@@ -233,9 +233,10 @@ const styles = StyleSheet.create({
   heroName: { fontFamily: "Inter_700Bold", fontSize: 28, color: "#FFFFFF", marginBottom: 4, zIndex: 2 },
   heroTagline: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.65)", marginBottom: 18, lineHeight: 18, zIndex: 2 },
   heroStats: { flexDirection: "row", gap: 10, zIndex: 2 },
-  heroStat: { flex: 1, alignItems: "center" },
-  heroStatValue: { fontFamily: "Inter_700Bold", fontSize: 18, color: "#FFFFFF" },
-  heroStatLabel: { fontFamily: "Inter_400Regular", fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 2 },
+  heroStat: { flex: 1, alignItems: "center", paddingBottom: 6 },
+  heroStatValue: { fontFamily: "Inter_700Bold", fontSize: 20, color: "#FFFFFF" },
+  heroStatLabel: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+  heroStatPadding: { flex: 1, alignItems: "center", paddingBottom: 4 },
 
   // Description
   descCard: { marginBottom: 24, backgroundColor: "rgba(10,18,41,0.5)" },

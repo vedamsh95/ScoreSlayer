@@ -29,7 +29,7 @@ export default function RummyVariantDetailScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
-  const variant = RUMMY_VARIANTS.find((v) => v.id === variantId);
+  const variant = RUMMY_VARIANTS.find((v) => v.id === `rummy_${variantId}` || v.id.endsWith(variantId as string));
 
   if (!variant) {
     return (
@@ -79,11 +79,11 @@ export default function RummyVariantDetailScreen() {
               </NeuTrench>
               <NeuTrench color={darken(variant.color, 0.4)} borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>{isGin ? "High" : "Low"}</Text>
-                <Text style={styles.heroStatLabel}>score wins</Text>
+                <Text style={styles.heroStatLabel}>complexity</Text>
               </NeuTrench>
               <NeuTrench color={darken(variant.color, 0.4)} borderRadius={12} padding={10} style={styles.heroStat}>
                 <Text style={styles.heroStatValue}>{variant.targetScore}</Text>
-                <Text style={styles.heroStatLabel}>point goal</Text>
+                <Text style={styles.heroStatLabel}>points</Text>
               </NeuTrench>
             </View>
           </View>

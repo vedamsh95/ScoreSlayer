@@ -56,6 +56,7 @@ const WinnerAvatar = ({ player, isWinner, initial }: { player: any, isWinner: bo
 };
 
 interface UnifiedToolsCoreProps {
+  initialTab?: "dice" | "first" | "seating" | "timer";
   initialPlayers?: { id: string; name: string; color: string }[];
   onShuffleSeating?: (shuffled: any[]) => void;
   showPlayerInput?: boolean;
@@ -116,8 +117,8 @@ const DiceFace = ({ value }: { value: number }) => {
   );
 };
 
-export function UnifiedToolsCore({ initialPlayers = [], onShuffleSeating, showPlayerInput = false }: UnifiedToolsCoreProps) {
-  const [activeTab, setActiveTab] = useState<"dice" | "first" | "seating" | "timer">("dice");
+export function UnifiedToolsCore({ initialPlayers = [], onShuffleSeating, showPlayerInput = false, initialTab = "first" }: UnifiedToolsCoreProps) {
+  const [activeTab, setActiveTab] = useState<"dice" | "first" | "seating" | "timer">(initialTab);
   
   // PLAYER STATE
   const [players, setPlayers] = useState(initialPlayers);
@@ -136,7 +137,11 @@ export function UnifiedToolsCore({ initialPlayers = [], onShuffleSeating, showPl
 
   // BOTTLE SPIN STATE (FIRST)
   const [isSpinning, setIsSpinning] = useState(false);
-  const spinRotation = useSharedValue(0);
+const spinRotation = useSharedValue(0);
+  const idleRotation = useSharedValue(0);
+  useEffect(() => {
+    idleRotation.value = withRepeat(withTiming(360, { duration: 20000 }), -1, true);
+  }, []);
   const [winnerIdx, setWinnerIdx] = useState<number | null>(null);
 
   // TIMER STATE
@@ -184,7 +189,9 @@ export function UnifiedToolsCore({ initialPlayers = [], onShuffleSeating, showPl
         runOnJS(setIsSpinning)(false);
         const totalDegrees = finalAngle % 360;
         const playerAngleStep = 360 / players.length;
-        const idx = Math.round(totalDegrees / playerAngleStep) % players.length;
+        const offsetCorrection = playerAngleStep / 2; // Point to player center
+        const correctedAngle = (totalDegrees + offsetCorrection) % 360;
+        const idx = Math.floor(correctedAngle / playerAngleStep) % players.length;
         runOnJS(setWinnerIdx)(idx);
         runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
       }
@@ -193,7 +200,7 @@ export function UnifiedToolsCore({ initialPlayers = [], onShuffleSeating, showPl
 
   // --- TIMER LOGIC ---
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isTimerRunning && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((t) => {
@@ -206,7 +213,7 @@ export function UnifiedToolsCore({ initialPlayers = [], onShuffleSeating, showPl
       setIsTimerRunning(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
-    return () => clearInterval(interval);
+    return () => { if (interval) clearInterval(interval); };
   }, [isTimerRunning, timeLeft, initialTime]);
 
   const startTimer = (seconds: number) => {
@@ -240,8 +247,8 @@ export function UnifiedToolsCore({ initialPlayers = [], onShuffleSeating, showPl
     transform: [{ rotate: `${rollRotation.value}deg` }, { scale: rollScale.value }],
   }));
 
-  const animatedSpinStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${spinRotation.value}deg` }],
+const animatedSpinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spinRotation.value + idleRotation.value}deg` }],
   }));
 
   const animatedTimerProps = useAnimatedProps(() => ({
@@ -266,7 +273,7 @@ export function UnifiedToolsCore({ initialPlayers = [], onShuffleSeating, showPl
                     >
                         <View style={[styles.tabOptionClay, { borderRadius: 16, backgroundColor: "#00F5A0" }]}>
                             <View style={styles.tabGloss} pointerEvents="none" />
-                            <MaterialCommunityIcons name={iconName as any} size={18} color="#1A0533" />
+                        <MaterialCommunityIcons name={iconName as any} size={20} color="#1A0533" />
                             <Text style={styles.tabTextActive}>{tab.toUpperCase()}</Text>
                         </View>
                     </Pressable>
@@ -353,7 +360,7 @@ export function UnifiedToolsCore({ initialPlayers = [], onShuffleSeating, showPl
                         );
                     })}
                     <Animated.View style={[styles.bottleWrapper, animatedSpinStyle]}>
-                        <MaterialCommunityIcons name="bottle-wine" size={80} color="#FF2D78" style={styles.spinBottleIcon} />
+                        <MaterialCommunityIcons name="bottle-wine" size={110} color="#FF2D78" style={styles.spinBottleIcon} />
                     </Animated.View>
                 </View>
 
@@ -550,7 +557,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.25)", borderBottomRightRadius: 20,
   },
   tabOptionNeu: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12 },
-  tabTextActive: { fontFamily: "Bungee_400Regular", fontSize: 10, color: "#1A0533", paddingTop: 2 },
+  tabTextActive: { fontFamily: "Bungee_400Regular", fontSize: 11, color: "#1A0533", paddingTop: 2 },
   tabTextInactive: { fontFamily: "Inter_700Bold", fontSize: 10, color: "rgba(255,255,255,0.3)" },
   main: { flex: 1 },
   tabContent: { flex: 1, paddingBottom: 10 },
@@ -587,7 +594,7 @@ const styles = StyleSheet.create({
   avatarName: { color: 'rgba(255,255,255,0.5)', fontSize: 10, fontFamily: 'Inter_700Bold', marginTop: 6, width: 60, textAlign: 'center' },
   winnerAvatar: { },
   winnerGlow: { ...StyleSheet.absoluteFillObject, borderRadius: 24, opacity: 0.4, transform: [{ scale: 1.3 }], zIndex: -1 },
-  bottleWrapper: { position: 'absolute', width: 100, height: 100, alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  bottleWrapper: { position: 'absolute', width: 140, height: 140, alignItems: 'center', justifyContent: 'center', zIndex: 30 },
   spinBottleIcon: { textShadowColor: 'rgba(255,45,120,0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 15 },
   bottleSpinControls: { width: '100%', gap: 20, marginTop: 40 },
   pickedResultFixed: { alignItems: 'center' },
