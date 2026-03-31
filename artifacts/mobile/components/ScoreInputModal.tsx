@@ -282,7 +282,15 @@ export function ScoreInputModal({
       return <DutchBlitzCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]?.stats} />;
     }
     if (game.id === "custom_game") {
-      return <GeneralCalculator key={calcKey} {...common} customScoreRules={customScoreRules} initialLogs={allLogs[activePlayer.id]} />;
+      return (
+        <GeneralCalculator 
+          key={calcKey} 
+          {...common} 
+          customScoreRules={customScoreRules} 
+          initialLogs={allLogs[activePlayer.id]} 
+          initialMetadata={allMetadata[activePlayer.id]}
+        />
+      );
     }
     if (game.id === "five_crowns") {
       return <FiveCrownsCalculator key={calcKey} {...common} round={roundNumber} initialLogs={allLogs[activePlayer.id]} />;

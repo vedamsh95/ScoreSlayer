@@ -266,7 +266,7 @@ export default function GameScreen() {
             </View>
 
             <View style={styles.headerCenter}>
-              <Text style={[styles.headerGame, { color: "#1A0533" }]} numberOfLines={1}>{game.name}</Text>
+              <Text style={[styles.headerGame, { color: "#1A0533" }]}>{game.name}</Text>
               {session.gameId === "five_crowns" ? (
                 <NeuTrench color="rgba(0,0,0,0.08)" borderRadius={8} padding={2} style={styles.fiveCrownsBadge}>
                   <Ionicons name="flash" size={10} color="#1A0533" />

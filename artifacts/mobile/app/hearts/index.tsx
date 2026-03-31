@@ -84,17 +84,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cardWrapper: {
-    width: "31.2%",
+    width: "48%",
     marginBottom: 8,
   },
   variantCard: {
-    padding: 8,
-    height: 72,
+    padding: 12,
+    aspectRatio: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  variantName: { fontFamily: "Bungee_400Regular", fontSize: 10, color: "#1A0533", textAlign: "center", paddingTop: 2 },
-  variantTagline: { fontFamily: "Inter_900Black", fontSize: 6, color: "rgba(0,0,0,0.5)", lineHeight: 8, marginTop: 4, textAlign: "center", textTransform: "uppercase" },
+  variantName: { fontFamily: "Bungee_400Regular", fontSize: 14, color: "#1A0533", textAlign: "center", paddingTop: 2 },
+  variantTagline: { fontFamily: "Inter_900Black", fontSize: 9, color: "rgba(26,5,51,0.5)", lineHeight: 12, marginTop: 4, textAlign: "center", textTransform: "uppercase" },
   tapRow: { display: "none" },
   backFab: { position: "absolute", alignSelf: "center", width: "80%" },
 });

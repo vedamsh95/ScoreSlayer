@@ -182,8 +182,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.greeting}>GAME NIGHT</Text>
-          <Text style={styles.appName}>ScoreSlayer</Text>
+          <Text style={styles.appName}>SCOREUP</Text>
         </View>
         <BrandButton 
           style={{ width: 44, height: 44 }}
