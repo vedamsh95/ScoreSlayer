@@ -1,7 +1,17 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo } from "react";
+import { StyleSheet, Text, View, ScrollView } from "react-native";
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withRepeat, 
+  withTiming, 
+  withSpring,
+  interpolateColor
+} from "react-native-reanimated";
 import { Player } from "@/context/GameContext";
 import { PolymerCard, NeuTrench } from "./PolymerCard";
+import { RoundHistoryChip } from "./RoundHistoryChip";
+import { COLORS } from "../constants/DesignTokens";
 
 interface PlayerScoreRowProps {
   player: Player;
@@ -14,6 +24,7 @@ interface PlayerScoreRowProps {
   showRoundScore?: boolean;
   progress?: number; // 0-1 for vertical progress bar
   tableMode?: boolean; // compact cell vs full card
+  onEditRound?: (roundIndex: number) => void;
 }
 
 export function PlayerScoreRow({
@@ -27,218 +38,276 @@ export function PlayerScoreRow({
   showRoundScore = false,
   progress = 0,
   tableMode = false,
+  onEditRound,
 }: PlayerScoreRowProps) {
-  const Container = tableMode ? NeuTrench : PolymerCard;
-  const containerColor = tableMode ? "rgba(255,255,255,0.05)" : player.color + "88";
-  const containerStyle = tableMode 
-    ? [styles.tableCell, { borderColor: player.color, borderLeftWidth: 3, borderRightWidth: 1.5 }]
-    : [styles.cardContainer, { borderColor: player.color, borderWidth: 2 }];
-  const containerPadding = tableMode ? 8 : 12;
-  const containerBorderRadius = tableMode ? 14 : 24;
+  const glowScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.1);
+
+  useEffect(() => {
+    if (isLeader) {
+      glowScale.value = withRepeat(withTiming(1.05, { duration: 1500 }), -1, true);
+      glowOpacity.value = withRepeat(withTiming(0.25, { duration: 1500 }), -1, true);
+    } else {
+      glowScale.value = 1;
+      glowOpacity.value = 0.1;
+    }
+  }, [isLeader]);
+
+  const animatedGlowStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: glowScale.value }],
+    opacity: glowOpacity.value,
+    backgroundColor: player.color,
+  }));
+
+  // Use a transparent container to integrate with the parent 'Clay' trench
+  const containerColor = "rgba(255,255,255,0.02)"; 
+  const containerBorderRadius = 18;
+
+  const history = useMemo(() => {
+    return player.scores.map((s, idx) => ({
+      score: s,
+      isPhase: !!player.clearedHistory[idx],
+      bid: player.bids?.[idx],
+      won: player.tricksWon?.[idx],
+    }));
+  }, [player.scores, player.clearedHistory, player.bids, player.tricksWon]);
 
   return (
-    <Container 
-      color={containerColor}
-      borderRadius={containerBorderRadius}
-      padding={containerPadding}
-      style={containerStyle}
-    >
-        <View style={[styles.rowInner, tableMode && styles.tableInner]}>
-          {/* Rank Dot/Well */}
-          {rank !== undefined ? (
-            <NeuTrench
-              color="rgba(0,0,0,0.25)"
-              borderRadius={tableMode ? 8 : 14}
-              padding={0}
-              style={tableMode ? styles.tableRankDot : styles.rankWell}
-            >
-              <Text style={[styles.rankText, { color: rank === 1 ? "#FFB800" : "rgba(255,255,255,0.6)", fontSize: tableMode ? 11 : 14 }]}>
-                #{rank}
+    <View style={styles.outerContainer}>
+      <View style={styles.rowBody}>
+        <View style={styles.barContent}>
+          {/* Section 1: Identity & Rank */}
+          <View style={styles.identitySection}>
+            <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={10} padding={0} style={styles.rankWell}>
+              <Text style={[styles.rankText, { color: rank === 1 ? COLORS.accent : COLORS.muted }]}>
+                {rank}
               </Text>
             </NeuTrench>
-          ) : null}
-
-          <View style={tableMode ? styles.tableNameSection : styles.nameSection}>
-            <Text style={[styles.playerName, tableMode && styles.tablePlayerName]} numberOfLines={1}>
-              {player.name}
-              {isDealer ? " 🃏" : ""}
-            </Text>
-            <View style={styles.badgesRow}>
-              {isPhase10 && player.currentPhase !== undefined && (
-                <Text style={[styles.phaseText, tableMode && { fontSize: 9 }]}>Phase {player.currentPhase}</Text>
-              )}
-              {showBags && player.totalBags !== undefined && player.totalBags > 0 && (
-                <View style={[styles.bagBadge, { backgroundColor: player.color + "33" }]}>
-                  <Text style={[styles.bagText, tableMode && { fontSize: 8 }]}>{player.totalBags} Bags</Text>
-                </View>
-              )}
+            <View style={styles.nameBadgeBlock}>
+              <View style={styles.nameRow}>
+                <Text style={[styles.playerName, { color: player.color }]} numberOfLines={1}>
+                  {player.name}
+                </Text>
+                {isDealer && <Text style={styles.dealerEmoji}>🃏</Text>}
+              </View>
+              <View style={styles.miniBadges}>
+                {isLeader && (
+                  <View style={[styles.miniStatusBadge, { backgroundColor: player.color }]}>
+                    <Text style={[styles.miniStatusText, { color: "#1A0533" }]}>TOP</Text>
+                  </View>
+                )}
+                {isPhase10 && player.currentPhase !== undefined && (
+                  <Text style={styles.microInfoText}>P{player.currentPhase}</Text>
+                )}
+              </View>
             </View>
           </View>
 
-          <View style={tableMode ? styles.tableScoreArea : styles.scoreArea}>
-{showRoundScore && roundScore !== undefined && (
-              <NeuTrench color="rgba(0,0,0,0.25)" borderRadius={tableMode ? 8 : 10} padding={tableMode ? 4 : 6} style={tableMode ? [styles.deltaChip, { minWidth: 32 }] : styles.deltaChip}>
-                <Text style={[styles.deltaText, { color: roundScore > 0 ? "#00F5A0" : roundScore < 0 ? "#FF2D78" : "#FFFFFF", fontSize: tableMode ? 10 : 12 }]}>
-                  {roundScore >= 0 ? "+" : ""}{roundScore}
-                </Text>
-              </NeuTrench>
-            )}
-
-            {/* Total Score Well */}
-            <View style={tableMode ? styles.tableScoreWellContainer : {}}>
-              <NeuTrench
-                color="rgba(0,0,0,0.25)"
-                borderRadius={tableMode ? 12 : 16}
-                padding={0}
-                style={tableMode ? styles.tableScoreWell : styles.scoreWell}
+          {/* Section 2: History Trench */}
+          <View style={styles.historySection}>
+            <NeuTrench color="rgba(0,0,0,0.25)" borderRadius={12} padding={4} style={styles.historyTrench}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={styles.historyScrollContent}
               >
-                <Text style={[styles.totalScore, tableMode && styles.tableTotalScore]}>
-                  {player.totalScore.toLocaleString()}
-                </Text>
-              </NeuTrench>
-              
-              {/* Progress Bar */}
-              {tableMode && progress > 0 && (
-                <NeuTrench color="rgba(0,0,0,0.25)" borderRadius={6} padding={0} style={styles.progressBarContainer}>
-                  <View style={[styles.progressFill, { height: `${progress * 100}%`, backgroundColor: player.color }]} />
-                </NeuTrench>
-              )}
-            </View>
+                {history.length > 0 ? (
+                  history.slice(-5).map((h, i) => {
+                    const actualIdx = i + Math.max(0, history.length - 5);
+                    return (
+                      <RoundHistoryChip 
+                        key={i} 
+                        score={h.score} 
+                        label={`R${actualIdx + 1}`}
+                        color={h.isPhase ? COLORS.primary : "rgba(255,255,255,0.6)"}
+                        style={styles.microChip}
+                        onPress={() => onEditRound?.(actualIdx)}
+                      />
+                    );
+                  })
+                ) : (
+                  <Text style={styles.noHistoryText}>No rounds yet</Text>
+                )}
+              </ScrollView>
+            </NeuTrench>
+          </View>
+
+          {/* Section 3: Victory Well */}
+          <View style={styles.victorySection}>
+            <NeuTrench
+              color="rgba(0,0,0,0.35)"
+              borderRadius={12}
+              padding={0}
+              style={styles.totalWell}
+            >
+              <Text style={[styles.totalText, { color: player.color }]}>
+                {player.totalScore.toLocaleString()}
+              </Text>
+            </NeuTrench>
           </View>
         </View>
-    </Container>
+
+        {/* Subtle Progress Underline */}
+        {progress > 0 && (
+          <View style={styles.progressUnderlineTrack}>
+            <View 
+              style={[
+                styles.progressUnderlineFill, 
+                { width: `${progress * 100}%` as any, backgroundColor: player.color }
+              ]} 
+              onLayout={() => {}}
+            />
+          </View>
+        )}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  cardContainer: {
-    marginBottom: 12,
+  outerContainer: {
+    marginBottom: 4,
+    position: "relative",
   },
-  rowInner: {
+  leaderGlow: {
+    position: "absolute",
+    top: -3,
+    left: -3,
+    right: -3,
+    bottom: -3,
+    borderRadius: 22,
+    zIndex: -1,
+  },
+  rowBody: {
+    height: 72,
+    justifyContent: "center",
+    borderRadius: 18,
+    paddingHorizontal: 8,
+  },
+  barContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "space-between",
   },
-  tableInner: {
-    flexDirection: "column",
-    gap: 4,
-    alignItems: "flex-start",
-  },
-  tableCell: {
-    height: 84,
+  identitySection: {
     flexDirection: "row",
-    borderColor: "#FFFFFF20",
-    borderBottomWidth: 1,
+    alignItems: "center",
+    width: "30%",
+    gap: 10,
   },
   rankWell: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tableRankDot: {
     width: 28,
     height: 28,
     alignItems: "center",
     justifyContent: "center",
   },
   rankText: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 14,
+    fontFamily: "Inter_900Black",
+    fontSize: 11,
   },
-  nameSection: {
+  nameBadgeBlock: {
     flex: 1,
+    justifyContent: "center",
+    gap: 2,
   },
-  tableNameSection: {
-    flex: 1,
-    marginTop: 2,
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   playerName: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 16,
+    fontFamily: "Bungee_400Regular",
+    fontSize: 12,
     color: "#FFFFFF",
+    maxWidth: "100%",
     letterSpacing: 0.5,
+    paddingTop: 3,
   },
-  tablePlayerName: {
-    fontSize: 14,
+  dealerEmoji: {
+    fontSize: 12,
   },
-  phaseText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 11,
-    color: "rgba(255,255,255,0.45)",
-  },
-  badgesRow: {
+  miniBadges: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 1,
   },
-  bagBadge: {
-    paddingHorizontal: 6,
+  miniStatusBadge: {
+    paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 6,
+    borderRadius: 4,
   },
-  bagText: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 9,
-    textTransform: "uppercase",
+  miniStatusText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 7,
     letterSpacing: 0.5,
   },
-  scoreArea: {
+  microInfoText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 8,
+    color: "rgba(255,255,255,0.35)",
+  },
+  historySection: {
+    width: "50%",
+    paddingHorizontal: 4,
+  },
+  historyTrench: {
+    height: 48,
+    justifyContent: "center",
+  },
+  historyScrollContent: {
+    alignItems: "center",
+    paddingHorizontal: 4,
+    gap: 6,
+  },
+  microChip: {
+    height: 34,
+    minWidth: 40,
+    paddingHorizontal: 6,
+  },
+  noHistoryText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 9,
+    color: "rgba(255,255,255,0.15)",
+    fontStyle: "italic",
+    textAlign: "center",
+    width: "100%",
+  },
+  victorySection: {
+    width: "20%",
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-  },
-  tableScoreArea: {
-    flexDirection: "column",
-    gap: 4,
-    alignItems: "flex-end",
-    marginTop: 2,
-  },
-  deltaChip: {
-    minWidth: 40,
-    alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-end",
+    gap: 8,
   },
   deltaText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 12,
-  },
-  scoreWell: {
-    minWidth: 70,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tableScoreWellContainer: {
-    alignItems: "flex-end",
-  },
-  tableScoreWell: {
-    width: 52,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tableTotalScore: {
-    fontSize: 16,
-  },
-  totalScore: {
     fontFamily: "Inter_900Black",
-    fontSize: 22,
+    fontSize: 11,
+  },
+  totalWell: {
+    minWidth: 60,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  totalText: {
+    fontFamily: "Bungee_400Regular",
+    fontSize: 15,
     color: "#FFFFFF",
     textAlign: "center",
+    paddingTop: 3,
   },
-  progressBarContainer: {
-    width: 52,
-    height: 20,
-    marginTop: 2,
-    overflow: "hidden",
-  },
-  progressFill: {
+  progressUnderlineTrack: {
     position: "absolute",
     bottom: 0,
-    right: 0,
-    left: 0,
-    borderRadius: 4,
+    left: 18,
+    right: 18,
+    height: 2,
+    backgroundColor: "rgba(0,0,0,0.2)",
+    borderRadius: 1,
+    overflow: "hidden",
+  },
+  progressUnderlineFill: {
+    height: "100%",
+    borderRadius: 1,
   },
 });

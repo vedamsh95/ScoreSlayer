@@ -10,15 +10,16 @@ interface UnoCalculatorProps {
   player: Player;
   game: GameDefinition;
   initialLogs?: number[];
+  initialMetadata?: any;
   customScoreRules?: any[];
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
-export function UnoCalculator({ player, game, initialLogs, customScoreRules, onUpdate }: UnoCalculatorProps) {
+export function UnoCalculator({ player, game, initialLogs, initialMetadata, customScoreRules, onUpdate }: UnoCalculatorProps) {
   const [logs, setLogs] = useState<number[]>(initialLogs || []);
-  const [cardLabels, setCardLabels] = useState<string[]>([]);
-  const [caughtWithUno, setCaughtWithUno] = useState(false);
-  const [isWinner, setIsWinner] = useState(false); // Track if player declared Uno (winner)
+  const [cardLabels, setCardLabels] = useState<string[]>(initialMetadata?.cardLabels || []);
+  const [caughtWithUno, setCaughtWithUno] = useState(initialMetadata?.caughtWithUno || false);
+  const [isWinner, setIsWinner] = useState(initialMetadata?.isWinner || false); // Track if player declared Uno (winner)
 
   const unoVariant = useMemo(() => UNO_VARIANTS.find(v => v.id === game.id), [game.id]);
   

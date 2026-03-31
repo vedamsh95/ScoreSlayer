@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   },
   gameName: {
     fontFamily: "Bungee_400Regular",
-    fontSize: 12,
+    fontSize: 14,
     color: "#000000",
     textAlign: "center",
   },
@@ -430,13 +430,13 @@ const styles = StyleSheet.create({
   },
   variantCountText: {
     fontFamily: "Inter_900Black",
-    fontSize: 7,
-    color: "rgba(0,0,0,0.6)",
+    fontSize: 10,
+    color: "rgba(0,0,0,0.8)",
   },
   gamePlayerCount: {
     fontFamily: "Inter_900Black",
-    fontSize: 7,
-    color: "rgba(0,0,0,0.6)",
+    fontSize: 10,
+    color: "rgba(0,0,0,0.8)",
   },
   // Recent games
   recentSection: { marginTop: 24 },

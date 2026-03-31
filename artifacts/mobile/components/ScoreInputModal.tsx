@@ -55,11 +55,13 @@ interface ScoreInputModalProps {
   visible: boolean;
   players: Player[];
   game: GameDefinition;
-  round: number;
+  roundNumber: number;
   initialLogs?: Record<string, number[]>;
   initialCleared?: Record<string, boolean>;
   initialBids?: Record<string, number>;
   initialTricksWon?: Record<string, number>;
+  initialMetadata?: Record<string, any>;
+  initialScores?: Record<string, number>;
   customScoreRules?: any[];
   onSubmit: (
     scores: Record<string, number>,
@@ -77,11 +79,13 @@ export function ScoreInputModal({
   visible,
   players,
   game,
-  round,
+  roundNumber,
   initialLogs,
   initialCleared,
   initialBids,
   initialTricksWon,
+  initialMetadata,
+  initialScores,
   customScoreRules,
   onSubmit,
   onClose,
@@ -146,20 +150,27 @@ export function ScoreInputModal({
   // Initialize state when initial values change or modal opens
   useEffect(() => {
     if (visible) {
+      if (!isEditing) {
+        setActivePlayerIndex(0);
+      }
+      
       setAllLogs(initialLogs || {});
       setAllCleared(initialCleared || {});
       setAllBids(initialBids || {});
       setAllTricksWon(initialTricksWon || {});
+      setAllMetadata(initialMetadata || {});
       
       const scores: Record<string, number> = {};
-      if (initialLogs) {
+      if (initialScores) {
+        Object.assign(scores, initialScores);
+      } else if (initialLogs) {
         Object.keys(initialLogs).forEach(pid => {
           scores[pid] = (initialLogs[pid] || []).reduce((a, b: number) => a + b, 0);
         });
       }
       setAllScores(scores);
     }
-  }, [visible, initialLogs, initialCleared, initialBids, initialTricksWon]);
+  }, [visible, isEditing, initialLogs, initialCleared, initialBids, initialTricksWon, initialMetadata, initialScores]);
 
   const activePlayer = players[activePlayerIndex];
 
@@ -230,7 +241,15 @@ export function ScoreInputModal({
       return <GolfCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
     }
     if (game.id === "uno" || game.parentId === "uno") {
-      return <UnoCalculator key={calcKey} {...common} customScoreRules={customScoreRules} initialLogs={allLogs[activePlayer.id]} />;
+      return (
+        <UnoCalculator 
+          key={calcKey} 
+          {...common} 
+          customScoreRules={customScoreRules} 
+          initialLogs={allLogs[activePlayer.id]} 
+          initialMetadata={allMetadata[activePlayer.id]}
+        />
+      );
     }
     if (game.id === "cornhole") {
       return <CornholeCalculator key={calcKey} {...common} initialStats={allMetadata[activePlayer.id]} />;
@@ -266,13 +285,13 @@ export function ScoreInputModal({
       return <GeneralCalculator key={calcKey} {...common} customScoreRules={customScoreRules} initialLogs={allLogs[activePlayer.id]} />;
     }
     if (game.id === "five_crowns") {
-      return <FiveCrownsCalculator key={calcKey} {...common} round={round} initialLogs={allLogs[activePlayer.id]} />;
+      return <FiveCrownsCalculator key={calcKey} {...common} round={roundNumber} initialLogs={allLogs[activePlayer.id]} />;
     }
     if (game.id === "moelkky") {
       return <MoelkkyCalculator key={calcKey} {...common} initialScore={allScores[activePlayer.id]} />;
     }
     if (game.id === "skull_king") {
-      return <SkullKingCalculator key={calcKey} {...common} round={round} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
+      return <SkullKingCalculator key={calcKey} {...common} round={roundNumber} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
     }
     if (game.id === "wizard") {
       return <WizardCalculator key={calcKey} {...common} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
@@ -320,7 +339,7 @@ export function ScoreInputModal({
                 
                 <View style={styles.sheetHeader}>
                   <View>
-                    <Text style={styles.title}>{isEditing ? "Edit Round" : `Round ${round}`}</Text>
+                    <Text style={styles.title}>{isEditing ? `Edit Round ${roundNumber}` : `Round ${roundNumber}`}</Text>
                     <Text style={styles.subtitle}>Enter cards for {activePlayer.name}</Text>
                   </View>
                   <View style={styles.headerActions}>
@@ -363,12 +382,12 @@ export function ScoreInputModal({
                     style={styles.playerTabWrapper}
                   >
                     <NeuTrench 
-                      color={activePlayerIndex === i ? p.color + "20" : "#1C0638"} 
+                      color={activePlayerIndex === i ? p.color + "25" : "#1C0638"} 
                       borderRadius={16} 
                       padding={10} 
                       style={[
                         styles.playerTab,
-                        activePlayerIndex === i ? { borderColor: p.color + "50", borderWidth: 1 } : {}
+                        activePlayerIndex === i ? { borderColor: p.color + "60", borderWidth: 1.5 } : { borderWidth: 1.5, borderColor: "transparent" }
                       ]}
                     >
                       <View style={styles.tabContent}>
@@ -502,12 +521,15 @@ const styles = StyleSheet.create({
   },
   tabText: { 
     fontFamily: "Inter_800ExtraBold", 
-    fontSize: 14, 
-    color: "rgba(255,255,255,0.85)" 
+    fontSize: 13, 
+    color: "rgba(255,255,255,0.85)",
+    flexShrink: 1,
   },
   tabContent: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1,
+    overflow: "hidden",
   },
   tabScore: { 
     fontFamily: "Inter_900Black", 

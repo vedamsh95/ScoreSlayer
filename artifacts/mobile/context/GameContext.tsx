@@ -43,6 +43,7 @@ export interface GameSession {
   customScoreRules?: any[]; // For games like Uno/Phase10 where card values change
   winnerName?: string;
   customNotes?: string;
+  targetScore?: number;
 }
 
 interface GameState {
@@ -225,6 +226,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         isComplete: false,
         houseRules: [...houseRules],
         customScoreRules: customScoreRules ? [...customScoreRules] : undefined,
+        targetScore: game.targetScore,
       };
 
       dispatch({ type: "CREATE_SESSION", session });

@@ -17,7 +17,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { UNO_VARIANTS, UnoVariantDef } from "@/constants/games";
-import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
+import { NeuTrench, NeuIconWell, PolymerCard } from "@/components/PolymerCard";
 
 // ─── Clay Variant Card ───────────────────────────────────────────────────────
 function VariantCard({ variant }: { variant: UnoVariantDef }) {
@@ -27,13 +27,6 @@ function VariantCard({ variant }: { variant: UnoVariantDef }) {
     transform: [{ scale: scale.value }],
   }));
 
-  const handlePressIn = () => {
-    scale.value = withSpring(0.96, { damping: 18, stiffness: 500 });
-  };
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 14, stiffness: 380 });
-  };
-
   return (
     <Animated.View style={[styles.cardWrapper, animStyle]}>
       <Pressable
@@ -41,12 +34,25 @@ function VariantCard({ variant }: { variant: UnoVariantDef }) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
         }}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={[styles.cardBody, { backgroundColor: variant.color, borderRadius: 16 }]}
+        onPressIn={() => {
+          scale.value = withSpring(0.93, { damping: 18, stiffness: 500 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 14, stiffness: 380 });
+        }}
+        style={{ width: '100%' }}
       >
-        <Text style={styles.variantName} numberOfLines={2}>{variant.name}</Text>
-        <Text style={styles.variantTagline} numberOfLines={2}>{variant.tagline}</Text>
+        <PolymerCard 
+          color={variant.color} 
+          borderRadius={18} 
+          padding={12} 
+          style={styles.cardBody}
+        >
+          <Text style={styles.variantName} numberOfLines={2}>{variant.name}</Text>
+          <View style={styles.cardFooter}>
+            <Text style={styles.variantTagline} numberOfLines={2}>{variant.tagline}</Text>
+          </View>
+        </PolymerCard>
       </Pressable>
     </Animated.View>
   );
@@ -89,7 +95,7 @@ export default function UnoVariantsScreen() {
 
         {/* Big clay UNO badge */}
         <View style={styles.unoBadgeShadow}>
-          <View style={[styles.unoBadgeBody, { backgroundColor: "#FF5A05" }]}>
+          <View style={[styles.unoBadgeBody, { backgroundColor: "#FF6B6B" }]}>
             <View style={styles.unoBadgeGloss} pointerEvents="none" />
             <Text style={styles.unoBadgeText}>UNO</Text>
           </View>
@@ -166,15 +172,34 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cardWrapper: {
-    width: "31.2%",
-    marginBottom: 8,
+    width: "30.5%",
+    marginBottom: 12,
   },
   cardBody: {
-    padding: 8,
-    height: 72,
+    aspectRatio: 1,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
-  variantName: { fontFamily: "Bungee_400Regular", fontSize: 11, color: "#1A0533", textAlign: "center", paddingTop: 2 },
-  variantTagline: { fontFamily: "Inter_900Black", fontSize: 6, color: "rgba(26,5,51,0.5)", lineHeight: 8, marginTop: 4, textAlign: "center", textTransform: "uppercase" },
+  variantName: { 
+    fontFamily: "Bungee_400Regular", 
+    fontSize: 14, 
+    color: "#1A0533", 
+    textAlign: "center", 
+    paddingTop: 2 
+  },
+  cardFooter: {
+    position: "absolute",
+    bottom: 8,
+  },
+  variantTagline: { 
+    fontFamily: "Inter_900Black", 
+    fontSize: 9, 
+    color: "rgba(26,5,51,0.7)", 
+    lineHeight: 11, 
+    marginTop: 4, 
+    textAlign: "center", 
+    textTransform: "uppercase" 
+  },
 });

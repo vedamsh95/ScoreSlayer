@@ -148,11 +148,11 @@ export default function HistoryScreen() {
             highlight="#54FFC9"
             shadow="#00D289"
             glowColor="rgba(0, 245, 160, 0.4)"
-            borderRadius={14}
+            borderRadius={12}
             onPress={() => router.replace("/(tabs)")}
-            style={{ marginTop: 16, paddingHorizontal: 24, paddingVertical: 12 }}
+            style={{ marginTop: 24, width: 180, height: 48 }}
           >
-            <Text style={styles.emptyBtnText}>Choose a Game</Text>
+            <Text style={styles.emptyBtnText}>CHOOSE A GAME</Text>
           </BrandButton>
         </View>
       )}
@@ -292,7 +292,7 @@ export default function HistoryScreen() {
 
       {activeTab === "completed" && completedSessions.length === 0 && state.sessions.length > 0 && (
          <View style={styles.emptyState}>
-           <Feather name="trophy" size={48} color="rgba(255,255,255,0.1)" />
+           <Ionicons name="trophy-outline" size={48} color="rgba(255,255,255,0.1)" />
            <Text style={styles.emptyTitle}>No Completed Games</Text>
            <Text style={styles.emptySubtitle}>Your first victory is waiting!</Text>
          </View>

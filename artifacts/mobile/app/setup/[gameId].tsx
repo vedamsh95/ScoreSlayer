@@ -382,11 +382,23 @@ const styles = StyleSheet.create({
   },
   gameChipText: { fontFamily: "Bungee_400Regular", fontSize: 11, color: "#1A0533", zIndex: 2, paddingTop: 2 },
   heading: { fontFamily: "Bungee_400Regular", fontSize: 24, color: "#FFFFFF", marginBottom: 6 },
-  subheading: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 16, lineHeight: 18 },
+  subheading: { 
+    fontFamily: "Inter_700Bold", 
+    fontSize: 15, 
+    color: "rgba(255,255,255,0.8)", 
+    marginBottom: 20, 
+    lineHeight: 22 
+  },
   // Objective
   objectiveCard: { marginBottom: 20 },
   objectiveRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  objectiveText: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.55)", flex: 1, lineHeight: 18 },
+  objectiveText: { 
+    fontFamily: "Inter_600SemiBold", 
+    fontSize: 14, 
+    color: "rgba(255,255,255,0.7)", 
+    flex: 1, 
+    lineHeight: 20 
+  },
   // Rules Action
   rulesActionRow: { marginBottom: 24 },
   rulesBtnContent: { flexDirection: "row", alignItems: "center", gap: 8 },

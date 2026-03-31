@@ -16,11 +16,20 @@ import { useGame } from "@/context/GameContext";
 import { getGameById, GameDefinition } from "@/constants/games";
 import { PlayerScoreRow } from "@/components/PlayerScoreRow";
 import { ScoreInputModal } from "@/components/ScoreInputModal";
-import { PolymerCard, NeuTrench, NeuButton, BrandButton, NeuIconWell, PolymerAlert } from "@/components/PolymerCard";
+import { 
+  PolymerCard, 
+  NeuTrench, 
+  NeuButton, 
+  BrandButton, 
+  NeuIconWell, 
+  PolymerAlert 
+} from "@/components/PolymerCard";
+import { COLORS } from "@/constants/DesignTokens";
 import { Player } from "@/context/GameContext";
 import { GameToolsModal } from "@/components/GameToolsModal";
 import { AnalysisModal } from "@/components/AnalysisModal";
 import { AddPlayerModal } from "@/components/AddPlayerModal";
+import { TargetEditModal } from "@/components/TargetEditModal";
 
 function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] {
   if (!game) return players;
@@ -64,6 +73,7 @@ export default function GameScreen() {
   const [showEndAlert, setShowEndAlert] = useState(false);
   const [showResetAlert, setShowResetAlert] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+  const [showTargetEditModal, setShowTargetEditModal] = useState(false);
 
   const FIVE_CROWNS_WILDS = ["3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
@@ -105,6 +115,18 @@ export default function GameScreen() {
     setEditingRoundIndex(roundIndex);
     setShowScoreModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const handleEditTarget = () => {
+    if (!id || !session || !game) return;
+    setShowTargetEditModal(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleUpdateTarget = (newTarget: number) => {
+    if (!id || !session) return;
+    updateSession({ ...session, targetScore: newTarget });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const handleEndGame = useCallback(() => {
@@ -163,25 +185,18 @@ export default function GameScreen() {
 
   if (!session || !game) return null;
 
-  const activeSession = session;
-  const activeGame = game;
-
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const dealer = activeSession.dealerIndex >= 0 ? activeSession.players[activeSession.dealerIndex] : null;
+  const dealer = session.dealerIndex >= 0 ? session.players[session.dealerIndex] : null;
 
   const recentRoundScores: Record<string, number> = {};
-  activeSession.players.forEach((p) => {
+  session.players.forEach((p) => {
     const last = p.scores[p.scores.length - 1];
     if (last !== undefined) recentRoundScores[p.id] = last;
   });
 
-  const hasTargetScore = game.targetScore !== undefined;
-  const canAddPlayer =
-    !session.isComplete && session.players.length < game.maxPlayers;
-  const leader = sortedPlayers[0];
-  const leaderProgress = hasTargetScore && game.targetScore
-    ? Math.min((leader?.totalScore ?? 0) / game.targetScore, 1)
-    : 0;
+  const activeTargetScore = session.targetScore ?? game.targetScore;
+  const hasTargetScore = activeTargetScore !== undefined;
+  const canAddPlayer = !session.isComplete && session.players.length < game.maxPlayers;
 
   return (
     <View style={styles.container}>
@@ -238,7 +253,7 @@ export default function GameScreen() {
                     if (game.parentId) {
                       const slug = game.parentId;
                       const varSlug = game.id.replace(`${slug}_`, '');
-router.push(`/${slug}/${varSlug}` as any);
+                      router.push(`/${slug}/${varSlug}` as any);
                     } else {
                       router.back();
                     }
@@ -251,14 +266,14 @@ router.push(`/${slug}/${varSlug}` as any);
             </View>
 
             <View style={styles.headerCenter}>
-              <Text style={styles.headerGame} numberOfLines={1}>{game.name}</Text>
+              <Text style={[styles.headerGame, { color: "#1A0533" }]} numberOfLines={1}>{game.name}</Text>
               {session.gameId === "five_crowns" ? (
-                <NeuTrench color="rgba(255,255,255,0.15)" borderRadius={8} padding={2} style={styles.fiveCrownsBadge}>
-                  <Ionicons name="flash" size={10} color="#FFB800" />
-                  <Text style={styles.wildText}>Wilds: {FIVE_CROWNS_WILDS[Math.min(session.currentRound - 1, 10)]}</Text>
+                <NeuTrench color="rgba(0,0,0,0.08)" borderRadius={8} padding={2} style={styles.fiveCrownsBadge}>
+                  <Ionicons name="flash" size={10} color="#1A0533" />
+                  <Text style={[styles.wildText, { color: "#1A0533" }]}>Wilds: {FIVE_CROWNS_WILDS[Math.min(session.currentRound - 1, 10)]}</Text>
                 </NeuTrench>
               ) : (
-                <Text style={styles.headerRound}>Round {session.currentRound}</Text>
+                <Text style={[styles.headerRound, { color: "rgba(26,5,51,0.5)" }]}>Round {session.currentRound}</Text>
               )}
             </View>
 
@@ -268,9 +283,9 @@ router.push(`/${slug}/${varSlug}` as any);
                 highlight="#5D6D7E"
                 shadow="#212F3D"
                 glowColor="rgba(52, 73, 94, 0.4)"
-                borderRadius={14} 
+                borderRadius={12} 
                 onPress={handleEndGame}
-                style={{ paddingHorizontal: 20, height: 42 }}
+                style={{ width: 64, height: 40 }}
               >
                 <Text style={[styles.endBtnText, { color: "#FFFFFF" }]}>END</Text>
               </BrandButton>
@@ -280,37 +295,27 @@ router.push(`/${slug}/${varSlug}` as any);
           {/* Info strip */}
           <View style={styles.infoStrip}>
             <Pressable onPress={toggleDirection} style={{ flex: 1 }}>
-              <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={12} padding={8} style={styles.infoChip}>
-                <Ionicons name={session.direction === "CW" ? "refresh" : "refresh-outline"} size={14} color="#00F5A0" />
-                <Text style={[styles.infoChipText, { color: "#FFFFFF" }]}>{session.direction}</Text>
+              <NeuTrench color="rgba(0,0,0,0.06)" borderRadius={12} padding={8} style={styles.infoChip}>
+                <Text style={[styles.infoChipText, { color: "#1A0533" }]}>DIR: <Text style={{ fontFamily: "Bungee_400Regular", fontSize: 10 }}>{session.direction}</Text></Text>
               </NeuTrench>
             </Pressable>
 
             <View style={{ flex: 1.5 }}>
-              <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={12} padding={8} style={styles.infoChip}>
-                <Ionicons name="person-outline" size={14} color="#FFB800" />
-                <Text style={[styles.infoChipText, { color: "#FFFFFF" }]} numberOfLines={1}>{dealer?.name ?? "—"}</Text>
+              <NeuTrench color="rgba(0,0,0,0.06)" borderRadius={12} padding={8} style={styles.infoChip}>
+                <Text style={[styles.infoChipText, { color: "#1A0533" }]} numberOfLines={1}>
+                  DEALER: <Text style={{ fontFamily: "Bungee_400Regular", fontSize: 10 }}>{dealer?.name ?? "—"}</Text>
+                </Text>
               </NeuTrench>
             </View>
 
-            {hasTargetScore && (
-              <View style={{ flex: 1.5 }}>
-                <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={12} padding={8} style={styles.infoChip}>
-                  <Ionicons name="flag-outline" size={14} color="#FF2D78" />
-                  <Text style={[styles.infoChipText, { color: "#FFFFFF" }]}>{game.targetScore?.toLocaleString()}</Text>
+            {hasTargetScore && activeTargetScore !== undefined && (
+              <Pressable onPress={handleEditTarget} style={{ flex: 1.5 }}>
+                <NeuTrench color="rgba(0,0,0,0.06)" borderRadius={12} padding={8} style={styles.infoChip}>
+                  <Text style={[styles.infoChipText, { color: "#1A0533" }]}>TGT: <Text style={{ fontFamily: "Bungee_400Regular", fontSize: 10 }}>{activeTargetScore.toLocaleString()}</Text></Text>
                 </NeuTrench>
-              </View>
+              </Pressable>
             )}
           </View>
-
-          {/* Progress track */}
-          {hasTargetScore && game.targetScore && (
-            <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={10} padding={2} style={styles.progressTrack}>
-              <View
-                style={[styles.progressFill, { width: `${leaderProgress * 100}%` as any, backgroundColor: session.gameColor, borderRadius: 8 }]}
-              />
-            </NeuTrench>
-          )}
         </PolymerCard>
       </View>
 
@@ -325,14 +330,14 @@ router.push(`/${slug}/${varSlug}` as any);
         {session.gameId === "golf" && session.currentRound > 1 && (
           <PolymerCard color="rgba(0,0,0,0.2)" borderRadius={24} padding={12} style={styles.golfHoleBar}>
             <Text style={styles.golfHoleTitle}>9-Hole Trend</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.golfHoleStrip}>
-                {Array.from({ length: Math.max(9, session.currentRound - 1) }).map((_, r) => (
-                  <View key={r} style={styles.golfHoleColumn}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.golfHistory}>
+              <View style={styles.golfTrack}>
+                {Array.from({ length: 9 }).map((_, r) => (
+                  <View key={r} style={styles.golfHole}>
                     <Text style={styles.golfHoleLabel}>H{r + 1}</Text>
                     <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={8} padding={4} style={styles.golfHoleChip}>
-                      <Text style={[styles.golfHoleScore, { color: (leader?.scores[r] ?? 0) > 0 ? "#FF2D78" : "#00F5A0" }]}>
-                        {leader?.scores[r] !== undefined ? leader.scores[r] : "—"}
+                      <Text style={[styles.golfHoleScore, { color: (sortedPlayers[0]?.scores[r] ?? 0) > 0 ? "#FF2D78" : "#00F5A0" }]}>
+                        {sortedPlayers[0]?.scores[r] !== undefined ? sortedPlayers[0].scores[r] : "—"}
                       </Text>
                     </NeuTrench>
                   </View>
@@ -342,137 +347,53 @@ router.push(`/${slug}/${varSlug}` as any);
           </PolymerCard>
         )}
 
-        {/* Unified Clay Table */}
-        <PolymerCard color="#1E293B" borderRadius={24} padding={0} style={styles.unifiedTableCard}>
-          <View style={styles.tableHeaderRow}>
-            {/* Fixed PLAYER header */}
-            <View style={[styles.tableFixedColumn, styles.tableHeaderCell]}>
-              <Text style={styles.tableHeaderText}>PLAYER</Text>
-            </View>
 
-            {/* Scrollable Rounds headers */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tableRoundsScroll}>
-              <View style={styles.tableRoundsHeader}>
-                {Array.from({ length: Math.max(0, session.currentRound - 1) }).map((_, r) => (
-                  <BrandButton
-                    key={r}
-                    onPress={() => handleEditRound(r)}
-                    color="#2D1B4D"
-                    highlight="rgba(255,255,255,0.1)"
-                    shadow="rgba(0,0,0,0.3)"
-                    borderRadius={12}
-                    style={styles.tableRoundHeaderBtn}
-                  >
-                    <Text style={styles.tableRoundLabel}>R{r + 1}</Text>
-                  </BrandButton>
-                ))}
-              </View>
-            </ScrollView>
+        {/* Player Card Stack wrapped in Clay Trench */}
+        <NeuTrench color="rgba(0,0,0,0.15)" borderRadius={28} padding={8} style={styles.clayTable}>
+          <View style={styles.cardStack}>
+            {sortedPlayers.map((player: Player, i: number) => {
+              const playerProgress = hasTargetScore && activeTargetScore 
+                ? Math.min(player.totalScore / activeTargetScore, 1) 
+                : 0;
+              const isPlayerDealer = player.id === dealer?.id;
+              const playerRecentScore = recentRoundScores[player.id];
+              const isLeader = i === 0 && session.currentRound > 0;
 
-            {/* Fixed TOTAL header */}
-            <View style={[styles.tableTotalColumn, styles.tableHeaderCell]}>
-              <Text style={styles.tableHeaderText}>TOTAL</Text>
-            </View>
+              return (
+                <PlayerScoreRow
+                  key={player.id}
+                  player={player}
+                  rank={i + 1}
+                  isLeader={isLeader}
+                  isDealer={isPlayerDealer}
+                  roundScore={playerRecentScore}
+                  showRoundScore={session.currentRound > 1}
+                  isPhase10={game.parentId === "phase10" || game.id.includes("phase10")}
+                  showBags={game.id.startsWith("spades")}
+                  progress={playerProgress}
+                  tableMode={false}
+                  onEditRound={handleEditRound}
+                />
+              );
+            })}
           </View>
 
-          {sortedPlayers.map((player: Player, i: number) => {
-            const playerProgress = hasTargetScore && game.targetScore 
-              ? Math.min(player.totalScore / game.targetScore!, 1) 
-              : 0;
-            const isPlayerDealer = player.id === dealer?.id;
-            const playerRecentScore = recentRoundScores[player.id];
-
-            return (
-              <View key={player.id} style={styles.tableRow}>
-                {/* Fixed Player Details */}
-                <View style={styles.tableFixedColumn}>
-                  <PlayerScoreRow
-                    player={player}
-                    rank={i + 1}
-                    isDealer={isPlayerDealer}
-                    roundScore={playerRecentScore}
-                    showRoundScore={session.currentRound > 1}
-                    isPhase10={game.parentId === "phase10" || game.id.includes("phase10")}
-                    showBags={game.id.startsWith("spades")}
-                    progress={playerProgress}
-                    tableMode={true}
-                  />
-                </View>
-
-                {/* Scrollable Rounds History */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tableRoundsScroll}>
-                  <View style={styles.tableRoundsRow}>
-                    {Array.from({ length: Math.max(0, session.currentRound - 1) }).map((_, r) => {
-                      const score = player.scores[r];
-                      const log = player.roundLogs[r] || [];
-                      const bid = player.bids?.[r];
-                      const won = player.tricksWon?.[r];
-                      const isSpades = session.gameId.startsWith("spades");
-                      const isPhase10 = session.gameId.startsWith("phase10");
-                      const wasCleared = player.clearedHistory[r];
-
-                      return (
-                        <NeuTrench 
-                          key={r}
-                          color="rgba(255,255,255,0.05)"
-                          borderRadius={14}
-                          padding={8}
-                          style={styles.tableHistoryCell}
-                        >
-                          <Text style={[styles.tableHistoryScore, { color: player.color }]}>
-                            {score !== undefined ? (score >= 0 ? "+" : "") + score : "—"}
-                          </Text>
-                          {player.roundMetadata?.[r]?.isWinner && (
-                            <Text style={styles.tableHistoryBadge}>🏆 UNO</Text>
-                          )}
-                          {isPhase10 && wasCleared && (
-                            <Text style={[styles.tableHistoryBadge, { color: player.color, fontFamily: "Inter_900Black", fontSize: 7 }]}>
-                              ✔️ PHASE
-                            </Text>
-                          )}
-                          {isSpades && bid !== undefined && (
-                            <Text style={[styles.tableHistoryLog, { color: "#FFF", opacity: 0.6 }]}>
-                              {bid}/{won ?? 0}
-                            </Text>
-                          )}
-                          {!isSpades && !isPhase10 && log.length > 0 && (
-                            <Text style={[styles.tableHistoryLog, { color: "#FFF", opacity: 0.6 }]}>
-                              {log.join(",")}
-                            </Text>
-                          )}
-                        </NeuTrench>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-
-                {/* Fixed Total Column */}
-                <View style={styles.tableTotalColumn}>
-                  <NeuTrench color="rgba(255,255,255,0.05)" borderRadius={16} padding={12} style={styles.tableTotalCell}>
-                    <Text style={styles.tableTotalScore}>{player.totalScore.toLocaleString()}</Text>
-                  </NeuTrench>
-                </View>
-              </View>
-            );
-          })}
-
-          {/* Footer for add player */}
+          {/* Standardized Add Player Brand Button */}
           {canAddPlayer && (
-            <View style={styles.tableFooter}>
-              <NeuButton
-                onPress={() => setShowAddPlayerModal(true)}
-                color="rgba(0,245,160,0.12)"
-                borderRadius={16}
-                style={styles.tableAddPlayerBtn}
-              >
-                <View style={styles.addPlayerRowInner}>
-                  <Ionicons name="person-add-outline" size={18} color="#00F5A0" />
-                  <Text style={styles.addPlayerRowText}>Add player</Text>
-                </View>
-              </NeuButton>
-            </View>
+            <BrandButton
+              onPress={() => setShowAddPlayerModal(true)}
+              borderRadius={18}
+              style={styles.addPlayerBrandBtn}
+            >
+              <View style={styles.addPlayerContent}>
+                <NeuIconWell color="rgba(255,255,255,0.15)" size={32} borderRadius={10}>
+                  <Ionicons name="person-add" size={16} color="#FFFFFF" />
+                </NeuIconWell>
+                <Text style={[styles.addPlayerText, { color: "#FFFFFF" }]}>ADD PLAYER</Text>
+              </View>
+            </BrandButton>
           )}
-        </PolymerCard>
+        </NeuTrench>
       </ScrollView>
 
       <View
@@ -486,7 +407,9 @@ router.push(`/${slug}/${varSlug}` as any);
           style={{ height: 62, width: "100%" }}
         >
           <View style={styles.bottomBtnInner}>
-            <Feather name={editingRoundIndex !== null ? "check" : "plus"} size={20} color="#FFFFFF" />
+            <NeuIconWell color="rgba(255,255,255,0.15)" size={32} borderRadius={10} style={{ marginRight: 12 }}>
+              <Feather name={editingRoundIndex !== null ? "check" : "plus"} size={18} color="#FFFFFF" />
+            </NeuIconWell>
             <Text style={styles.brandBtnText}>
               {editingRoundIndex !== null ? "APPLY CHANGES" : `ROUND ${session.currentRound}`}
             </Text>
@@ -496,28 +419,46 @@ router.push(`/${slug}/${varSlug}` as any);
 
       <ScoreInputModal
         visible={showScoreModal}
-        players={session.players}
-        game={game}
-        customScoreRules={session.customScoreRules}
-        round={editingRoundIndex !== null ? editingRoundIndex + 1 : session.currentRound}
-        isEditing={editingRoundIndex !== null}
-        initialLogs={editingRoundIndex !== null ? 
-          session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.roundLogs[editingRoundIndex] || [] }), {}) : 
-          undefined}
-        initialCleared={editingRoundIndex !== null ?
-          session.players.reduce((acc, p) => ({ ...acc, [p.id]: !!p.clearedHistory[editingRoundIndex] }), {}) :
-          undefined}
-        initialBids={editingRoundIndex !== null ?
-          session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.bids[editingRoundIndex] ?? 0 }), {}) :
-          undefined}
-        initialTricksWon={editingRoundIndex !== null ?
-          session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.tricksWon[editingRoundIndex] ?? 0 }), {}) :
-          undefined}
-        onSubmit={handleSubmitScores}
         onClose={() => {
           setShowScoreModal(false);
           setEditingRoundIndex(null);
         }}
+        onSubmit={handleSubmitScores}
+        players={session.players}
+        game={game}
+        customScoreRules={session.customScoreRules}
+        isEditing={editingRoundIndex !== null}
+        roundNumber={editingRoundIndex !== null ? editingRoundIndex + 1 : session.currentRound}
+        initialLogs={
+          editingRoundIndex !== null
+            ? session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.roundLogs[editingRoundIndex] || [] }), {})
+            : undefined
+        }
+        initialCleared={
+          editingRoundIndex !== null
+            ? session.players.reduce((acc, p) => ({ ...acc, [p.id]: !!p.clearedHistory[editingRoundIndex] }), {})
+            : undefined
+        }
+        initialBids={
+          editingRoundIndex !== null
+            ? session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.bids[editingRoundIndex] ?? 0 }), {})
+            : undefined
+        }
+        initialTricksWon={
+          editingRoundIndex !== null
+            ? session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.tricksWon[editingRoundIndex] ?? 0 }), {})
+            : undefined
+        }
+        initialMetadata={
+          editingRoundIndex !== null
+            ? session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.roundMetadata[editingRoundIndex] || {} }), {})
+            : undefined
+        }
+        initialScores={
+          editingRoundIndex !== null
+            ? session.players.reduce((acc, p) => ({ ...acc, [p.id]: p.scores[editingRoundIndex] ?? 0 }), {})
+            : undefined
+        }
       />
 
       <GameToolsModal
@@ -538,6 +479,13 @@ router.push(`/${slug}/${varSlug}` as any);
         completedRounds={Math.max(0, session.currentRound - 1)}
         onClose={() => setShowAddPlayerModal(false)}
         onAdd={handleAddPlayer}
+      />
+
+      <TargetEditModal
+        visible={showTargetEditModal}
+        initialValue={session.targetScore ?? game.targetScore ?? 0}
+        onClose={() => setShowTargetEditModal(false)}
+        onUpdate={handleUpdateTarget}
       />
 
       <PolymerAlert
@@ -563,7 +511,7 @@ router.push(`/${slug}/${varSlug}` as any);
   );
 }
 
-  const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1A0533",
@@ -575,108 +523,59 @@ router.push(`/${slug}/${varSlug}` as any);
     backgroundColor: "#1A0533",
     gap: 16,
   },
-  // Unified Table Styles
-  unifiedTableCard: {
-    marginTop: 20,
-    marginBottom: 20,
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.08)",
+  // New Card Stack Styles
+  statusDeck: {
+    marginTop: 12,
+    marginBottom: 16,
   },
-  tableHeaderRow: {
+  statusRow: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderBottomWidth: 1.5,
-    borderBottomColor: "rgba(255,255,255,0.08)",
-  },
-  tableRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.2)",
-  },
-  tableFixedColumn: {
-    width: 140,
-    borderRightWidth: 1.5,
-    borderRightColor: "rgba(255,255,255,0.1)",
-  },
-  tableTotalColumn: {
-    width: 80,
-    borderLeftWidth: 1.5,
-    borderLeftColor: "rgba(255,255,255,0.1)",
-  },
-  tableHeaderCell: {
-    height: 54,
-    justifyContent: "center",
-    paddingLeft: 12,
     alignItems: "center",
-  },
-  tableHeaderText: {
-    fontFamily: "Inter_900Black",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.5)",
-    letterSpacing: 1.5,
-  },
-  tableRoundsScroll: {
-    flex: 1,
-  },
-  tableRoundsHeader: {
-    flexDirection: "row",
-    height: 54,
-    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 8,
   },
-  tableRoundHeaderBtn: {
-    width: 64,
-    height: 38,
-    marginHorizontal: 4,
-  },
-  tableRoundLabel: {
-    fontFamily: "Inter_900Black",
-    fontSize: 12,
-    color: "#FFFFFF",
-  },
-  tableRoundsRow: {
-    flexDirection: "row",
-    height: 84,
-    alignItems: "center",
-    paddingHorizontal: 8,
-  },
-  tableHistoryCell: {
-    width: 64,
-    height: 60,
-    marginHorizontal: 4,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tableHistoryScore: {
-    fontFamily: "Inter_900Black",
-    fontSize: 15,
-  },
-  tableHistoryBadge: {
+  statusLabel: {
+    fontFamily: "Inter_800ExtraBold",
     fontSize: 10,
-    marginTop: 2,
+    color: COLORS.muted,
+    letterSpacing: 0.5,
   },
-  tableHistoryLog: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 9,
-    marginTop: 2,
-  },
-  tableTotalCell: {
-    height: 84,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tableTotalScore: {
-    fontFamily: "Inter_900Black",
-    fontSize: 20,
+  statusValue: {
+    fontFamily: "Bungee_400Regular",
+    fontSize: 12,
     color: "#FFFFFF",
   },
-  tableFooter: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.08)",
+  statusDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
-  tableAddPlayerBtn: {
-    height: 48,
+  clayTable: {
+    padding: 8,
+    marginBottom: 20,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+  },
+  cardStack: {
+    gap: 4,
+  },
+  addPlayerBrandBtn: {
+    height: 54,
+    marginTop: 8,
+    width: "100%",
+  },
+  addPlayerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  addPlayerText: {
+    fontFamily: "Bungee_400Regular",
+    fontSize: 12,
+    color: COLORS.primary,
+    letterSpacing: 0.5,
   },
   errText: {
     color: "#FFFFFF",
@@ -877,6 +776,17 @@ router.push(`/${slug}/${varSlug}` as any);
     fontFamily: "Inter_800ExtraBold",
     fontSize: 14,
   },
+  golfHistory: {
+    marginTop: 8,
+  },
+  golfTrack: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  golfHole: {
+    alignItems: "center",
+    gap: 4,
+  },
 
   // Sticky History Table Styles
   historyTableCard: {
@@ -990,12 +900,10 @@ router.push(`/${slug}/${varSlug}` as any);
     gap: 12,
   },
   brandBtnText: {
-    fontFamily: "Inter_900Black",
+    fontFamily: "Bungee_400Regular",
     fontSize: 15,
     color: "#FFFFFF",
     letterSpacing: 1.5,
-    textShadowColor: "rgba(0,0,0,0.2)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    paddingTop: 3,
   },
 });
