@@ -12,7 +12,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useGame } from "@/context/GameContext";
+import Svg, { Path } from "react-native-svg";
 import { MAIN_GAMES, GAME_CATEGORIES, GameCategory, GameDefinition, UNO_VARIANTS, PHASE10_VARIANTS, RUMMY_VARIANTS } from "@/constants/games";
+import { BRAND_PATHS, UP_ARROW_PATH, DOWN_ARROW_PATH, LOGO_VIEWBOX } from "@/constants/logo_config";
 import { PolymerCard, NeuIconWell, NeuTrench, BrandButton } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
 import Animated, {
@@ -28,6 +30,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   dice: "#00F5A0",
   tile: "#00BFFF",
 };
+
+// SVG Path data now imported from constants/logo_config.ts
 
 // Extracted animated game game card (to avoid hook-in-loop)
 function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void }) {
@@ -142,11 +146,6 @@ export default function HomeScreen() {
     [state.sessions]
   );
 
-  const recentCompleted = useMemo(
-    () => state.sessions.filter((s) => s.isComplete).slice(0, 3),
-    [state.sessions]
-  );
-
   const [expandedCategories, setExpandedCategories] = React.useState<Record<string, boolean>>({
     card: true, // Default open
   });
@@ -168,102 +167,96 @@ export default function HomeScreen() {
     return groups;
   }, []);
 
-  const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const topPadding = Platform.OS === "web" ? 10 : insets.top;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: topPadding + 16, paddingBottom: insets.bottom + 110 },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.appName}>SCOREUP</Text>
-        </View>
-        <BrandButton 
-          style={{ width: 44, height: 44 }}
-          borderRadius={14} 
-          color="#150428"
-          highlight="rgba(255,255,255,0.1)"
-          shadow="rgba(0,0,0,0.5)"
-          glowColor="rgba(0,0,0,0.3)"
-          onPress={() => router.push("/history")}
-        >
-          <Ionicons name="time-outline" size={22} color="rgba(255,255,255,0.8)" />
-        </BrandButton>
+    <View style={styles.container}>
+      {/* Fixed Header */}
+      <View style={[styles.fixedHeader, { paddingTop: topPadding + 10 }]}>
+        <Svg width={120} height={45} viewBox={LOGO_VIEWBOX}>
+          {BRAND_PATHS.map((path, i) => (
+            <Path key={`logo-${i}`} d={path.d} fill={path.color} />
+          ))}
+          <Path d={UP_ARROW_PATH} fill="#F0BE70" />
+          <Path d={DOWN_ARROW_PATH} fill="#F2887A" />
+        </Svg>
       </View>
 
-      {/* Active game banner — clay card */}
-      {activeSession && (
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push({ pathname: "/game/[id]", params: { id: activeSession.id } });
-          }}
-          style={{ marginBottom: 30 }}
-        >
-        <PolymerCard 
-          color={activeSession.gameColor + "CC"} 
-          borderRadius={32} 
-          padding={20} 
-          style={[styles.activeCard, { borderColor: activeSession.gameColor }]}
-        >
-            <View style={styles.activeBadgeRow}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE GAME</Text>
-            </View>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: topPadding + 80, paddingBottom: insets.bottom + 110 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
 
-            <Text style={styles.activeGameName}>{activeSession.gameName}</Text>
-            <Text style={styles.activeRound}>
-              Round {activeSession.currentRound} · {activeSession.players.length} players
-            </Text>
+        <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>Explore Library</Text>
 
-            {/* Neumorphic score chips carved into the clay */}
-            <View style={styles.activeScoreRow}>
-              {activeSession.players.slice(0, 3).map((p) => (
-                <NeuTrench
-                  key={p.id}
-                  color="rgba(0,0,0,0.3)"
-                  borderRadius={12}
-                  padding={8}
-                  style={styles.scoreChip}
-                >
-                  <View style={[styles.chipDotInline, { backgroundColor: p.color }]} />
-                  <Text style={styles.chipName}>{p.name}</Text>
-                  <Text style={[styles.chipScore, { color: "#FFFFFF" }]}>{p.totalScore}</Text>
-                </NeuTrench>
-              ))}
-            </View>
+        {GAME_CATEGORIES.map((cat) => {
+          const games = gamesByCategory[cat.id] || [];
+          if (games.length === 0) return null;
+          return (
+            <CollapsibleSection
+              key={cat.id}
+              category={cat}
+              games={games}
+              isExpanded={!!expandedCategories[cat.id]}
+              onToggle={() => toggleCategory(cat.id)}
+            />
+          );
+        })}
 
-            <View style={styles.tapHint}>
-              <Text style={styles.tapHintText}>Tap to resume</Text>
-              <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.6)" />
-            </View>
-          </PolymerCard>
-        </Pressable>
-      )}
+        {/* Active game banner — clay card (NOW AT BOTTOM) */}
+        {activeSession && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push({ pathname: "/game/[id]", params: { id: activeSession.id } });
+            }}
+            style={{ marginTop: 40, marginBottom: 20 }}
+          >
+            <PolymerCard 
+              color={activeSession.gameColor + "CC"} 
+              borderRadius={32} 
+              padding={20} 
+              style={[styles.activeCard, { borderColor: activeSession.gameColor }]}
+            >
+              <View style={styles.activeBadgeRow}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE GAME</Text>
+              </View>
 
-      <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>Explore Library</Text>
+              <Text style={styles.activeGameName}>{activeSession.gameName}</Text>
+              <Text style={styles.activeRound}>
+                Round {activeSession.currentRound} · {activeSession.players.length} players
+              </Text>
 
-      {GAME_CATEGORIES.map((cat) => {
-        const games = gamesByCategory[cat.id] || [];
-        if (games.length === 0) return null;
-        return (
-          <CollapsibleSection
-            key={cat.id}
-            category={cat}
-            games={games}
-            isExpanded={!!expandedCategories[cat.id]}
-            onToggle={() => toggleCategory(cat.id)}
-          />
-        );
-      })}
+              <View style={styles.activeScoreRow}>
+                {activeSession.players.slice(0, 3).map((p) => (
+                  <NeuTrench
+                    key={p.id}
+                    color="rgba(0,0,0,0.3)"
+                    borderRadius={12}
+                    padding={8}
+                    style={styles.scoreChip}
+                  >
+                    <View style={[styles.chipDotInline, { backgroundColor: p.color }]} />
+                    <Text style={styles.chipName}>{p.name}</Text>
+                    <Text style={[styles.chipScore, { color: "#FFFFFF" }]}>{p.totalScore}</Text>
+                  </NeuTrench>
+                ))}
+              </View>
 
-    </ScrollView>
+              <View style={styles.tapHint}>
+                <Text style={styles.tapHintText}>Tap to resume</Text>
+                <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.6)" />
+              </View>
+            </PolymerCard>
+          </Pressable>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -272,14 +265,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0F172A",
   },
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 15,
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+  },
   content: {
     paddingHorizontal: 20,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 24,
   },
   greeting: {
     fontFamily: "Bungee_400Regular",
@@ -287,12 +286,6 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.4)",
     letterSpacing: 2,
     marginBottom: 4,
-  },
-  appName: {
-    fontFamily: "Bungee_400Regular",
-    fontSize: 38,
-    color: "#FFFFFF",
-    letterSpacing: -1,
   },
   activeBadgeRow: {
     flexDirection: "row",
@@ -407,7 +400,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   gameCardWrapper: {
-    width: "30.5%", // Slightly adjusted for better gap alignment
+    width: "30.5%",
     marginBottom: 12,
   },
   gameCard: {
@@ -436,54 +429,5 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_900Black",
     fontSize: 10,
     color: "rgba(0,0,0,0.8)",
-  },
-  // Recent games
-  recentSection: { marginTop: 24 },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  seeAllText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-    color: "#00F5A0",
-  },
-  recentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
-  },
-  recentColorBar: {
-    width: 4,
-    height: 36,
-    borderRadius: 2,
-  },
-  recentGame: {
-    fontFamily: "Bungee_400Regular",
-    fontSize: 16,
-    color: "#FFFFFF",
-  },
-  recentWinner: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.4)",
-  },
-  historyEmpty: {
-    padding: 24,
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderRadius: 20,
-    borderStyle: "dashed",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  historyEmptyText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 14,
-    color: "rgba(255,255,255,0.3)",
-    marginTop: 8,
   },
 });

@@ -1,39 +1,54 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView, TextInput } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 
 interface GinRummyCalculatorProps {
   player: Player;
+  initialMetadata?: any;
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
 type GinMode = "knock" | "gin" | "big_gin" | "undercut";
 
-export function GinRummyCalculator({ player, onUpdate }: GinRummyCalculatorProps) {
-  const [mode, setMode] = useState<GinMode>("knock");
-  const [myDeadwood, setMyDeadwood] = useState<string>("0");
-  const [oppDeadwood, setOppDeadwood] = useState<string>("0");
+export function GinRummyCalculator({ player, initialMetadata, onUpdate }: GinRummyCalculatorProps) {
+  const [mode, setMode] = useState<GinMode>(initialMetadata?.mode || "knock");
+  const [myDeadwood, setMyDeadwood] = useState<string>(initialMetadata?.myDeadwood || "0");
+  const [oppDeadwood, setOppDeadwood] = useState<string>(initialMetadata?.oppDeadwood || "0");
   const [activeSide, setActiveSide] = useState<"me" | "opp">("me");
+  const [manualValue, setManualValue] = useState("");
+  const [dynamicQuickAdds, setDynamicQuickAdds] = useState<number[]>(initialMetadata?.dynamicQuickAdds || []);
+  const [manualLogs, setManualLogs] = useState<number[]>(initialMetadata?.manualLogs || []);
 
-  const score = useMemo(() => {
+  const calculatedBase = useMemo(() => {
     const mine = parseInt(myDeadwood) || 0;
     const opp = parseInt(oppDeadwood) || 0;
 
     switch (mode) {
       case "gin": return opp + 25;
       case "big_gin": return opp + 31;
-      case "undercut": return (mine - opp) + 25;
+      case "undercut": return Math.max(0, opp - mine) + 25;
       case "knock": return Math.max(0, opp - mine);
       default: return 0;
     }
   }, [mode, myDeadwood, oppDeadwood]);
 
+  const totalScore = useMemo(() => {
+    const manualTotal = manualLogs.reduce((a, b) => a + b, 0);
+    return calculatedBase + manualTotal;
+  }, [calculatedBase, manualLogs]);
+
   useEffect(() => {
-    onUpdate(score, [myDeadwood, oppDeadwood], { mode, myDeadwood, oppDeadwood });
-  }, [score, mode, myDeadwood, oppDeadwood, onUpdate]);
+    onUpdate(totalScore, [myDeadwood, oppDeadwood, ...manualLogs], { 
+      mode, 
+      myDeadwood, 
+      oppDeadwood, 
+      manualLogs, 
+      dynamicQuickAdds 
+    });
+  }, [totalScore, mode, myDeadwood, oppDeadwood, manualLogs, dynamicQuickAdds, onUpdate]);
 
   const handleModeChange = (newMode: GinMode) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -54,6 +69,24 @@ export function GinRummyCalculator({ player, onUpdate }: GinRummyCalculatorProps
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (activeSide === "me") setMyDeadwood("0");
     else setOppDeadwood("0");
+  };
+
+  const handleManualAdd = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val)) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setManualLogs(prev => [...prev, val]);
+      setManualValue("");
+    }
+  };
+
+  const handleSaveAsShortcut = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val) && !dynamicQuickAdds.includes(val)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setDynamicQuickAdds(prev => [...prev, val]);
+      setManualValue("");
+    }
   };
 
   return (
@@ -118,7 +151,8 @@ export function GinRummyCalculator({ player, onUpdate }: GinRummyCalculatorProps
         </NeuButton>
       </View>
 
-      <View style={styles.quickInputRow}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Tap Input</Text>
         <View style={styles.quickGrid}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
             <NeuButton key={num} onPress={() => addValue(num)} color="#00D2FF" borderRadius={12} style={styles.quickBtn}>
@@ -133,10 +167,62 @@ export function GinRummyCalculator({ player, onUpdate }: GinRummyCalculatorProps
         </View>
       </View>
 
+      {/* Manual Input Row */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Manual Entry</Text>
+        <View style={styles.manualRow}>
+          <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={16} padding={0} style={styles.manualInputTrench}>
+            <TextInput
+              style={styles.manualInput}
+              value={manualValue}
+              onChangeText={setManualValue}
+              placeholder="Manual Pts..."
+              placeholderTextColor="rgba(255,255,255,0.2)"
+              keyboardType="numeric"
+              onSubmitEditing={handleManualAdd}
+            />
+          </NeuTrench>
+          <View style={styles.manualActionGroup}>
+            <Pressable onPress={handleManualAdd} style={styles.manualAddBtn}>
+              <NeuIconWell color="rgba(0, 245, 160, 0.1)" size={48} borderRadius={14}>
+                <Feather name="plus" size={24} color="#00F5A0" />
+              </NeuIconWell>
+            </Pressable>
+            <Pressable onPress={handleSaveAsShortcut} style={[styles.manualAddBtn, { marginLeft: 8 }]}>
+              <NeuIconWell color="rgba(139, 92, 246, 0.1)" size={48} borderRadius={14}>
+                <MaterialCommunityIcons name="star-plus" size={24} color="#8B5CF6" />
+              </NeuIconWell>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {dynamicQuickAdds.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Custom Shortcuts</Text>
+          <View style={styles.shortcutsGrid}>
+            {dynamicQuickAdds.map((val, idx) => (
+              <NeuButton
+                key={`shortcut-${idx}`}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setManualLogs(prev => [...prev, val]);
+                }}
+                color="#8B5CF6"
+                borderRadius={14}
+                style={styles.shortcutBtn}
+              >
+                <Text style={styles.shortcutText}>+{val}</Text>
+              </NeuButton>
+            ))}
+          </View>
+        </View>
+      )}
+
       <NeuTrench color="#150428" borderRadius={28} padding={24} style={styles.resultBox}>
         <Text style={styles.resultLabel}>Total Score Earned</Text>
-        <Text style={[styles.resultValue, { color: score > 0 ? "#00D2FF" : "rgba(255,255,255,0.1)" }]}>
-          {score}
+        <Text style={[styles.resultValue, { color: totalScore > 0 ? "#00D2FF" : "rgba(255,255,255,0.1)" }]}>
+          {totalScore}
         </Text>
         
         <View style={styles.badges}>
@@ -162,7 +248,7 @@ export function GinRummyCalculator({ player, onUpdate }: GinRummyCalculatorProps
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  section: { marginBottom: 24 },
+  section: { marginBottom: 20 },
   sectionTitle: { fontFamily: "Inter_900Black", fontSize: 10, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", marginBottom: 12, letterSpacing: 1.5 },
   modeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   modeButton: { width: "48%", height: 60 },
@@ -175,15 +261,22 @@ const styles = StyleSheet.create({
   inputLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 9, marginBottom: 8, letterSpacing: 0.5 },
   displayContainer: { width: "100%", height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   displayText: { fontFamily: "Inter_900Black", fontSize: 24 },
-  quickInputRow: { marginBottom: 24 },
   quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   quickBtn: { width: "18.5%", height: 44 },
   quickBtnText: { fontFamily: "Inter_900Black", fontSize: 11, color: "rgba(255,255,255,0.5)" },
-  resultBox: { alignItems: "center" },
+  resultBox: { alignItems: "center", marginBottom: 30 },
   resultLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 13, color: "rgba(255,255,255,0.2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 },
   resultValue: { fontFamily: "Inter_900Black", fontSize: 56, lineHeight: 62 },
   badges: { flexDirection: "row", gap: 8, marginTop: 12 },
   roastBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
   roastText: { fontFamily: "Inter_900Black", fontSize: 9, color: "#FFF" },
   hint: { fontFamily: "Inter_800ExtraBold", fontSize: 11, color: "rgba(255,255,255,0.1)", textAlign: "center", marginTop: 20, textTransform: "uppercase", letterSpacing: 1 },
+  manualRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  manualInputTrench: { flex: 1, height: 48 },
+  manualActionGroup: { flexDirection: "row", alignItems: "center" },
+  manualInput: { flex: 1, color: "#FFF", fontFamily: "Inter_600SemiBold", fontSize: 16, paddingHorizontal: 16 },
+  manualAddBtn: { height: 48 },
+  shortcutsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 0 },
+  shortcutBtn: { width: "23%", height: 44 },
+  shortcutText: { fontFamily: "Bungee_400Regular", fontSize: 12, color: "#1A0533" },
 });

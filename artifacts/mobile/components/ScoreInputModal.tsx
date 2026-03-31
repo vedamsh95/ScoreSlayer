@@ -23,7 +23,7 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
-import { PolymerCard, NeuTrench, NeuButton, BrandButton, NeuIconWell } from "./PolymerCard";
+import { PolymerCard, NeuTrench, NeuButton, BrandButton, NeuIconWell, PolymerAlert } from "./PolymerCard";
 
 // Game Calculators
 import { SkyjoCalculator } from "./game_calculators/SkyjoCalculator";
@@ -146,6 +146,7 @@ export function ScoreInputModal({
   const [allTricksWon, setAllTricksWon] = useState<Record<string, number>>({});
   const [allMetadata, setAllMetadata] = useState<Record<string, any>>({});
   const [resetCounters, setResetCounters] = useState<Record<string, number>>({});
+  const [showResetAlert, setShowResetAlert] = useState(false);
 
   // Initialize state when initial values change or modal opens
   useEffect(() => {
@@ -192,26 +193,18 @@ export function ScoreInputModal({
   }, [allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata, onSubmit, handleDismiss]);
 
   const handleReset = useCallback(() => {
-    Alert.alert(
-      "Reset Scores?",
-      `This will clear all entries for ${activePlayer.name} in this round.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Reset", 
-          style: "destructive",
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            setResetCounters(prev => ({ ...prev, [activePlayer.id]: (prev[activePlayer.id] || 0) + 1 }));
-            setAllScores(prev => ({ ...prev, [activePlayer.id]: 0 }));
-            setAllLogs(prev => ({ ...prev, [activePlayer.id]: [] }));
-            setAllCleared(prev => ({ ...prev, [activePlayer.id]: false }));
-            setAllMetadata(prev => ({ ...prev, [activePlayer.id]: {} }));
-          }
-        }
-      ]
-    );
-  }, [activePlayer.id, activePlayer.name]);
+    setShowResetAlert(true);
+  }, []);
+
+  const confirmReset = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setResetCounters(prev => ({ ...prev, [activePlayer.id]: (prev[activePlayer.id] || 0) + 1 }));
+    setAllScores(prev => ({ ...prev, [activePlayer.id]: 0 }));
+    setAllLogs(prev => ({ ...prev, [activePlayer.id]: [] }));
+    setAllCleared(prev => ({ ...prev, [activePlayer.id]: false }));
+    setAllMetadata(prev => ({ ...prev, [activePlayer.id]: {} }));
+    setShowResetAlert(false);
+  }, [activePlayer.id]);
 
   const renderCalculator = () => {
     const common = {
@@ -302,7 +295,7 @@ export function ScoreInputModal({
       return <SkullKingCalculator key={calcKey} {...common} round={roundNumber} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
     }
     if (game.id === "wizard") {
-      return <WizardCalculator key={calcKey} {...common} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
+      return <WizardCalculator key={calcKey} {...common} round={roundNumber} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
     }
     if (game.id === "oh_hell") {
       return <OhHellCalculator key={calcKey} {...common} initialBid={allBids[activePlayer.id]} initialWon={allTricksWon[activePlayer.id]} />;
@@ -441,6 +434,16 @@ export function ScoreInputModal({
           </PolymerCard>
         </Animated.View>
       </View>
+
+      <PolymerAlert
+        visible={showResetAlert}
+        title="Reset Scores?"
+        message={`This will clear all entries for ${activePlayer.name} in this round.`}
+        confirmText="Reset"
+        type="danger"
+        onConfirm={confirmReset}
+        onCancel={() => setShowResetAlert(false)}
+      />
     </Modal>
   );
 }

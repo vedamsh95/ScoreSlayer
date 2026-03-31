@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView, TextInput } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
@@ -9,31 +9,39 @@ import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 interface RummyCalculatorProps {
   player: Player;
   initialLogs?: any[];
+  initialMetadata?: any;
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
-export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculatorProps) {
-  const [firstLife, setFirstLife] = useState(false);
-  const [secondLife, setSecondLife] = useState(false);
-  const [thirdLife, setThirdLife] = useState(false);
-  const [drop, setDrop] = useState<"none" | "first" | "middle">("none");
-  const [points, setPoints] = useState<string>("");
-  const [addedCards, setAddedCards] = useState<{ label: string; value: number }[]>([]);
+export function RummyCalculator({ player, initialLogs, initialMetadata, onUpdate }: RummyCalculatorProps) {
+  const [firstLife, setFirstLife] = useState(initialMetadata?.firstLife || false);
+  const [secondLife, setSecondLife] = useState(initialMetadata?.secondLife || false);
+  const [thirdLife, setThirdLife] = useState(initialMetadata?.thirdLife || false);
+  const [drop, setDrop] = useState<"none" | "first" | "middle">(initialMetadata?.drop || "none");
+  const [manualValue, setManualValue] = useState("");
+  const [dynamicQuickAdds, setDynamicQuickAdds] = useState<number[]>(initialMetadata?.dynamicQuickAdds || []);
+  const [addedCards, setAddedCards] = useState<{ label: string; value: number }[]>(initialMetadata?.addedCards || []);
 
   const score = useMemo(() => {
     if (drop === "first") return 20;
     if (drop === "middle") return 40;
     if (!firstLife) return 80;
-    if (firstLife && secondLife && thirdLife && addedCards.length === 0 && !points) return 0;
+    if (firstLife && secondLife && thirdLife && addedCards.length === 0) return 0;
 
     const cardPoints = addedCards.reduce((sum, c) => sum + c.value, 0);
-    const manualPoints = parseInt(points) || 0;
-    return Math.min(80, cardPoints + manualPoints);
-  }, [firstLife, secondLife, thirdLife, drop, points, addedCards]);
+    return Math.min(80, cardPoints);
+  }, [firstLife, secondLife, thirdLife, drop, addedCards]);
 
   useEffect(() => {
-    onUpdate(score, [...addedCards.map(c => c.label), points].filter(Boolean), { firstLife, secondLife, thirdLife, drop, addedCards });
-  }, [score, firstLife, secondLife, thirdLife, drop, points, addedCards, onUpdate]);
+    onUpdate(score, addedCards.map(c => c.label), { 
+      firstLife, 
+      secondLife, 
+      thirdLife, 
+      drop, 
+      addedCards,
+      dynamicQuickAdds 
+    });
+  }, [score, firstLife, secondLife, thirdLife, drop, addedCards, dynamicQuickAdds, onUpdate]);
 
   const toggleFirstLife = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -56,7 +64,6 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
     setSecondLife(true);
     setThirdLife(true);
     setAddedCards([]);
-    setPoints("");
   };
 
   const toggleThirdLife = () => {
@@ -74,16 +81,6 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
       setDrop(type);
       setFirstLife(false);
       setSecondLife(false);
-      setPoints("");
-    }
-  };
-
-  const handlePointInput = (val: string) => {
-    const numeric = val.replace(/[^0-9]/g, "");
-    setPoints(numeric);
-    if (numeric) {
-      setDrop("none");
-      setFirstLife(true);
     }
   };
 
@@ -97,6 +94,23 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
   const removeLastCard = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setAddedCards(prev => prev.slice(0, -1));
+  };
+
+  const handleManualAdd = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val)) {
+      addCard(val.toString(), val);
+      setManualValue("");
+    }
+  };
+
+  const handleSaveAsShortcut = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val) && !dynamicQuickAdds.includes(val)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setDynamicQuickAdds(prev => [...prev, val]);
+      setManualValue("");
+    }
   };
 
   return (
@@ -124,6 +138,52 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
             </View>
           </View>
         </NeuButton>
+      </View>
+
+      {/* Manual Entry - Moved UP */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Manual Entry & Shortcuts</Text>
+        <View style={styles.manualRow}>
+          <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={16} padding={0} style={styles.manualInputTrench}>
+            <TextInput
+              style={styles.manualInput}
+              value={manualValue}
+              onChangeText={setManualValue}
+              placeholder="Custom Sum..."
+              placeholderTextColor="rgba(255,255,255,0.2)"
+              keyboardType="numeric"
+              onSubmitEditing={handleManualAdd}
+            />
+          </NeuTrench>
+          <View style={styles.manualActionGroup}>
+            <Pressable onPress={handleManualAdd} style={styles.manualAddBtn}>
+              <NeuIconWell color="rgba(0, 245, 160, 0.1)" size={48} borderRadius={14}>
+                <Feather name="plus" size={24} color="#00F5A0" />
+              </NeuIconWell>
+            </Pressable>
+            <Pressable onPress={handleSaveAsShortcut} style={[styles.manualAddBtn, { marginLeft: 8 }]}>
+              <NeuIconWell color="rgba(139, 92, 246, 0.1)" size={48} borderRadius={14}>
+                <MaterialCommunityIcons name="star-plus" size={24} color="#8B5CF6" />
+              </NeuIconWell>
+            </Pressable>
+          </View>
+        </View>
+
+        {dynamicQuickAdds.length > 0 && (
+          <View style={[styles.quickGrid, { marginTop: 12 }]}>
+            {dynamicQuickAdds.map((val, idx) => (
+              <NeuButton
+                key={`shortcut-${idx}`}
+                onPress={() => addCard(val.toString(), val)}
+                color="#8B5CF6"
+                borderRadius={14}
+                style={styles.quickKey}
+              >
+                <Text style={styles.quickKeyText}>+{val}</Text>
+              </NeuButton>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -205,7 +265,8 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
         <View style={styles.numberGrid}>
           {[10, 9, 8, 7, 6, 5, 4, 3, 2].map((num) => (
             <NeuButton key={num} onPress={() => addCard(num.toString(), num)} color="#00D2FF" borderRadius={10} style={styles.numKey}>
-              <Text style={styles.numText}>{num}</Text>
+              <Text style={styles.numText}>+{num}</Text>
+              <Text style={styles.numSub}>pts</Text>
             </NeuButton>
           ))}
         </View>
@@ -217,26 +278,6 @@ export function RummyCalculator({ player, initialLogs, onUpdate }: RummyCalculat
             </View>
           ))}
         </ScrollView>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Other Deadwood Sum</Text>
-        <NeuTrench color="#150428" borderRadius={18} padding={0} style={styles.inputTrench}>
-          <TextInput
-            style={styles.input}
-            placeholder="0"
-            placeholderTextColor="rgba(255,255,255,0.1)"
-            keyboardType="numeric"
-            value={points}
-            onChangeText={handlePointInput}
-            maxLength={2}
-          />
-          {parseInt(points) >= 80 && (
-            <View style={styles.capBadge}>
-              <Text style={styles.capText}>CAPPED</Text>
-            </View>
-          )}
-        </NeuTrench>
       </View>
 
       <NeuTrench color="#150428" borderRadius={24} padding={20} style={styles.totalBox}>
@@ -275,18 +316,23 @@ const styles = StyleSheet.create({
   cardText: { fontFamily: "Inter_900Black", fontSize: 15, color: "#1A0533" },
   cardSub: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(26,5,51,0.4)" },
   numberGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 },
-  numKey: { width: "18.5%", height: 36 },
-  numText: { fontFamily: "Inter_900Black", fontSize: 13, color: "#1A0533" },
+  numKey: { width: "18%", height: 48 },
+  numText: { fontFamily: "Inter_900Black", fontSize: 16, color: "#1A0533" },
+  numSub: { fontFamily: "Inter_800ExtraBold", fontSize: 7, color: "rgba(26,5,51,0.5)", textTransform: "uppercase" },
   logStrip: { flexDirection: "row" },
   logChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginRight: 6 },
   logChipText: { fontFamily: "Inter_900Black", fontSize: 11 },
-  inputTrench: { flexDirection: "row", alignItems: "center", paddingRight: 12 },
-  input: { flex: 1, paddingHorizontal: 16, paddingVertical: 12, color: "#FFF", fontFamily: "Inter_900Black", fontSize: 18 },
-  capBadge: { backgroundColor: "#FF4757", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  capText: { fontFamily: "Inter_900Black", fontSize: 9, color: "#FFF" },
-  totalBox: { alignItems: "center", marginTop: 10 },
+  totalBox: { alignItems: "center", marginTop: 10, marginBottom: 40 },
   totalLabel: { fontFamily: "Inter_700Bold", fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 4 },
   totalValue: { fontFamily: "Inter_900Black", fontSize: 44 },
   roastBadge: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
   roastText: { fontFamily: "Inter_900Black", fontSize: 10, color: "#FF4757", letterSpacing: 0.5 },
+  manualRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  manualInputTrench: { flex: 1, height: 48 },
+  manualActionGroup: { flexDirection: "row", alignItems: "center" },
+  manualInput: { flex: 1, color: "#FFF", fontFamily: "Inter_600SemiBold", fontSize: 16, paddingHorizontal: 16 },
+  manualAddBtn: { height: 48 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 0 },
+  quickKey: { width: "23%", height: 44 },
+  quickKeyText: { fontFamily: "Bungee_400Regular", fontSize: 12, color: "#1A0533" },
 });

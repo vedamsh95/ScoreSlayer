@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { View, Text, Pressable, StyleSheet, ScrollView, TextInput } from "react-native";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
@@ -11,19 +11,24 @@ interface HandAndFootCalculatorProps {
   game: GameDefinition;
   onUpdate: (score: number, logs: any[], extra?: any) => void;
   initialStats?: any;
+  initialMetadata?: any;
 }
 
-export function HandAndFootCalculator({ player, game, onUpdate, initialStats }: HandAndFootCalculatorProps) {
+export function HandAndFootCalculator({ player, game, onUpdate, initialStats, initialMetadata }: HandAndFootCalculatorProps) {
   const [stats, setStats] = useState({
-    cleanBooks: initialStats?.cleanBooks || 0,       // 500 each
-    dirtyBooks: initialStats?.dirtyBooks || 0,       // 300 each
-    redThrees: initialStats?.redThrees || 0,         // 100 each
-    points50: initialStats?.points50 || 0,           // Jokers
-    points20: initialStats?.points20 || 0,           // 2s, Aces
-    points10: initialStats?.points10 || 0,           // 8-K
-    points5: initialStats?.points5 || 0,             // 4-7
-    wentOut: initialStats?.wentOut || false,         // 100 bonus
+    cleanBooks: initialStats?.cleanBooks || initialMetadata?.stats?.cleanBooks || 0,       // 500 each
+    dirtyBooks: initialStats?.dirtyBooks || initialMetadata?.stats?.dirtyBooks || 0,       // 300 each
+    redThrees: initialStats?.redThrees || initialMetadata?.stats?.redThrees || 0,         // 100 each
+    points50: initialStats?.points50 || initialMetadata?.stats?.points50 || 0,           // Jokers
+    points20: initialStats?.points20 || initialMetadata?.stats?.points20 || 0,           // 2s, Aces
+    points10: initialStats?.points10 || initialMetadata?.stats?.points10 || 0,           // 8-K
+    points5: initialStats?.points5 || initialMetadata?.stats?.points5 || 0,             // 4-7
+    wentOut: initialStats?.wentOut || initialMetadata?.stats?.wentOut || false,         // 100 bonus
   });
+
+  const [manualValue, setManualValue] = useState("");
+  const [dynamicQuickAdds, setDynamicQuickAdds] = useState<number[]>(initialMetadata?.dynamicQuickAdds || []);
+  const [manualLogs, setManualLogs] = useState<number[]>(initialMetadata?.manualLogs || []);
 
   const totalScore = useMemo(() => {
     let score = 0;
@@ -35,12 +40,14 @@ export function HandAndFootCalculator({ player, game, onUpdate, initialStats }: 
     score += stats.points10 * 10;
     score += stats.points5 * 5;
     if (stats.wentOut) score += 100;
-    return score;
-  }, [stats]);
+
+    const manualTotal = manualLogs.reduce((a, b) => a + b, 0);
+    return score + manualTotal;
+  }, [stats, manualLogs]);
 
   useEffect(() => {
-    onUpdate(totalScore, [], { stats });
-  }, [totalScore, stats, onUpdate]);
+    onUpdate(totalScore, manualLogs, { stats, manualLogs, dynamicQuickAdds });
+  }, [totalScore, stats, manualLogs, dynamicQuickAdds, onUpdate]);
 
   const updateStat = (key: string, delta: number | boolean) => {
     setStats(prev => {
@@ -53,6 +60,24 @@ export function HandAndFootCalculator({ player, game, onUpdate, initialStats }: 
       return next;
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleManualAdd = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val)) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setManualLogs(prev => [...prev, val]);
+      setManualValue("");
+    }
+  };
+
+  const handleSaveAsShortcut = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val) && !dynamicQuickAdds.includes(val)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setDynamicQuickAdds(prev => [...prev, val]);
+      setManualValue("");
+    }
   };
 
   const renderBookPart = (label: string, key: string, value: number, color: string, pts: number) => (
@@ -93,11 +118,62 @@ export function HandAndFootCalculator({ player, game, onUpdate, initialStats }: 
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       <NeuTrench color="#150428" borderRadius={28} padding={20} style={styles.totalHeader}>
         <Text style={styles.totalLabel}>Round Total</Text>
         <Text style={[styles.totalValue, { color: player.color }]}>{totalScore.toLocaleString()}</Text>
       </NeuTrench>
+
+      <Text style={styles.sectionTitle}>Manual Entry & Shortcuts</Text>
+      {/* Manual Input Row */}
+      <View style={styles.manualSection}>
+        <View style={styles.manualRow}>
+          <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={16} padding={0} style={styles.manualInputTrench}>
+            <TextInput
+              style={styles.manualInput}
+              value={manualValue}
+              onChangeText={setManualValue}
+              placeholder="Custom Pts..."
+              placeholderTextColor="rgba(255,255,255,0.2)"
+              keyboardType="numeric"
+              onSubmitEditing={handleManualAdd}
+            />
+          </NeuTrench>
+          <View style={styles.manualActionGroup}>
+            <Pressable onPress={handleManualAdd} style={styles.manualAddBtn}>
+              <NeuIconWell color="rgba(0, 245, 160, 0.1)" size={48} borderRadius={14}>
+                <Feather name="plus" size={24} color="#00F5A0" />
+              </NeuIconWell>
+            </Pressable>
+            <Pressable onPress={handleSaveAsShortcut} style={[styles.manualAddBtn, { marginLeft: 8 }]}>
+              <NeuIconWell color="rgba(139, 92, 246, 0.1)" size={48} borderRadius={14}>
+                <MaterialCommunityIcons name="star-plus" size={24} color="#8B5CF6" />
+              </NeuIconWell>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {dynamicQuickAdds.length > 0 && (
+        <View style={styles.shortcutsSection}>
+          <View style={styles.quickGrid}>
+            {dynamicQuickAdds.map((val, idx) => (
+              <NeuButton
+                key={`shortcut-${idx}`}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setManualLogs(prev => [...prev, val]);
+                }}
+                color="#8B5CF6"
+                borderRadius={14}
+                style={styles.shortcutKey}
+              >
+                <Text style={styles.shortcutKeyText}>+{val}</Text>
+              </NeuButton>
+            ))}
+          </View>
+        </View>
+      )}
 
       <Text style={styles.sectionTitle}>Books & Bonuses</Text>
       <View style={styles.booksGrid}>
@@ -166,5 +242,15 @@ const styles = StyleSheet.create({
   valLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "rgba(255,255,255,0.2)", textTransform: "uppercase" },
   miniBtn: { width: 30, height: 30 },
   miniValue: { fontFamily: "Inter_900Black", fontSize: 18, color: "#FFF", minWidth: 20, textAlign: "center" },
+  manualSection: { marginBottom: 12 },
+  manualRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  manualInputTrench: { flex: 1, height: 48 },
+  manualActionGroup: { flexDirection: "row", alignItems: "center" },
+  manualInput: { flex: 1, color: "#FFF", fontFamily: "Inter_600SemiBold", fontSize: 16, paddingHorizontal: 16 },
+  manualAddBtn: { height: 48 },
+  shortcutsSection: { marginBottom: 24 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  shortcutKey: { width: "23%", height: 44 },
+  shortcutKeyText: { fontFamily: "Bungee_400Regular", fontSize: 12, color: "#1A0533" },
   spacer: { height: 40 }
 });

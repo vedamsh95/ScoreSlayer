@@ -9,16 +9,20 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1A0533"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": false
     },
     "android": {
-      "backgroundColor": "#1A0533",
-      "package": "com.anonymous.mobile"
+      "backgroundColor": "#000000",
+      "package": "com.anonymous.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#000000"
+      }
     },
     "web": {
       "favicon": "./assets/images/icon.png"

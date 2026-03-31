@@ -11,8 +11,10 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { View } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AnimatedSplashScreen } from "@/components/AnimatedSplashScreen";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GameProvider } from "@/context/GameContext";
@@ -80,27 +82,41 @@ export default function RootLayout() {
     Bungee_400Regular,
   });
 
+  const [isAppReady, setIsAppReady] = React.useState(false);
+  const [isSplashVisible, setIsSplashVisible] = React.useState(true);
+
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+      // Hide native splash screen immediately when fonts are loaded
+      // Our custom AnimatedSplashScreen will take over
+      SplashScreen.hideAsync().then(() => {
+        setIsAppReady(true);
+      });
     }
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GameProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </GameProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
+    <SafeAreaProvider style={{ flex: 1 }}>
+      {isSplashVisible && (
+        <AnimatedSplashScreen 
+          onAnimationComplete={() => setIsSplashVisible(false)} 
+        />
+      )}
+      <View style={{ flex: 1, display: isAppReady ? 'flex' : 'none' }}>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <GameProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </GameProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </View>
     </SafeAreaProvider>
   );
 }

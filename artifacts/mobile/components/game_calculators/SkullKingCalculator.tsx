@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable } from "react-native";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
@@ -10,28 +10,37 @@ interface SkullKingCalculatorProps {
   round: number;
   initialBid?: number;
   initialWon?: number;
+  initialMetadata?: any;
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
-export function SkullKingCalculator({ player, round, initialBid = 0, initialWon = 0, onUpdate }: SkullKingCalculatorProps) {
-  const [bid, setBid] = useState<number>(initialBid);
-  const [won, setWon] = useState<number>(initialWon);
-  const [captures, setCaptures] = useState<number>(0); // Skull King capturing Pirates
+export function SkullKingCalculator({ player, round, initialBid = 0, initialWon = 0, initialMetadata, onUpdate }: SkullKingCalculatorProps) {
+  const [bid, setBid] = useState<number>(initialBid || initialMetadata?.bid || 0);
+  const [won, setWon] = useState<number>(initialWon || initialMetadata?.won || 0);
+  const [captures, setCaptures] = useState<number>(initialMetadata?.captures || 0);
   const [mode, setMode] = useState<"bid" | "won">("bid");
 
-  const score = useMemo(() => {
+  const [manualValue, setManualValue] = useState("");
+  const [dynamicQuickAdds, setDynamicQuickAdds] = useState<number[]>(initialMetadata?.dynamicQuickAdds || []);
+  const [manualLogs, setManualLogs] = useState<number[]>(initialMetadata?.manualLogs || []);
+
+  const totalScore = useMemo(() => {
+    let score = 0;
     if (bid === 0) {
-      return (won === 0) ? round * 10 : -(round * 10);
+      score = (won === 0) ? round * 10 : -(round * 10);
+    } else if (bid === won) {
+      score = (bid * 20) + (captures * 30);
+    } else {
+      score = -(Math.abs(bid - won) * 10);
     }
-    if (bid === won) {
-      return (bid * 20) + (captures * 30); // Standard is 20 per trick + bonuses
-    }
-    return -(Math.abs(bid - won) * 10);
-  }, [bid, won, captures, round]);
+    
+    const manualTotal = manualLogs.reduce((a, b) => a + b, 0);
+    return score + manualTotal;
+  }, [bid, won, captures, round, manualLogs]);
 
   useEffect(() => {
-    onUpdate(score, [won], { bid, won, captures });
-  }, [score, bid, won, captures, onUpdate]);
+    onUpdate(totalScore, manualLogs, { bid, won, captures, manualLogs, dynamicQuickAdds });
+  }, [totalScore, bid, won, captures, manualLogs, dynamicQuickAdds, onUpdate]);
 
   const handleKeyPress = (num: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -43,8 +52,35 @@ export function SkullKingCalculator({ player, round, initialBid = 0, initialWon 
     }
   };
 
+  const handleManualAdd = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val)) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setManualLogs(prev => [...prev, val]);
+      setManualValue("");
+    }
+  };
+
+  const handleSaveAsShortcut = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val) && !dynamicQuickAdds.includes(val)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setDynamicQuickAdds(prev => [...prev, val]);
+      setManualValue("");
+    }
+  };
+
+  const resetAll = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setBid(0);
+    setWon(0);
+    setCaptures(0);
+    setManualLogs([]);
+    setMode("bid");
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       <View style={styles.displayRow}>
         <NeuButton 
           onPress={() => setMode("bid")}
@@ -61,8 +97,8 @@ export function SkullKingCalculator({ player, round, initialBid = 0, initialWon 
         <View style={styles.dividerBox}>
           <NeuTrench color="#150428" borderRadius={20} padding={10} style={styles.scoreSummary}>
             <Text style={styles.summaryLabel}>VP</Text>
-            <Text style={[styles.summaryValue, { color: score >= 0 ? "#00D2FF" : "#FF4757" }]}>
-              {score > 0 ? `+${score}` : score}
+            <Text style={[styles.summaryValue, { color: totalScore >= 0 ? "#00D2FF" : "#FF4757" }]}>
+              {totalScore > 0 ? `+${totalScore}` : totalScore}
             </Text>
           </NeuTrench>
         </View>
@@ -79,6 +115,57 @@ export function SkullKingCalculator({ player, round, initialBid = 0, initialWon 
           </View>
         </NeuButton>
       </View>
+
+      {/* Manual Input Row */}
+      <View style={styles.manualSection}>
+        <Text style={styles.sectionTitle}>Manual Entry & Shortcuts</Text>
+        <View style={styles.manualRow}>
+          <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={16} padding={0} style={styles.manualInputTrench}>
+            <TextInput
+              style={styles.manualInput}
+              value={manualValue}
+              onChangeText={setManualValue}
+              placeholder="Custom Pts..."
+              placeholderTextColor="rgba(255,255,255,0.2)"
+              keyboardType="numeric"
+              onSubmitEditing={handleManualAdd}
+            />
+          </NeuTrench>
+          <View style={styles.manualActionGroup}>
+            <Pressable onPress={handleManualAdd} style={styles.manualAddBtn}>
+              <NeuIconWell color="rgba(0, 245, 160, 0.1)" size={48} borderRadius={14}>
+                <Feather name="plus" size={24} color="#00F5A0" />
+              </NeuIconWell>
+            </Pressable>
+            <Pressable onPress={handleSaveAsShortcut} style={[styles.manualAddBtn, { marginLeft: 8 }]}>
+              <NeuIconWell color="rgba(139, 92, 246, 0.1)" size={48} borderRadius={14}>
+                <MaterialCommunityIcons name="star-plus" size={24} color="#8B5CF6" />
+              </NeuIconWell>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {dynamicQuickAdds.length > 0 && (
+        <View style={styles.shortcutsSection}>
+          <View style={styles.quickGrid}>
+            {dynamicQuickAdds.map((val, idx) => (
+              <NeuButton
+                key={`shortcut-${idx}`}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setManualLogs(prev => [...prev, val]);
+                }}
+                color="#8B5CF6"
+                borderRadius={14}
+                style={styles.shortcutKey}
+              >
+                <Text style={styles.shortcutKeyText}>+{val}</Text>
+              </NeuButton>
+            ))}
+          </View>
+        </View>
+      )}
 
       <View style={styles.bonusArea}>
         <Text style={styles.sectionTitle}>Skull King Bonuses</Text>
@@ -106,18 +193,19 @@ export function SkullKingCalculator({ player, round, initialBid = 0, initialWon 
             <Text style={[styles.keyText, { color: "#1A0533" }]}>{num}</Text>
           </NeuButton>
         ))}
-        <NeuButton onPress={() => { setBid(0); setWon(0); setCaptures(0); setMode("bid"); }} color="#FF4757" borderRadius={14} style={styles.key}>
+        <NeuButton onPress={resetAll} color="#FF4757" borderRadius={14} style={styles.key}>
           <Ionicons name="refresh" size={20} color="#FFF" />
         </NeuButton>
       </View>
-    </View>
+      <View style={{ height: 40 }} />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  displayRow: { flexDirection: "row", alignItems: "center", marginBottom: 28, gap: 10 },
-  slot: { flex: 1, height: 100 },
+  displayRow: { flexDirection: "row", alignItems: "center", marginBottom: 16, marginTop: 8, gap: 10 },
+  slot: { flex: 1, height: 90 },
   slotInner: { alignItems: "center", justifyContent: "center" },
   slotLabel: { fontFamily: "Inter_900Black", fontSize: 8, letterSpacing: 0.5, marginBottom: 2 },
   slotValue: { fontFamily: "Inter_900Black", fontSize: 40, lineHeight: 46 },
@@ -125,8 +213,18 @@ const styles = StyleSheet.create({
   scoreSummary: { width: "100%", alignItems: "center" },
   summaryLabel: { fontFamily: "Inter_900Black", fontSize: 8, color: "rgba(255,255,255,0.2)" },
   summaryValue: { fontFamily: "Inter_900Black", fontSize: 16 },
-  bonusArea: { marginBottom: 24, padding: 16, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 20 },
-  sectionTitle: { fontFamily: "Inter_900Black", fontSize: 11, color: "rgba(255,255,255,0.2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1.5 },
+  manualSection: { marginBottom: 12, marginTop: 8 },
+  sectionTitle: { fontFamily: "Inter_900Black", fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", marginBottom: 10, letterSpacing: 1.5 },
+  manualRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  manualInputTrench: { flex: 1, height: 48 },
+  manualActionGroup: { flexDirection: "row", alignItems: "center" },
+  manualInput: { flex: 1, color: "#FFF", fontFamily: "Inter_600SemiBold", fontSize: 16, paddingHorizontal: 16 },
+  manualAddBtn: { height: 48 },
+  shortcutsSection: { marginBottom: 16 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  shortcutKey: { width: "23%", height: 44 },
+  shortcutKeyText: { fontFamily: "Bungee_400Regular", fontSize: 12, color: "#1A0533" },
+  bonusArea: { marginBottom: 20, padding: 14, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 20 },
   bonusRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   bonusInfo: { flex: 1 },
   bonusLabel: { fontFamily: "Inter_900Black", fontSize: 13, color: "#FFF" },
@@ -136,5 +234,5 @@ const styles = StyleSheet.create({
   stepVal: { fontFamily: "Inter_900Black", fontSize: 18, color: "#FFF", minWidth: 20, textAlign: "center" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" },
   key: { width: "23%", height: 50 },
-  keyText: { fontFamily: "Inter_900Black", fontSize: 20, color: "#FFF" },
+  keyText: { fontFamily: "Inter_900Black", fontSize: 20 },
 });

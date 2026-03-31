@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView, TextInput, Dimensions } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
 import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
@@ -13,6 +13,7 @@ interface SevenWondersCalculatorProps {
   initialScience?: { gears: number; tablets: number; compasses: number };
   initialMilitary?: { age1: number, age2: number, age3: number, defeats: number };
   initialCoins?: number;
+  initialMetadata?: any;
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
@@ -22,20 +23,19 @@ export function SevenWondersCalculator({
   initialScience, 
   initialMilitary,
   initialCoins,
+  initialMetadata,
   onUpdate 
 }: SevenWondersCalculatorProps) {
-  const [stats, setStats] = useState<Record<string, number>>(initialStats || {
+  const [stats, setStats] = useState<Record<string, number>>(initialStats || initialMetadata?.stats || {
     wonder: 0, civil: 0, commerce: 0, guilds: 0
   });
-  const [science, setScience] = useState(initialScience || { gears: 0, tablets: 0, compasses: 0 });
-  
-  // Detailed Military Logic
-  const [milDetail, setMilDetail] = useState(initialMilitary || {
-    age1: 0, age2: 0, age3: 0, defeats: 0
-  });
+  const [science, setScience] = useState(initialScience || initialMetadata?.science || { gears: 0, tablets: 0, compasses: 0 });
+  const [milDetail, setMilDetail] = useState(initialMilitary || initialMetadata?.milDetail || { age1: 0, age2: 0, age3: 0, defeats: 0 });
+  const [totalCoins, setTotalCoins] = useState(initialCoins || initialMetadata?.totalCoins || 0);
 
-  // Detailed Coins Logic
-  const [totalCoins, setTotalCoins] = useState(initialCoins || 0);
+  const [manualValue, setManualValue] = useState("");
+  const [dynamicQuickAdds, setDynamicQuickAdds] = useState<number[]>(initialMetadata?.dynamicQuickAdds || []);
+  const [manualLogs, setManualLogs] = useState<number[]>(initialMetadata?.manualLogs || []);
 
   const milScore = useMemo(() => {
     return (milDetail.age1 * 1) + (milDetail.age2 * 3) + (milDetail.age3 * 5) - milDetail.defeats;
@@ -54,19 +54,19 @@ export function SevenWondersCalculator({
 
   const total = useMemo(() => {
     const base = Object.values(stats).reduce((a, b) => a + b, 0);
-    return base + sciScore + milScore + coinScore;
-  }, [stats, sciScore, milScore, coinScore]);
+    const manualTotal = manualLogs.reduce((a, b) => a + b, 0);
+    return base + sciScore + milScore + coinScore + manualTotal;
+  }, [stats, sciScore, milScore, coinScore, manualLogs]);
 
   useEffect(() => {
-    // Determine Roasts
     const roasts = [];
     if (sciScore > 30) roasts.push("The Nerd: Spent the game in a library.");
     if (milScore < 0) roasts.push("The Pacifist: Civilization is a 'Kick Me' sign.");
     if (coinScore === 0 && totalCoins > 0) roasts.push("The Broke Boy: Zero financial literacy.");
     if (stats.guilds > 12) roasts.push("The Parasite: Neighbor leech energy detected.");
 
-    onUpdate(total, [total], { stats, science, milDetail, totalCoins, roasts });
-  }, [total, stats, science, milDetail, totalCoins, onUpdate]);
+    onUpdate(total, manualLogs, { stats, science, milDetail, totalCoins, manualLogs, dynamicQuickAdds, roasts });
+  }, [total, stats, science, milDetail, totalCoins, manualLogs, dynamicQuickAdds, onUpdate]);
 
   const updateStat = (cat: string, val: number) => {
     setStats(prev => ({ ...prev, [cat]: Math.max(0, val) }));
@@ -82,6 +82,24 @@ export function SevenWondersCalculator({
     setMilDetail(prev => ({ ...prev, [type]: Math.max(0, prev[type] + delta) }));
   };
 
+  const handleManualAdd = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val)) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setManualLogs(prev => [...prev, val]);
+      setManualValue("");
+    }
+  };
+
+  const handleSaveAsShortcut = () => {
+    const val = parseInt(manualValue);
+    if (!isNaN(val) && !dynamicQuickAdds.includes(val)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setDynamicQuickAdds(prev => [...prev, val]);
+      setManualValue("");
+    }
+  };
+
   const categories = [
     { id: "wonder", icon: "pyramid", label: "Wonder", color: "#95A5A6" },
     { id: "civil", icon: "bank", label: "Civil", color: "#3498DB" },
@@ -90,13 +108,64 @@ export function SevenWondersCalculator({
   ];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       <NeuTrench color="#150428" borderRadius={28} padding={20} style={styles.header}>
         <View style={styles.totalBox}>
           <Text style={[styles.totalVal, { color: player.color }]}>{total}</Text>
           <Text style={styles.totalLabel}>Civilization Score</Text>
         </View>
       </NeuTrench>
+
+      <View style={styles.manualSection}>
+        <Text style={styles.sectionTitle}>Manual Adjustment</Text>
+        <View style={styles.manualRow}>
+          <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={16} padding={0} style={styles.manualInputTrench}>
+            <TextInput
+              style={styles.manualInput}
+              value={manualValue}
+              onChangeText={setManualValue}
+              placeholder="Manual Pts..."
+              placeholderTextColor="rgba(255,255,255,0.2)"
+              keyboardType="numeric"
+              onSubmitEditing={handleManualAdd}
+            />
+          </NeuTrench>
+          <View style={styles.manualActionGroup}>
+            <Pressable onPress={handleManualAdd} style={styles.manualAddBtn}>
+              <NeuIconWell color="rgba(0, 245, 160, 0.1)" size={48} borderRadius={14}>
+                <Feather name="plus" size={24} color="#00F5A0" />
+              </NeuIconWell>
+            </Pressable>
+            <Pressable onPress={handleSaveAsShortcut} style={[styles.manualAddBtn, { marginLeft: 8 }]}>
+              <NeuIconWell color="rgba(139, 92, 246, 0.1)" size={48} borderRadius={14}>
+                <MaterialCommunityIcons name="star-plus" size={24} color="#8B5CF6" />
+              </NeuIconWell>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {dynamicQuickAdds.length > 0 && (
+        <View style={styles.shortcutsSection}>
+          <Text style={styles.sectionTitle}>Shortcuts</Text>
+          <View style={styles.quickGrid}>
+            {dynamicQuickAdds.map((val, idx) => (
+              <NeuButton
+                key={`shortcut-${idx}`}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setManualLogs(prev => [...prev, val]);
+                }}
+                color="#8B5CF6"
+                borderRadius={14}
+                style={styles.shortcutKey}
+              >
+                <Text style={styles.shortcutKeyText}>+{val}</Text>
+              </NeuButton>
+            ))}
+          </View>
+        </View>
+      )}
 
       <View style={styles.grid}>
         {/* Military Card */}
@@ -260,7 +329,7 @@ export function SevenWondersCalculator({
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16 },
-  header: { alignItems: "center", marginBottom: 20 },
+  header: { alignItems: "center", marginBottom: 12, marginTop: 8 },
   totalBox: { alignItems: "center" },
   totalVal: { fontFamily: "Inter_900Black", fontSize: 64, lineHeight: 70 },
   totalLabel: { fontFamily: "Inter_900Black", fontSize: 11, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: 1.5 },
@@ -291,4 +360,15 @@ const styles = StyleSheet.create({
   sciLabel: { fontFamily: "Inter_900Black", fontSize: 8, color: "rgba(255,255,255,0.2)", letterSpacing: 0.5 },
   sciControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 4 },
   sciVal: { fontFamily: "Inter_900Black", fontSize: 18, color: "#FFF", minWidth: 22, textAlign: "center" },
+  manualSection: { marginBottom: 12 },
+  sectionTitle: { fontFamily: "Inter_900Black", fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", marginBottom: 10, letterSpacing: 1.5 },
+  manualRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  manualInputTrench: { flex: 1, height: 48 },
+  manualActionGroup: { flexDirection: "row", alignItems: "center" },
+  manualInput: { flex: 1, color: "#FFF", fontFamily: "Inter_600SemiBold", fontSize: 16, paddingHorizontal: 16 },
+  manualAddBtn: { height: 48 },
+  shortcutsSection: { marginBottom: 16 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  shortcutKey: { width: "23%", height: 44 },
+  shortcutKeyText: { fontFamily: "Bungee_400Regular", fontSize: 12, color: "#1A0533" },
 });

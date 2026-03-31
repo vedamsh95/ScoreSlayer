@@ -129,23 +129,7 @@ export function GeneralCalculator({ player, game, initialLogs, initialMetadata, 
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
-        {/* Numpad - Uno Style */}
-        <View style={styles.grid}>
-          {numberKeys.map((num) => (
-            <NeuButton
-              key={num}
-              onPress={() => addValue(num)}
-              color="#00D2FF"
-              borderRadius={16}
-              style={styles.key}
-            >
-              <Text style={styles.keyText}>{num}</Text>
-              <Text style={styles.keySubtext}>+{num} pts</Text>
-            </NeuButton>
-          ))}
-        </View>
-
-        {/* Quick Adds */}
+        {/* Quick Adds - Moved UP */}
         <Text style={styles.sectionTitle}>QUICK ADDS & SHORTCUTS</Text>
         <View style={styles.quickGrid}>
            {allQuickAdds.map((val, idx) => (
@@ -159,6 +143,21 @@ export function GeneralCalculator({ player, game, initialLogs, initialMetadata, 
                 <Text style={styles.quickKeyText}>+{val}</Text>
               </NeuButton>
            ))}
+        </View>
+
+        {/* Numpad - 2 rows of 5 */}
+        <View style={styles.grid}>
+          {numberKeys.map((num) => (
+            <NeuButton
+              key={num}
+              onPress={() => addValue(num)}
+              color="#00D2FF"
+              borderRadius={16}
+              style={styles.key}
+            >
+              <Text style={styles.keyText}>+{num}</Text>
+            </NeuButton>
+          ))}
         </View>
       </ScrollView>
     </View>
@@ -184,9 +183,8 @@ const styles = StyleSheet.create({
   manualAddBtn: { height: 44 },
   scroll: { flex: 1 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between", marginBottom: 20 },
-  key: { width: "31%", height: 54 },
-  keyText: { fontFamily: "Bungee_400Regular", fontSize: 20, color: "#1A0533", marginBottom: -6 },
-  keySubtext: { fontFamily: "Inter_800ExtraBold", fontSize: 9, color: "rgba(26,5,51,0.6)", textTransform: "uppercase" },
+  key: { width: "18%", height: 54 },
+  keyText: { fontFamily: "Bungee_400Regular", fontSize: 20, color: "#1A0533" },
   sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1.5 },
   quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 },
   quickKey: { width: "23%", height: 44 },
