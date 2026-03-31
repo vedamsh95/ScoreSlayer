@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ScoreSlayer",
-    "slug": "mobile",
+    "name": "SCOREUP",
+    "slug": "scoreup",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
