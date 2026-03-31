@@ -65,7 +65,7 @@ export default function ResultsScreen() {
       : "—";
 
     const text = [
-      `🎮 ScoreSlayer - ${session.gameName}`,
+      `🎮 ScoreUp - ${session.gameName}`,
       ``,
       `👑 Winner: ${session.winnerName}`,
       ``,
@@ -74,11 +74,11 @@ export default function ResultsScreen() {
       ``,
       `Rounds: ${session.currentRound - 1} | Duration: ${duration}`,
       ``,
-      `Slay the Game. Own the Stats. — ScoreSlayer`,
+      `Slay the Game. Own the Stats. — ScoreUp`,
     ].join("\n");
 
     try {
-      await Share.share({ message: text, title: "ScoreSlayer Results" });
+      await Share.share({ message: text, title: "ScoreUp Results" });
     } catch {}
   }, [session]);
 
@@ -151,7 +151,7 @@ export default function ResultsScreen() {
         <BrandButton
           onPress={() => {
             router.replace({
-              pathname: "/setup/[gameId]",
+              pathname: "/setup/[gameId]" as any,
               params: { gameId: session.gameId },
             });
           }}

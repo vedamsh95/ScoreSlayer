@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, TextInput } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, TextInput, Alert } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
@@ -12,10 +12,19 @@ interface UnoCalculatorProps {
   initialLogs?: number[];
   initialMetadata?: any;
   customScoreRules?: any[];
+  alreadyDeclaredPlayerName?: string | null;
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
-export function UnoCalculator({ player, game, initialLogs, initialMetadata, customScoreRules, onUpdate }: UnoCalculatorProps) {
+export function UnoCalculator({ 
+  player, 
+  game, 
+  initialLogs, 
+  initialMetadata, 
+  customScoreRules, 
+  alreadyDeclaredPlayerName,
+  onUpdate 
+}: UnoCalculatorProps) {
   const [logs, setLogs] = useState<number[]>(initialLogs || []);
   const [cardLabels, setCardLabels] = useState<string[]>(initialMetadata?.cardLabels || []);
   const [caughtWithUno, setCaughtWithUno] = useState(initialMetadata?.caughtWithUno || false);
@@ -68,7 +77,13 @@ export function UnoCalculator({ player, game, initialLogs, initialMetadata, cust
   const total = useMemo(() => logs.reduce((a, b) => a + b, 0), [logs]);
 
   useEffect(() => {
-    onUpdate(total, logs, { cardLabels, caughtWithUno, isWinner, dynamicQuickAdds });
+    onUpdate(total, logs, { 
+      cardLabels, 
+      caughtWithUno, 
+      isWinner, 
+      cleared: isWinner,
+      dynamicQuickAdds 
+    });
   }, [total, logs, cardLabels, caughtWithUno, isWinner, dynamicQuickAdds, onUpdate]);
 
   const addValue = (val: number, label?: string) => {
@@ -106,6 +121,15 @@ export function UnoCalculator({ player, game, initialLogs, initialMetadata, cust
   };
 
   const handleUno = () => {
+    if (!isWinner && alreadyDeclaredPlayerName) {
+      Alert.alert(
+        "Winner Already Declared",
+        `${alreadyDeclaredPlayerName} has already declared Uno! Only one player can win the round.`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const newWinnerState = !isWinner;
     setIsWinner(newWinnerState);

@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, TextInput } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, TextInput, Alert } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
@@ -8,12 +8,18 @@ import { NeuTrench, NeuButton, NeuIconWell } from "../PolymerCard";
 interface GinRummyCalculatorProps {
   player: Player;
   initialMetadata?: any;
+  alreadyDeclaredPlayerName?: string | null;
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
 type GinMode = "knock" | "gin" | "big_gin" | "undercut";
 
-export function GinRummyCalculator({ player, initialMetadata, onUpdate }: GinRummyCalculatorProps) {
+export function GinRummyCalculator({ 
+  player, 
+  initialMetadata, 
+  alreadyDeclaredPlayerName,
+  onUpdate 
+}: GinRummyCalculatorProps) {
   const [mode, setMode] = useState<GinMode>(initialMetadata?.mode || "knock");
   const [myDeadwood, setMyDeadwood] = useState<string>(initialMetadata?.myDeadwood || "0");
   const [oppDeadwood, setOppDeadwood] = useState<string>(initialMetadata?.oppDeadwood || "0");
@@ -46,11 +52,21 @@ export function GinRummyCalculator({ player, initialMetadata, onUpdate }: GinRum
       myDeadwood, 
       oppDeadwood, 
       manualLogs, 
+      cleared: totalScore > 0,
       dynamicQuickAdds 
     });
   }, [totalScore, mode, myDeadwood, oppDeadwood, manualLogs, dynamicQuickAdds, onUpdate]);
 
   const handleModeChange = (newMode: GinMode) => {
+    if (alreadyDeclaredPlayerName) {
+      Alert.alert(
+        "Round Already Ended",
+        `${alreadyDeclaredPlayerName} has already declared a win/score for this round. In Gin Rummy, only one player scores per round.`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setMode(newMode);
     if (newMode === "gin" || newMode === "big_gin") setMyDeadwood("0");

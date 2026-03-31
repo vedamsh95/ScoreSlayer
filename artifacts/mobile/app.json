@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ScoreSlayer",
-    "slug": "mobile",
+    "name": "ScoreUp",
+    "slug": "scoreup",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,19 +9,18 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#0F172A"
     },
     "ios": {
       "supportsTablet": false
     },
     "android": {
-      "backgroundColor": "#000000",
-      "package": "com.anonymous.mobile",
+      "backgroundColor": "#0F172A",
+      "package": "com.scoreup.scoreup",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#0F172A"
       }
     },
     "web": {

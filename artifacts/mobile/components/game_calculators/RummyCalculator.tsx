@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, TextInput } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, TextInput, Alert } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Player } from "@/context/GameContext";
@@ -10,10 +10,17 @@ interface RummyCalculatorProps {
   player: Player;
   initialLogs?: any[];
   initialMetadata?: any;
+  alreadyDeclaredPlayerName?: string | null;
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
-export function RummyCalculator({ player, initialLogs, initialMetadata, onUpdate }: RummyCalculatorProps) {
+export function RummyCalculator({ 
+  player, 
+  initialLogs, 
+  initialMetadata, 
+  alreadyDeclaredPlayerName,
+  onUpdate 
+}: RummyCalculatorProps) {
   const [firstLife, setFirstLife] = useState(initialMetadata?.firstLife || false);
   const [secondLife, setSecondLife] = useState(initialMetadata?.secondLife || false);
   const [thirdLife, setThirdLife] = useState(initialMetadata?.thirdLife || false);
@@ -33,12 +40,14 @@ export function RummyCalculator({ player, initialLogs, initialMetadata, onUpdate
   }, [firstLife, secondLife, thirdLife, drop, addedCards]);
 
   useEffect(() => {
+    const isShow = score === 0 && firstLife && secondLife && thirdLife && addedCards.length === 0;
     onUpdate(score, addedCards.map(c => c.label), { 
       firstLife, 
       secondLife, 
       thirdLife, 
       drop, 
       addedCards,
+      cleared: isShow,
       dynamicQuickAdds 
     });
   }, [score, firstLife, secondLife, thirdLife, drop, addedCards, dynamicQuickAdds, onUpdate]);
@@ -58,6 +67,15 @@ export function RummyCalculator({ player, initialLogs, initialMetadata, onUpdate
   };
 
   const handleShow = () => {
+    if (!(score === 0 && firstLife && secondLife && thirdLife) && alreadyDeclaredPlayerName) {
+      Alert.alert(
+        "Rummy Already Declared",
+        `${alreadyDeclaredPlayerName} has already declared Rummy/Show! Only one player can win the round.`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setDrop("none");
     setFirstLife(true);

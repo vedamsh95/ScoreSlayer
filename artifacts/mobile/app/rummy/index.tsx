@@ -33,11 +33,10 @@ function VariantCard({ variant }: { variant: RummyVariantDef }) {
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          const gameDef = getGameById(variant.id);
-          if (gameDef) {
-            const session = createSession(gameDef, ["Player 1", "Player 2"], gameDef.houseRules ?? []);
-            router.push({ pathname: "/game/[id]", params: { id: session.id } });
-          }
+          router.push({ 
+            pathname: "/rummy/[variantId]", 
+            params: { variantId: variant.id.replace("rummy_", "") } 
+          });
         }}
         onPressIn={() => {
           scale.value = withSpring(0.93, { damping: 18, stiffness: 500 });

@@ -152,7 +152,7 @@ export const NerdCard = memo(React.forwardRef<View, NerdCardProps>(
         )}
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>ScoreSlayer • Slay the Game. Own the Stats.</Text>
+          <Text style={styles.footerText}>ScoreUp • Slay the Game. Own the Stats.</Text>
         </View>
       </View>
     );

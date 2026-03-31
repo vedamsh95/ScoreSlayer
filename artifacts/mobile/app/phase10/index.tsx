@@ -34,11 +34,10 @@ function VariantCard({ variant }: { variant: Phase10VariantDef }) {
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          const gameDef = getGameById(variant.id);
-          if (gameDef) {
-            const session = createSession(gameDef, ["Player 1", "Player 2"], gameDef.houseRules ?? []);
-            router.push({ pathname: "/game/[id]", params: { id: session.id } });
-          }
+          router.push({ 
+            pathname: "/phase10/[variantId]", 
+            params: { variantId: variant.id.replace("phase10_", "") } 
+          });
         }}
         onPressIn={() => {
           scale.value = withSpring(0.93, { damping: 18, stiffness: 500 });

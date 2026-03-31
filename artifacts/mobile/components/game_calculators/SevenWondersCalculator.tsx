@@ -29,8 +29,8 @@ export function SevenWondersCalculator({
   const [stats, setStats] = useState<Record<string, number>>(initialStats || initialMetadata?.stats || {
     wonder: 0, civil: 0, commerce: 0, guilds: 0
   });
-  const [science, setScience] = useState(initialScience || initialMetadata?.science || { gears: 0, tablets: 0, compasses: 0 });
-  const [milDetail, setMilDetail] = useState(initialMilitary || initialMetadata?.milDetail || { age1: 0, age2: 0, age3: 0, defeats: 0 });
+  const [science, setScience] = useState<{ gears: number; tablets: number; compasses: number }>(initialScience || initialMetadata?.science || { gears: 0, tablets: 0, compasses: 0 });
+  const [milDetail, setMilDetail] = useState<{ age1: number, age2: number, age3: number, defeats: number }>(initialMilitary || initialMetadata?.milDetail || { age1: 0, age2: 0, age3: 0, defeats: 0 });
   const [totalCoins, setTotalCoins] = useState(initialCoins || initialMetadata?.totalCoins || 0);
 
   const [manualValue, setManualValue] = useState("");

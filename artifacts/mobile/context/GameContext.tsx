@@ -200,13 +200,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       customScoreRules?: any[]
     ) => {
       const sessionId = Math.random().toString(36).substring(7);
+      const isPhase10 = game.parentId === "phase10" || game.id.startsWith("phase10");
       const session: GameSession = {
         id: sessionId,
         gameId: game.id,
         gameName: game.name,
         gameColor: game.color,
         players: playerNames.map((n, i) => {
-          const isPhase10 = game.parentId === "phase10" || game.id === "phase10";
           return {
             id: `p${i}`,
             name: n,
@@ -559,14 +559,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           ? scores.reduce((sum, s) => sum + s, 0)
           : scoreNum;
 
-      const hasPhases = !!gameDef.phases?.length;
+      const isPhase10 = gameDef.parentId === "phase10" || gameDef.id.startsWith("phase10");
       const newPlayer: Player = {
         id: newId,
         name: trimmed,
         color: PLAYER_COLORS[colorIndex % PLAYER_COLORS.length],
         scores,
         roundLogs: {},
-        currentPhase: hasPhases ? 1 : undefined,
+        currentPhase: isPhase10 ? 1 : undefined,
         currentPhaseCleared: false,
         clearedHistory: Array(completedRounds).fill(false),
         bids: Array(completedRounds).fill(null),

@@ -175,6 +175,13 @@ export function ScoreInputModal({
 
   const activePlayer = players[activePlayerIndex];
 
+  const alreadyDeclaredPlayerName = useMemo(() => {
+    const isWinnerGame = game.parentId === "rummy" || game.parentId === "uno" || game.id.startsWith("phase10") || game.id === "uno" || game.id.includes("rummy");
+    if (!isWinnerGame) return null;
+    const otherWinner = players.find(p => p.id !== activePlayer.id && allCleared[p.id]);
+    return otherWinner ? otherWinner.name : null;
+  }, [game, players, activePlayer.id, allCleared]);
+
   const handleUpdate = useCallback((score: number, logs: any[], extra?: any) => {
     setAllScores(prev => ({ ...prev, [activePlayer.id]: score }));
     setAllLogs(prev => ({ ...prev, [activePlayer.id]: logs }));
@@ -188,9 +195,30 @@ export function ScoreInputModal({
   }, [activePlayer.id]);
 
   const handleSubmit = useCallback(() => {
+    const isWinnerGame = game.parentId === "rummy" || game.parentId === "uno" || game.id.startsWith("phase10") || game.id === "uno" || game.id.includes("rummy");
+    const hasWinner = Object.values(allCleared).some(v => v === true);
+
+    if (isWinnerGame && !hasWinner) {
+      Alert.alert(
+        "No Winner Declared",
+        "It looks like no one has declared a win in this round. Did someone win (e.g., Uno or Rummy)?",
+        [
+          { text: "Yes, I Forgot", style: "cancel" },
+          { 
+            text: "No, Continue", 
+            onPress: () => {
+              onSubmit(allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata);
+              handleDismiss();
+            }
+          }
+        ]
+      );
+      return;
+    }
+
     onSubmit(allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata);
     handleDismiss();
-  }, [allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata, onSubmit, handleDismiss]);
+  }, [allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata, onSubmit, handleDismiss, game, allCleared]);
 
   const handleReset = useCallback(() => {
     setShowResetAlert(true);
@@ -218,7 +246,7 @@ export function ScoreInputModal({
     if (game.id === "skyjo") {
       return <SkyjoCalculator key={calcKey} {...common} initialGrid={allLogs[activePlayer.id]} />;
     }
-    if (game.parentId === "phase10" || game.id.includes("phase10")) {
+    if (game.parentId === "phase10" || game.id.startsWith("phase10")) {
       return (
         <Phase10Calculator 
           key={calcKey}
@@ -227,13 +255,14 @@ export function ScoreInputModal({
           initialPhase={allMetadata[activePlayer.id]?.phase} 
           initialLogs={allLogs[activePlayer.id]} 
           initialCleared={allCleared[activePlayer.id]} 
+          alreadyDeclaredPlayerName={alreadyDeclaredPlayerName}
         />
       );
     }
     if (game.id === "golf") {
       return <GolfCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
     }
-    if (game.id === "uno" || game.parentId === "uno") {
+    if (game.id === "uno" || game.parentId === "uno" || game.id.startsWith("uno")) {
       return (
         <UnoCalculator 
           key={calcKey} 
@@ -241,6 +270,7 @@ export function ScoreInputModal({
           customScoreRules={customScoreRules} 
           initialLogs={allLogs[activePlayer.id]} 
           initialMetadata={allMetadata[activePlayer.id]}
+          alreadyDeclaredPlayerName={alreadyDeclaredPlayerName}
         />
       );
     }
@@ -302,9 +332,24 @@ export function ScoreInputModal({
     }
     if (game.parentId === "rummy" || game.id.includes("rummy")) {
       if (game.id === "rummy_gin") {
-        return <GinRummyCalculator key={calcKey} {...common} />;
+        return (
+          <GinRummyCalculator 
+            key={calcKey} 
+            {...common} 
+            initialMetadata={allMetadata[activePlayer.id]}
+            alreadyDeclaredPlayerName={alreadyDeclaredPlayerName}
+          />
+        );
       }
-      return <RummyCalculator key={calcKey} {...common} initialLogs={allLogs[activePlayer.id]} />;
+      return (
+        <RummyCalculator 
+          key={calcKey} 
+          {...common} 
+          initialLogs={allLogs[activePlayer.id]} 
+          initialMetadata={allMetadata[activePlayer.id]}
+          alreadyDeclaredPlayerName={alreadyDeclaredPlayerName}
+        />
+      );
     }
 
     // Default to Uno Style for now as a fallback

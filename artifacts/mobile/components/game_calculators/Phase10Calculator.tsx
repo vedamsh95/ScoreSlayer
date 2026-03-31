@@ -14,6 +14,7 @@ interface Phase10CalculatorProps {
   initialPhase?: number;
   initialMetadata?: any;
   customScoreRules?: any[];
+  alreadyDeclaredPlayerName?: string | null;
   onUpdate: (score: number, logs: any[], metadata?: any) => void;
 }
 
@@ -25,6 +26,7 @@ export function Phase10Calculator({
   initialPhase, 
   initialMetadata,
   customScoreRules, 
+  alreadyDeclaredPlayerName,
   onUpdate 
 }: Phase10CalculatorProps) {
   const [logs, setLogs] = useState<number[]>(initialLogs || []);

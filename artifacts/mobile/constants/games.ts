@@ -659,6 +659,7 @@ export const GAMES: GameDefinition[] = [
       { id: "pwild", label: "Wildcard", points: 25 },
     ],
     houseRules: v.houseRules || [],
+    phases: v.phases,
     hasCalculator: true,
   })),
 

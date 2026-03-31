@@ -16,7 +16,7 @@ interface BilliardsCalculatorProps {
 
 export function BilliardsCalculator({ player, game, onUpdate, initialLogs, initialMetadata }: BilliardsCalculatorProps) {
   const [history, setHistory] = useState<number[]>(initialLogs || initialMetadata?.history || []);
-  const [currentRun, setCurrentRun] = useState(initialMetadata?.currentRun || 0);
+  const [currentRun, setCurrentRun] = useState<number>(initialMetadata?.currentRun || 0);
   const [manualValue, setManualValue] = useState("");
   const [dynamicQuickAdds, setDynamicQuickAdds] = useState<number[]>(initialMetadata?.dynamicQuickAdds || []);
   const [manualLogs, setManualLogs] = useState<number[]>(initialMetadata?.manualLogs || []);

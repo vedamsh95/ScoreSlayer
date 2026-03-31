@@ -15,6 +15,8 @@ import { SPADES_VARIANTS } from "@/constants/games";
 import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
 
+import { useGame } from "@/context/GameContext";
+
 /**
  * @screen SpadesVariantDetailScreen
  */
@@ -23,6 +25,7 @@ export default function SpadesVariantDetail() {
   const isReadOnly = readOnly === "true";
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const { state: { sessions } } = useGame();
 
   const variant = SPADES_VARIANTS.find((v) => v.id === `spades_${variantId}` || v.id.endsWith(variantId as string));
 
@@ -33,6 +36,8 @@ export default function SpadesVariantDetail() {
       </View>
     );
   }
+
+  const activeSession = sessions.find(s => s.gameId === variant.id && !s.isComplete);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#150428" }}>
@@ -127,20 +132,24 @@ export default function SpadesVariantDetail() {
         )}
       </ScrollView>
 
-      {/* Sticky Play button */}
+      {/* Sticky Action button */}
       {!isReadOnly && (
         <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
           <PolymerButton
-            label={`Play ${variant.name}`}
+            label={activeSession ? "Resume Session" : "Setup Game"}
             onPress={() => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
+              if (activeSession) {
+                router.push(`/game/${activeSession.id}`);
+              } else {
+                router.push({ pathname: "/setup/[gameId]" as any, params: { gameId: variant.id } });
+              }
             }}
             color={variant.color}
             textColor="#FFFFFF"
             size="lg"
             style={{ flex: 1 }}
-            icon={<Feather name="play" size={16} color="#FFFFFF" />}
+            icon={<Feather name={activeSession ? "play" : "settings"} size={16} color="#FFFFFF" />}
           />
         </View>
       )}

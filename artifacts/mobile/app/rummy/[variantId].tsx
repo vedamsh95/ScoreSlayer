@@ -14,6 +14,7 @@ import * as Haptics from "expo-haptics";
 import { RUMMY_VARIANTS } from "@/constants/games";
 import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
+import { useGame } from "@/context/GameContext";
 
 function darken(hex: string, factor: number): string {
   const hexVal = hex.startsWith("#") ? hex.slice(1) : hex;
@@ -43,6 +44,9 @@ export default function RummyVariantDetailScreen() {
   }
 
   const isGin = variant.id === "rummy_gin";
+
+  const { state: { sessions } } = useGame();
+  const activeSession = sessions.find(s => s.gameId === variant.id && !s.isComplete);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0A1229" }}>
@@ -178,18 +182,23 @@ export default function RummyVariantDetailScreen() {
         )}
       </ScrollView>
 
+      {/* Sticky Action button */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
         <PolymerButton
-          label={`Start ${variant.name}`}
+          label={activeSession ? "Resume Session" : "Setup Game"}
           onPress={() => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
+            if (activeSession) {
+              router.push(`/game/${activeSession.id}`);
+            } else {
+              router.push({ pathname: "/setup/[gameId]" as any, params: { gameId: variant.id } });
+            }
           }}
           color={variant.color}
           textColor="#FFFFFF"
           size="lg"
           style={{ flex: 1 }}
-          icon={<Feather name="play" size={16} color="#FFFFFF" />}
+          icon={<Feather name={activeSession ? "play" : "settings"} size={16} color="#FFFFFF" />}
         />
       </View>
     </View>

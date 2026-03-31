@@ -67,8 +67,8 @@ export default function Phase10VariantDetailScreen() {
   const isReadOnly = readOnly === "true";
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const { createSession } = useGame();
-
+  const { state: { sessions } } = useGame();
+  
   const variant = PHASE10_VARIANTS.find((v) => v.id === `phase10_${variantId}` || v.id.endsWith(variantId as string));
 
   if (!variant) {
@@ -78,6 +78,8 @@ export default function Phase10VariantDetailScreen() {
       </View>
     );
   }
+
+  const activeSession = sessions.find(s => s.gameId === variant.id && !s.isComplete);
 
   const defaultScoring = [
     { label: "Cards 1–9", points: 5 },
@@ -185,31 +187,24 @@ export default function Phase10VariantDetailScreen() {
         )}
       </ScrollView>
 
-      {/* Sticky Play button */}
+      {/* Sticky Action button */}
       {!isReadOnly && (
         <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
           <PolymerButton
-            label={`Start ${variant.name}`}
+            label={activeSession ? "Resume Session" : "Setup Game"}
             onPress={() => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              const gameDef = GAMES.find(g => g.id === variant.id);
-              if (gameDef) {
-                const session = createSession(
-                  gameDef, 
-                  ["Player 1", "Player 2"], 
-                  gameDef.houseRules ?? []
-                );
-                router.push(`/game/${session.id}`);
+              if (activeSession) {
+                router.push(`/game/${activeSession.id}`);
               } else {
-                // Fallback in case definition is tricky
-                router.replace("/");
+                router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
               }
             }}
             color={variant.color}
             textColor="#FFFFFF"
             size="lg"
             style={{ flex: 1 }}
-            icon={<Feather name="play" size={16} color="#FFFFFF" />}
+            icon={<Feather name={activeSession ? "play" : "settings"} size={16} color="#FFFFFF" />}
           />
         </View>
       )}
