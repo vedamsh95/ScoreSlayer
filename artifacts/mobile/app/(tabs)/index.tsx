@@ -91,6 +91,7 @@ function CollapsibleSection({
   isExpanded: boolean; 
   onToggle: () => void;
 }) {
+  const { createSession } = useGame();
   return (
     <View style={styles.categoryContainer}>
       <Pressable 
@@ -126,7 +127,9 @@ function CollapsibleSection({
                 } else if (game.hasVariants) {
                   router.push(`/${game.id}` as any);
                 } else {
-                  router.push({ pathname: "/setup/[gameId]", params: { gameId: game.id } });
+                  // Direct session start with 2 players
+                  const session = createSession(game, ["Player 1", "Player 2"], game.houseRules ?? []);
+                  router.push({ pathname: "/game/[id]", params: { id: session.id } });
                 }
               }}
             />

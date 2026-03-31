@@ -225,31 +225,31 @@ export function Phase10Calculator({
         <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Point Categories</Text>
         <View style={styles.grid}>
           <NeuButton
-            onPress={() => addValue(5)}
+            onPress={() => addValue(getNumberPoints(5))}
             color="#00D2FF"
             borderRadius={20}
             style={styles.bigKey}
           >
             <View style={styles.bigKeyInner}>
-              <Text style={styles.bigKeyVal}>+5</Text>
+              <Text style={styles.bigKeyVal}>+{getNumberPoints(5)}</Text>
               <View>
                 <Text style={styles.bigKeyLabel}>CARDS 1–9</Text>
-                <Text style={styles.bigKeySub}>5 POINTS EACH</Text>
+                <Text style={[styles.bigKeySub, { color: "#1A0533" }]}>{getNumberPoints(5)} POINTS EACH</Text>
               </View>
             </View>
           </NeuButton>
 
           <NeuButton
-            onPress={() => addValue(10)}
+            onPress={() => addValue(getNumberPoints(10))}
             color="#00D2FF"
             borderRadius={20}
             style={styles.bigKey}
           >
             <View style={styles.bigKeyInner}>
-              <Text style={styles.bigKeyVal}>+10</Text>
+              <Text style={styles.bigKeyVal}>+{getNumberPoints(10)}</Text>
               <View>
                 <Text style={styles.bigKeyLabel}>CARDS 10–12</Text>
-                <Text style={styles.bigKeySub}>10 POINTS EACH</Text>
+                <Text style={[styles.bigKeySub, { color: "#1A0533" }]}>{getNumberPoints(10)} POINTS EACH</Text>
               </View>
             </View>
           </NeuButton>

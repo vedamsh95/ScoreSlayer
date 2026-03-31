@@ -11,7 +11,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { PHASE10_VARIANTS } from "@/constants/games";
+import { PHASE10_VARIANTS, GAMES } from "@/constants/games";
+import { useGame } from "@/context/GameContext";
 import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
 
@@ -26,29 +27,17 @@ function darken(hex: string, factor: number): string {
 
 // ─── Phase Card Component ─────────────────────────────────────────────────────
 function PhaseCard({ number, description, color }: { number: number; description: string; color: string }) {
-  const [expanded, setExpanded] = useState(false);
-  
   return (
-    <Pressable onPress={() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setExpanded(!expanded);
-    }}>
-      <NeuTrench color={darken(color, 0.42)} borderRadius={16} padding={12} style={styles.phaseCard}>
-        <View style={styles.phaseRow}>
-          <View style={[styles.phaseNumberBadge, { backgroundColor: color }]}>
-            <Text style={styles.phaseNumberText}>{number}</Text>
-          </View>
-          <Text style={styles.phaseDescription} numberOfLines={expanded ? undefined : 1}>
-            {description}
-          </Text>
-          <Ionicons 
-            name={expanded ? "chevron-up" : "chevron-down"} 
-            size={14} 
-            color="rgba(255,255,255,0.3)" 
-          />
+    <NeuTrench color={darken(color, 0.42)} borderRadius={16} padding={14} style={styles.phaseCard}>
+      <View style={styles.phaseRow}>
+        <View style={[styles.phaseNumberBadge, { backgroundColor: color }]}>
+          <Text style={styles.phaseNumberText}>{number}</Text>
         </View>
-      </NeuTrench>
-    </Pressable>
+        <Text style={styles.phaseDescription}>
+          {description}
+        </Text>
+      </View>
+    </NeuTrench>
   );
 }
 
@@ -78,6 +67,7 @@ export default function Phase10VariantDetailScreen() {
   const isReadOnly = readOnly === "true";
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const { createSession } = useGame();
 
   const variant = PHASE10_VARIANTS.find((v) => v.id === `phase10_${variantId}` || v.id.endsWith(variantId as string));
 
@@ -202,7 +192,18 @@ export default function Phase10VariantDetailScreen() {
             label={`Start ${variant.name}`}
             onPress={() => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
+              const gameDef = GAMES.find(g => g.id === variant.id);
+              if (gameDef) {
+                const session = createSession(
+                  gameDef, 
+                  ["Player 1", "Player 2"], 
+                  gameDef.houseRules ?? []
+                );
+                router.push(`/game/${session.id}`);
+              } else {
+                // Fallback in case definition is tricky
+                router.replace("/");
+              }
             }}
             color={variant.color}
             textColor="#FFFFFF"

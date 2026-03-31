@@ -16,10 +16,12 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import { RUMMY_VARIANTS, RummyVariantDef } from "@/constants/games";
+import { RUMMY_VARIANTS, RummyVariantDef, getGameById } from "@/constants/games";
 import { NeuTrench, NeuIconWell, PolymerCard } from "@/components/PolymerCard";
+import { useGame } from "@/context/GameContext";
 
 function VariantCard({ variant }: { variant: RummyVariantDef }) {
+  const { createSession } = useGame();
   const scale = useSharedValue(1);
 
   const animStyle = useAnimatedStyle(() => ({
@@ -31,7 +33,11 @@ function VariantCard({ variant }: { variant: RummyVariantDef }) {
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
+          const gameDef = getGameById(variant.id);
+          if (gameDef) {
+            const session = createSession(gameDef, ["Player 1", "Player 2"], gameDef.houseRules ?? []);
+            router.push({ pathname: "/game/[id]", params: { id: session.id } });
+          }
         }}
         onPressIn={() => {
           scale.value = withSpring(0.93, { damping: 18, stiffness: 500 });

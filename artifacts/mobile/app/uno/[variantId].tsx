@@ -11,7 +11,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { UNO_VARIANTS, UnoCard, UnoScoringGroup } from "@/constants/games";
+import { UNO_VARIANTS, UnoCard, UnoScoringGroup, GAMES } from "@/constants/games";
+import { useGame } from "@/context/GameContext";
 import { NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
 
@@ -63,8 +64,6 @@ function NumberChip({
 
 // ─── Card row inside a scoring group ─────────────────────────────────────────
 function CardRow({ card, color }: { card: UnoCard; color: string }) {
-  const [expanded, setExpanded] = useState(false);
-
   const cardBgColor = card.isDark
     ? "#0A0015"
     : card.isWild
@@ -78,50 +77,38 @@ function CardRow({ card, color }: { card: UnoCard; color: string }) {
     : color;
 
   return (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setExpanded((e) => !e);
-      }}
+    <NeuTrench
+      color={cardBgColor}
+      borderRadius={14}
+      padding={12}
+      style={styles.cardRow}
     >
-      <NeuTrench
-        color={cardBgColor}
-        borderRadius={14}
-        padding={12}
-        style={styles.cardRow}
-      >
-        {/* Card type indicator */}
-        <View style={styles.cardRowLeft}>
-          <View style={[styles.cardTypeDot, {
-            backgroundColor: card.isDark ? "#FF8C42" : card.isWild ? "#FFB800" : card.isSpecial ? "#00F5A0" : color
-          }]} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardRowName}>{card.name}</Text>
-            {card.qty && (
-              <Text style={styles.cardRowQty}>{card.qty}</Text>
-            )}
-            {expanded && card.description && (
-              <Text style={styles.cardRowDesc}>{card.description}</Text>
-            )}
+      {/* Card type indicator */}
+      <View style={styles.cardRowLeft}>
+        <View style={[styles.cardTypeDot, {
+          backgroundColor: card.isDark ? "#FF8C42" : card.isWild ? "#FFB800" : card.isSpecial ? "#00F5A0" : color
+        }]} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardRowName}>{card.name}</Text>
+          {card.qty && (
+            <Text style={styles.cardRowQty}>{card.qty}</Text>
+          )}
+          {card.description && (
+            <Text style={styles.cardRowDesc}>{card.description}</Text>
+          )}
+        </View>
+      </View>
+      <View style={styles.cardRowRight}>
+        {/* Point value — clay pill */}
+        <View style={[styles.pointsShadow, { borderRadius: 10, shadowColor: pointColor }]}>
+          <View style={[styles.pointsBody, { backgroundColor: pointColor, borderRadius: 10 }]}>
+            <Text style={styles.pointsText}>
+              {card.points === 0 ? "FV" : `+${card.points}`}
+            </Text>
           </View>
         </View>
-        <View style={styles.cardRowRight}>
-          {/* Point value — clay pill */}
-          <View style={[styles.pointsShadow, { borderRadius: 10, shadowColor: pointColor }]}>
-            <View style={[styles.pointsBody, { backgroundColor: pointColor, borderRadius: 10 }]}>
-              <Text style={styles.pointsText}>
-                {card.points === 0 ? "FV" : `+${card.points}`}
-              </Text>
-            </View>
-          </View>
-          <Ionicons
-            name={expanded ? "chevron-up" : "chevron-down"}
-            size={12}
-            color="rgba(255,255,255,0.3)"
-          />
-        </View>
-      </NeuTrench>
-    </Pressable>
+      </View>
+    </NeuTrench>
   );
 }
 
@@ -201,6 +188,7 @@ export default function VariantDetailScreen() {
   const isReadOnly = readOnly === "true";
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const { createSession } = useGame();
 
   const variant = UNO_VARIANTS.find((v) => v.id === `uno_${variantId}` || v.id.endsWith(variantId as string));
 
@@ -363,7 +351,17 @@ export default function VariantDetailScreen() {
             label={`Play ${variant.name}`}
             onPress={() => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
+              const gameDef = GAMES.find(g => g.id === variant.id);
+              if (gameDef) {
+                const session = createSession(
+                  gameDef, 
+                  ["Player 1", "Player 2"], 
+                  gameDef.houseRules ?? []
+                );
+                router.push(`/game/${session.id}`);
+              } else {
+                router.replace("/");
+              }
             }}
             color={variant.color}
             textColor="#FFFFFF"

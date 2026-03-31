@@ -16,11 +16,13 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import { UNO_VARIANTS, UnoVariantDef } from "@/constants/games";
+import { UNO_VARIANTS, UnoVariantDef, getGameById } from "@/constants/games";
 import { NeuTrench, NeuIconWell, PolymerCard } from "@/components/PolymerCard";
+import { useGame } from "@/context/GameContext";
 
 // ─── Clay Variant Card ───────────────────────────────────────────────────────
 function VariantCard({ variant }: { variant: UnoVariantDef }) {
+  const { createSession } = useGame();
   const scale = useSharedValue(1);
 
   const animStyle = useAnimatedStyle(() => ({
@@ -32,7 +34,11 @@ function VariantCard({ variant }: { variant: UnoVariantDef }) {
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push({ pathname: "/setup/[gameId]", params: { gameId: variant.id } });
+          const gameDef = getGameById(variant.id);
+          if (gameDef) {
+            const session = createSession(gameDef, ["Player 1", "Player 2"], gameDef.houseRules ?? []);
+            router.push({ pathname: "/game/[id]", params: { id: session.id } });
+          }
         }}
         onPressIn={() => {
           scale.value = withSpring(0.93, { damping: 18, stiffness: 500 });

@@ -68,6 +68,7 @@ export interface Phase10VariantDef {
   description: string;
   phases: Phase[];
   scoring?: ScoreRule[];
+  houseRules?: HouseRuleOverride[];
   notes?: string[];
 }
 
@@ -84,6 +85,7 @@ export interface TrickVariantDef {
   hasBidding: boolean;
   isPartnership: boolean;
   scoringRules: ScoreRule[];
+  houseRules?: HouseRuleOverride[];
   notes?: string[];
 }
 
@@ -102,6 +104,7 @@ export interface RummyVariantDef {
   cardValues: { [key: string]: number | string };
   bonuses?: { [key: string]: number };
   scoringRules?: ScoreRule[];
+  houseRules?: HouseRuleOverride[];
   notes?: string[];
 }
 
@@ -391,11 +394,24 @@ export const PHASE10_VARIANTS: Phase10VariantDef[] = [
     color: "#00BFFF",
     icon: "list",
     description: "10 phases.",
-    phases: Array.from({ length: 10 }, (_, i) => ({ number: i + 1, description: `Phase ${i + 1}` })),
+    phases: [
+      { number: 1, description: "2 sets of 3 (e.g., Three 4s and three 9s)" },
+      { number: 2, description: "1 set of 3 + 1 run of 4 (e.g., Three 7s AND a run of 2, 3, 4, 5)" },
+      { number: 3, description: "1 set of 4 + 1 run of 4 (e.g., Four 2s AND a run of 6, 7, 8, 9)" },
+      { number: 4, description: "1 run of 7 (e.g., 4, 5, 6, 7, 8, 9, 10)" },
+      { number: 5, description: "1 run of 8 (e.g., 2, 3, 4, 5, 6, 7, 8, 9)" },
+      { number: 6, description: "1 run of 9 (e.g., 1, 2, 3, 4, 5, 6, 7, 8, 9)" },
+      { number: 7, description: "2 sets of 4 (e.g., Four 5s and four 10s)" },
+      { number: 8, description: "7 cards of 1 color (e.g., Seven Green cards)" },
+      { number: 9, description: "1 set of 5 + 1 set of 2 (e.g., Five 8s and two 3s)" },
+      { number: 10, description: "1 set of 5 + 1 set of 3 (e.g., Five 12s and three 1s)" },
+    ],
+    notes: ["Colors only matter for Phase 8. For sets or runs, colors can mix."],
     scoring: [
       { id: "p1_9", label: "Cards 1–9", points: 5 },
       { id: "p10_12", label: "Cards 10–12", points: 10 },
-      { id: "pwild", label: "Wild", points: 25 },
+      { id: "pskip", label: "Skip", points: 15 },
+      { id: "pwild", label: "Wildcard", points: 25 },
     ],
   },
   {
@@ -406,11 +422,73 @@ export const PHASE10_VARIANTS: Phase10VariantDef[] = [
     color: "#00BFFF",
     icon: "flash",
     description: "Shortened phases.",
-    phases: Array.from({ length: 10 }, (_, i) => ({ number: i + 1, description: `Phase ${i + 1}` })),
+    phases: [
+      { number: 1, description: "4 Odd Cards (e.g., 1, 3, 5, 9 in any colors)" },
+      { number: 2, description: "2 Sets of 2 (e.g., two 4s and two 8s)" },
+      { number: 3, description: "4 Even Cards (e.g., 2, 4, 8, 12 in any colors)" },
+      { number: 4, description: "Run of 2 Pairs (Two consecutive pairs, e.g., two 5s and two 6s)" },
+      { number: 5, description: "1 Set of 3 (e.g., three 7s)" },
+      { number: 6, description: "1 Run of 4 (e.g., 3, 4, 5, 6)" },
+      { number: 7, description: "1 Color Run of 3 (e.g., Red 5, Red 6, Red 7)" },
+      { number: 8, description: "Run of 4 Odd (Consecutive odds, e.g., 3, 5, 7, 9)" },
+      { number: 9, description: "Run of 4 Even (Consecutive evens, e.g., 2, 4, 6, 8)" },
+      { number: 10, description: "4 of One Color (e.g., four Blue cards, regardless of number)" },
+    ],
   },
-  { id: "phase10_even_odd", name: "Even/Odd", tagline: "Numerical parity.", badge: "VARY", color: "#00BFFF", icon: "calculator", description: "Numerical strategy.", phases: Array.from({ length: 4 }, (_, i) => ({ number: i+1, description: "Parity Phase" })) },
-  { id: "phase10_masters", name: "Masters", tagline: "Any order.", badge: "PICK", color: "#00BFFF", icon: "medal", description: "Non-linear phase picking.", phases: Array.from({ length: 10 }, (_, i) => ({ number: i+1, description: "Phase" })) },
-  { id: "phase10_junior", name: "Junior", tagline: "For kids.", badge: "KIDS", color: "#00BFFF", icon: "happy", description: "Simplified phases.", phases: Array.from({ length: 10 }, (_, i) => ({ number: i+1, description: "Kid Phase" })) },
+  { id: "phase10_even_odd", name: "Even/Odd", tagline: "Numerical parity.", badge: "VARY", color: "#00BFFF", icon: "calculator", description: "Numerical strategy.", phases: Array.from({ length: 4 }, (_, i) => ({ number: i+1, description: "Parity Phase" })), houseRules: [{ ruleId: "cap", label: "Point Cap", defaultValue: 500, currentValue: 500 }] },
+  { 
+    id: "phase10_masters", 
+    name: "Masters", 
+    tagline: "Any order strategy.", 
+    badge: "PICK", 
+    color: "#00BFFF", 
+    icon: "medal", 
+    description: "Strategic non-linear gameplay.", 
+    phases: [
+      { number: 1, description: "2 sets of 3" },
+      { number: 2, description: "1 set of 3 + 1 run of 4" },
+      { number: 3, description: "1 set of 4 + 1 run of 4" },
+      { number: 4, description: "1 run of 7" },
+      { number: 5, description: "1 run of 8" },
+      { number: 6, description: "1 run of 9" },
+      { number: 7, description: "2 sets of 4" },
+      { number: 8, description: "7 cards of 1 color" },
+      { number: 9, description: "1 set of 5 + 1 set of 2" },
+      { number: 10, description: "1 set of 5 + 1 set of 3" },
+    ],
+    notes: [
+      "Play in Any Order: Secretly choose your phase each round.",
+      "The Save Pile: Save one card face-down per round for future use.",
+      "Winning: Still need all 10 phases, but can pick the order."
+    ]
+  },
+  { 
+    id: "phase10_junior", 
+    name: "Junior", 
+    tagline: "Simplified for kids (4+).", 
+    badge: "KIDS", 
+    color: "#00BFFF", 
+    icon: "happy", 
+    description: "No math, just animals and shapes.", 
+    phases: [
+      { number: 1, description: "Match 4 Cards with the same Animal" },
+      { number: 2, description: "Match 4 Cards of the same Color" },
+      { number: 3, description: "Match 2 Animals + 2 Colors" },
+      { number: 4, description: "Sequence of 4 different Animals" },
+      { number: 5, description: "Collect 4 Star Cards" },
+      { number: 6, description: "Match 4 Cards with the same Shape" },
+      { number: 7, description: "Collect 4 Blue Cards" },
+      { number: 8, description: "Match 3 of Kind + 1 Wild" },
+      { number: 9, description: "Sequence of 4 Colors" },
+      { number: 10, description: "Match any 4 Cards of your choice" },
+    ],
+    notes: [
+      "Hand Size: Players only hold 4 cards at a time.",
+      "Gameplay: Draw a card and check if you satisfy one of your Phase Tokens.",
+      "Two Levels: Easy level for starts, advanced for color+animal combos.",
+      "Winning: First to flip 10 Phase Tokens wins."
+    ]
+  },
 ];
 
 export const SPADES_VARIANTS: TrickVariantDef[] = [
@@ -577,19 +655,21 @@ export const GAMES: GameDefinition[] = [
     scoreRules: v.scoring || [
       { id: "p1_9", label: "Cards 1–9", points: 5 },
       { id: "p10_12", label: "Cards 10–12", points: 10 },
+      { id: "pskip", label: "Skip", points: 15 },
+      { id: "pwild", label: "Wildcard", points: 25 },
     ],
-    houseRules: [],
+    houseRules: v.houseRules || [],
     hasCalculator: true,
   })),
 
   { id: "spades", name: "Spades", category: "trick", icon: "triangle", color: "#A29BFE", winCondition: "highest" as WinCondition, minPlayers: 4, maxPlayers: 20, description: "Bidding game.", objective: "Highest partnership wins.", hasVariants: true, houseRules: [], hasCalculator: false },
-  ...SPADES_VARIANTS.map(v => ({ id: v.id, name: v.name, category: "trick" as GameCategory, icon: v.icon, color: "#A29BFE", winCondition: "highest" as WinCondition, targetScore: v.targetScore, minPlayers: 4, maxPlayers: 20, description: v.description, objective: "Reach target score.", parentId: "spades", scoreRules: v.scoringRules, houseRules: [], hasCalculator: true })),
+  ...SPADES_VARIANTS.map(v => ({ id: v.id, name: v.name, category: "trick" as GameCategory, icon: v.icon, color: "#A29BFE", winCondition: "highest" as WinCondition, targetScore: v.targetScore, minPlayers: 4, maxPlayers: 20, description: v.description, objective: "Reach target score.", parentId: "spades", scoreRules: v.scoringRules, houseRules: v.houseRules || [], hasCalculator: true })),
 
   { id: "hearts", name: "Hearts", category: "trick", icon: "heart", color: "#FF2D78", winCondition: "lowest" as WinCondition, minPlayers: 4, maxPlayers: 20, description: "Avoid cards.", objective: "Avoid penalty cards.", hasVariants: true, houseRules: [], hasCalculator: false },
-  ...HEARTS_VARIANTS.map(v => ({ id: v.id, name: v.name, category: "trick" as GameCategory, icon: v.icon, color: "#FF2D78", winCondition: "lowest" as WinCondition, targetScore: v.targetScore, minPlayers: 4, maxPlayers: 20, description: v.description, objective: "Avoid penalty cards.", parentId: "hearts", scoreRules: v.scoringRules, houseRules: [], hasCalculator: true })),
+  ...HEARTS_VARIANTS.map(v => ({ id: v.id, name: v.name, category: "trick" as GameCategory, icon: v.icon, color: "#FF2D78", winCondition: "lowest" as WinCondition, targetScore: v.targetScore, minPlayers: 4, maxPlayers: 20, description: v.description, objective: "Avoid penalty cards.", parentId: "hearts", scoreRules: v.scoringRules, houseRules: v.houseRules || [], hasCalculator: true })),
 
   { id: "rummy", name: "Rummy", category: "card", icon: "grid", color: "#FFB800", winCondition: "lowest" as WinCondition, minPlayers: 2, maxPlayers: 20, description: "Indian & Gin Rummy.", objective: "Empty hand first.", hasVariants: true, houseRules: [], hasCalculator: false },
-  ...RUMMY_VARIANTS.map(v => ({ id: v.id, name: v.name, category: "card" as GameCategory, icon: v.icon, color: "#FFB800", winCondition: (v.id === "rummy_gin" ? "highest" : "lowest") as WinCondition, minPlayers: 2, maxPlayers: 20, description: v.description, objective: "Meld all cards.", parentId: "rummy", scoreRules: v.scoringRules || [], houseRules: [], hasCalculator: true })),
+  ...RUMMY_VARIANTS.map(v => ({ id: v.id, name: v.name, category: "card" as GameCategory, icon: v.icon, color: "#FFB800", winCondition: (v.id === "rummy_gin" ? "highest" : "lowest") as WinCondition, minPlayers: 2, maxPlayers: 20, description: v.description, objective: "Meld all cards.", parentId: "rummy", scoreRules: v.scoringRules || [], houseRules: v.houseRules || [], hasCalculator: true })),
 
   { id: "skyjo", name: "Skyjo", category: "card", icon: "grid", color: "#27AE60", winCondition: "lowest" as WinCondition, minPlayers: 2, maxPlayers: 20, description: "Grid strategy.", objective: "Lowest score wins.", scoreRules: [{ id: "grd", label: "Grid Sum", points: 0 }], houseRules: [], hasCalculator: true },
   { id: "catan", name: "Catan", category: "board", icon: "hexagon", color: "#D35400", winCondition: "highest" as WinCondition, minPlayers: 3, maxPlayers: 20, description: "Colonize Catan.", objective: "10 Victory Points.", scoreRules: [{ id: "st", label: "Settlements", points: 1 }, { id: "ct", label: "Cities", points: 2 }], houseRules: [], hasCalculator: true },
@@ -597,7 +677,7 @@ export const GAMES: GameDefinition[] = [
   { id: "custom_game", name: "Custom Game", category: "general", icon: "add-circle", color: "#00D2FF", winCondition: "highest" as WinCondition, minPlayers: 2, maxPlayers: 20, description: "Any other game.", objective: "Win based on your own rules.", scoreRules: Array.from({ length: 10 }, (_, i) => ({ id: `n${i+1}`, label: `${i+1}`, points: i+1 })), houseRules: [], hasCalculator: true },
   { id: "game_tools", name: "Game Night Tools", category: "general", icon: "extension-puzzle", color: "#00F5A0", winCondition: "highest" as WinCondition, minPlayers: 1, maxPlayers: 20, description: "Dice & tools.", objective: "Enhance your game night.", houseRules: [], hasCalculator: false },
   { id: "five_crowns", name: "Five Crowns", category: "card", icon: "ribbon", color: "#F39C12", winCondition: "lowest" as WinCondition, minPlayers: 2, maxPlayers: 20, description: "Rummy with 5 suits.", objective: "Score lowest.", houseRules: [], hasCalculator: true },
-  { id: "skip_bo", name: "Skip-Bo", category: "card", icon: "fast-forward", color: "#E67E22", winCondition: "lowest" as WinCondition, targetScore: 500, minPlayers: 2, maxPlayers: 20, description: "Sequence game.", objective: "Clear your stock pile.", houseRules: [], hasCalculator: true },
+  { id: "skip_bo", name: "Skip-Bo", category: "card", icon: "fast-forward", color: "#E67E22", winCondition: "lowest" as WinCondition, targetScore: 500, minPlayers: 2, maxPlayers: 20, description: "Sequence game.", objective: "Clear your stock pile.", houseRules: [{ ruleId: "stock", label: "Stock Pile", defaultValue: 30, currentValue: 30 }, { ruleId: "hand", label: "Hand Size", defaultValue: 5, currentValue: 5 }], hasCalculator: true },
   { id: "seven_wonders", name: "7 Wonders", category: "board", icon: "business", color: "#8E44AD", winCondition: "highest" as WinCondition, minPlayers: 2, maxPlayers: 20, description: "Civilization drafting.", objective: "Highest score.", houseRules: [], hasCalculator: true },
   { id: "carcassonne", name: "Carcassonne", category: "board", icon: "map", color: "#3498DB", winCondition: "highest" as WinCondition, minPlayers: 2, maxPlayers: 20, description: "Tile laying.", objective: "Highest score.", houseRules: [], hasCalculator: true },
   { id: "moelkky", name: "Mölkky", category: "outdoor", icon: "pin", color: "#D35400", winCondition: "highest" as WinCondition, targetScore: 50, minPlayers: 2, maxPlayers: 20, description: "Finnish throwing.", objective: "Exactly 50 points.", houseRules: [], hasCalculator: true },

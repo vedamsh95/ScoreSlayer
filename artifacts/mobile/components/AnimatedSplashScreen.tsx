@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, Dimensions, View } from 'react-native';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -7,42 +7,33 @@ import Animated, {
   withDelay,
   Easing,
   runOnJS,
-  interpolateColor,
   useAnimatedProps
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { BRAND_PATHS, UP_ARROW_PATH, DOWN_ARROW_PATH, LOGO_VIEWBOX } from '@/constants/logo_config';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
-
 const { width, height } = Dimensions.get('window');
-
-// SVG Path data now imported from constants/logo_config.ts
 
 interface AnimatedSplashScreenProps {
   onAnimationComplete: () => void;
 }
 
 export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onAnimationComplete }) => {
-  const zoomProgress = useSharedValue(0);
-  const bgColorProgress = useSharedValue(0);
-  const arrowDivergence = useSharedValue(0);
+  const slideProgress = useSharedValue(0);
+  const logoOpacity = useSharedValue(1);
 
   useEffect(() => {
-    const duration = 1200;
-    const easing = Easing.bezier(0.25, 0.1, 0.25, 1);
-    const startDelay = 500;
+    const slideDuration = 800;
+    const startDelay = 1200;
+    const easing = Easing.bezier(0.4, 0, 0.2, 1);
 
-    bgColorProgress.value = withDelay(startDelay, withTiming(1, { duration }));
-    
-    // Diverging arrows move faster
-    arrowDivergence.value = withDelay(startDelay + 200, withTiming(1, { 
-      duration: duration * 0.8,
-      easing: Easing.out(Easing.quad)
-    }));
+    // Fade logo out slightly before/during slide
+    logoOpacity.value = withDelay(startDelay, withTiming(0, { duration: 300 }));
 
-    zoomProgress.value = withDelay(startDelay, withTiming(1, { 
-      duration, 
+    // Slide doors apart
+    slideProgress.value = withDelay(startDelay, withTiming(1, { 
+      duration: slideDuration, 
       easing 
     }, (finished) => {
       if (finished) {
@@ -51,78 +42,64 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onAn
     }));
   }, []);
 
-  const logoContainerStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: 1 + zoomProgress.value * 20 }
-    ],
-    opacity: 1 - zoomProgress.value * 0.8
+  const leftDoorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -slideProgress.value * (width / 2) }]
   }));
 
-  const upArrowStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: -arrowDivergence.value * 150 }
-    ],
-    opacity: 1 - arrowDivergence.value
+  const rightDoorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slideProgress.value * (width / 2) }]
   }));
 
-  const downArrowStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: arrowDivergence.value * 150 }
-    ],
-    opacity: 1 - arrowDivergence.value
-  }));
-
-  const containerStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      bgColorProgress.value,
-      [0, 1],
-      ['#000000', '#0F172A']
-    )
+  const logoStyle = useAnimatedStyle(() => ({
+    opacity: logoOpacity.value,
+    transform: [{ scale: 1 - slideProgress.value * 0.1 }]
   }));
 
   return (
-    <Animated.View style={[styles.container, containerStyle]}>
-      <Animated.View style={[styles.logoContainer, logoContainerStyle]}>
+    <View style={styles.container}>
+      {/* Left Door */}
+      <Animated.View style={[styles.door, styles.leftDoor, leftDoorStyle]} />
+      
+      {/* Right Door */}
+      <Animated.View style={[styles.door, styles.rightDoor, rightDoorStyle]} />
+
+      {/* Centered Logo (stays centered until fade) */}
+      <Animated.View style={[styles.logoContainer, logoStyle]}>
         <Svg width={320} height={120} viewBox={LOGO_VIEWBOX}>
-          {/* Base Logo Paths */}
           {BRAND_PATHS.map((path, i) => (
             <Path key={`logo-${i}`} d={path.d} fill={path.color} />
           ))}
-          
-          {/* Diverging Arrows */}
-          <AnimatedPath 
-            d={UP_ARROW_PATH} 
-            fill="#F0BE70" 
-            animatedProps={useAnimatedProps(() => ({
-              transform: [{ translateY: -arrowDivergence.value * 80 }],
-              opacity: 1 - arrowDivergence.value
-            }))}
-          />
-          <AnimatedPath 
-            d={DOWN_ARROW_PATH} 
-            fill="#F2887A"
-            animatedProps={useAnimatedProps(() => ({
-              transform: [{ translateY: arrowDivergence.value * 80 }],
-              opacity: 1 - arrowDivergence.value
-            }))}
-          />
+          <Path d={UP_ARROW_PATH} fill="#F0BE70" />
+          <Path d={DOWN_ARROW_PATH} fill="#F2887A" />
         </Svg>
       </Animated.View>
-    </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
     zIndex: 9999,
+    overflow: 'hidden',
+  },
+  door: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: width / 2 + 1, // Add 1px overlap to prevent visible seam
+    backgroundColor: '#0F172A',
+  },
+  leftDoor: {
+    left: 0,
+  },
+  rightDoor: {
+    right: 0,
   },
   logoContainer: {
-    position: 'absolute',
-  },
-  arrowContainer: {
-    position: 'absolute',
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10000,
   },
 });

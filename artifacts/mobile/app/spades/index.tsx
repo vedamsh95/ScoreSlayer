@@ -11,11 +11,13 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { SPADES_VARIANTS } from "@/constants/games";
+import { SPADES_VARIANTS, getGameById } from "@/constants/games";
 import { PolymerCard, NeuTrench, NeuIconWell } from "@/components/PolymerCard";
 import { PolymerButton } from "@/components/PolymerButton";
+import { useGame } from "@/context/GameContext";
 
 export default function SpadesVariantPicker() {
+  const { createSession } = useGame();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
@@ -45,7 +47,11 @@ export default function SpadesVariantPicker() {
               key={v.id}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push({ pathname: "/setup/[gameId]", params: { gameId: v.id } });
+                const gameDef = getGameById(v.id);
+                if (gameDef) {
+                  const session = createSession(gameDef, ["Player 1", "Player 2"], gameDef.houseRules ?? []);
+                  router.push({ pathname: "/game/[id]", params: { id: session.id } });
+                }
               }}
               style={styles.cardWrapper}
             >

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { StyleSheet, Text, View, ScrollView } from "react-native";
+import { StyleSheet, Text, View, ScrollView, Pressable } from "react-native";
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -25,6 +25,7 @@ interface PlayerScoreRowProps {
   progress?: number; // 0-1 for vertical progress bar
   tableMode?: boolean; // compact cell vs full card
   onEditRound?: (roundIndex: number) => void;
+  onRename?: () => void;
 }
 
 export function PlayerScoreRow({
@@ -39,6 +40,7 @@ export function PlayerScoreRow({
   progress = 0,
   tableMode = false,
   onEditRound,
+  onRename,
 }: PlayerScoreRowProps) {
   const glowScale = useSharedValue(1);
   const glowOpacity = useSharedValue(0.1);
@@ -77,7 +79,7 @@ export function PlayerScoreRow({
       <View style={styles.rowBody}>
         <View style={styles.barContent}>
           {/* Section 1: Identity & Rank */}
-          <View style={styles.identitySection}>
+          <Pressable onPress={onRename} style={styles.identitySection}>
             <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={10} padding={0} style={styles.rankWell}>
               <Text style={[styles.rankText, { color: rank === 1 ? COLORS.accent : COLORS.muted }]}>
                 {rank}
@@ -88,7 +90,6 @@ export function PlayerScoreRow({
                 <Text style={[styles.playerName, { color: player.color }]} numberOfLines={1}>
                   {player.name}
                 </Text>
-                {isDealer && <Text style={styles.dealerEmoji}>🃏</Text>}
               </View>
               <View style={styles.miniBadges}>
                 {isLeader && (
@@ -97,11 +98,11 @@ export function PlayerScoreRow({
                   </View>
                 )}
                 {isPhase10 && player.currentPhase !== undefined && (
-                  <Text style={styles.microInfoText}>P{player.currentPhase}</Text>
+                  <Text style={styles.phaseSubtitle}>Phase {player.currentPhase}</Text>
                 )}
               </View>
             </View>
-          </View>
+          </Pressable>
 
           {/* Section 2: History Trench */}
           <View style={styles.historySection}>
@@ -245,6 +246,12 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     fontSize: 8,
     color: "rgba(255,255,255,0.35)",
+  },
+  phaseSubtitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+    color: "rgba(255,255,255,0.5)",
+    marginTop: -2,
   },
   historySection: {
     width: "50%",

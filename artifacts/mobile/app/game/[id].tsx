@@ -12,7 +12,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useGame } from "@/context/GameContext";
+import { useGame, Player, GameSession } from "@/context/GameContext";
 import { getGameById, GameDefinition } from "@/constants/games";
 import { PlayerScoreRow } from "@/components/PlayerScoreRow";
 import { ScoreInputModal } from "@/components/ScoreInputModal";
@@ -25,11 +25,13 @@ import {
   PolymerAlert 
 } from "@/components/PolymerCard";
 import { COLORS } from "@/constants/DesignTokens";
-import { Player } from "@/context/GameContext";
+
 import { GameToolsModal } from "@/components/GameToolsModal";
 import { AnalysisModal } from "@/components/AnalysisModal";
 import { AddPlayerModal } from "@/components/AddPlayerModal";
 import { TargetEditModal } from "@/components/TargetEditModal";
+import { GameSettingsModal } from "@/components/GameSettingsModal";
+import { RenamePlayerModal } from "@/components/RenamePlayerModal";
 
 function sortPlayers(players: Player[], game?: GameDefinition | null): Player[] {
   if (!game) return players;
@@ -74,6 +76,9 @@ export default function GameScreen() {
   const [showResetAlert, setShowResetAlert] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showTargetEditModal, setShowTargetEditModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renamingPlayer, setRenamingPlayer] = useState<Player | null>(null);
 
   const FIVE_CROWNS_WILDS = ["3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
@@ -183,6 +188,19 @@ export default function GameScreen() {
     [id, addPlayerMidGame]
   );
 
+  const handleRenamePlayer = useCallback((newName: string) => {
+    if (!id || !session || !renamingPlayer) return;
+    const updatedPlayers = session.players.map(p => 
+      p.id === renamingPlayer.id ? { ...p, name: newName } : p
+    );
+    updateSession({ ...session, players: updatedPlayers });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [id, session, renamingPlayer, updateSession]);
+
+  const handleUpdateSession = useCallback((updated: GameSession) => {
+    updateSession(updated);
+  }, [updateSession]);
+
   if (!session || !game) return null;
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -249,17 +267,11 @@ export default function GameScreen() {
                   shadow="#4F46E5"
                   glowColor="rgba(99, 102, 241, 0.4)"
                   onPress={() => {
+                    setShowSettingsModal(true);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    if (game.parentId) {
-                      const slug = game.parentId;
-                      const varSlug = game.id.replace(`${slug}_`, '');
-                      router.push(`/${slug}/${varSlug}` as any);
-                    } else {
-                      router.back();
-                    }
                   }}
                 >
-                  <Ionicons name="information-circle-outline" size={22} color="#FFFFFF" />
+                  <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
                 </BrandButton>
 
               </View>
@@ -373,6 +385,11 @@ export default function GameScreen() {
                   progress={playerProgress}
                   tableMode={false}
                   onEditRound={handleEditRound}
+                  onRename={() => {
+                    setRenamingPlayer(player);
+                    setShowRenameModal(true);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
                 />
               );
             })}
@@ -506,6 +523,21 @@ export default function GameScreen() {
         type="warning"
         onConfirm={confirmResetRound}
         onCancel={() => setShowResetAlert(false)}
+      />
+
+      <GameSettingsModal
+        visible={showSettingsModal}
+        session={session}
+        game={game}
+        onClose={() => setShowSettingsModal(false)}
+        onUpdate={handleUpdateSession}
+      />
+
+      <RenamePlayerModal
+        visible={showRenameModal}
+        player={renamingPlayer}
+        onClose={() => setShowRenameModal(false)}
+        onRename={handleRenamePlayer}
       />
     </View>
   );
