@@ -1,7 +1,7 @@
 import { ALL_SVG_PATHS } from './logo_paths';
 
 // Optimized Bounding Box: 150 350 730 320
-export const LOGO_VIEWBOX = "150 350 730 320";
+export const LOGO_VIEWBOX = "50 350 880 320";
 
 // Categorized paths for precise animation and styling
 export const UP_ARROW_PATH = ALL_SVG_PATHS[11];
