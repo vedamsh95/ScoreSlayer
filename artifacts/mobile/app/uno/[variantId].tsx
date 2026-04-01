@@ -345,27 +345,8 @@ export default function VariantDetailScreen() {
         )}
       </ScrollView>
 
-      {/* Sticky Action button */}
-      {!isReadOnly && (
-        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
-          <PolymerButton
-            label={activeSession ? "Resume Session" : "Setup Game"}
-            onPress={() => {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              if (activeSession) {
-                router.push(`/game/${activeSession.id}`);
-              } else {
-                router.push({ pathname: "/setup/[gameId]" as any, params: { gameId: variant.id } });
-              }
-            }}
-            color={variant.color}
-            textColor="#FFFFFF"
-            size="lg"
-            style={{ flex: 1 }}
-            icon={<Feather name={activeSession ? "play" : "settings"} size={16} color="#FFFFFF" />}
-          />
-        </View>
-      )}
+      {/* Bottom padding */}
+      <View style={{ height: 40 + insets.bottom }} />
     </View>
   );
 }

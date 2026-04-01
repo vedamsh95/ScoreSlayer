@@ -121,15 +121,6 @@ export function UnoCalculator({
   };
 
   const handleUno = () => {
-    if (!isWinner && alreadyDeclaredPlayerName) {
-      Alert.alert(
-        "Winner Already Declared",
-        `${alreadyDeclaredPlayerName} has already declared Uno! Only one player can win the round.`,
-        [{ text: "OK" }]
-      );
-      return;
-    }
-
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const newWinnerState = !isWinner;
     setIsWinner(newWinnerState);

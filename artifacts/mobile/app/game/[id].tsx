@@ -219,7 +219,12 @@ export default function GameScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
-        <PolymerCard color={session.gameColor} borderRadius={24} padding={16} style={styles.headerCard}>
+        <NeuTrench 
+          color="rgba(0,0,0,0.15)" 
+          borderRadius={28} 
+          padding={16} 
+          style={styles.headerCard}
+        >
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
               <BrandButton 
@@ -278,14 +283,14 @@ export default function GameScreen() {
             </View>
 
             <View style={styles.headerCenter}>
-              <Text style={[styles.headerGame, { color: "#1A0533" }]}>{game.name}</Text>
+              <Text style={styles.headerGame}>{game.name}</Text>
               {session.gameId === "five_crowns" ? (
-                <NeuTrench color="rgba(0,0,0,0.08)" borderRadius={8} padding={2} style={styles.fiveCrownsBadge}>
-                  <Ionicons name="flash" size={10} color="#1A0533" />
-                  <Text style={[styles.wildText, { color: "#1A0533" }]}>Wilds: {FIVE_CROWNS_WILDS[Math.min(session.currentRound - 1, 10)]}</Text>
+                <NeuTrench color="rgba(255,255,255,0.05)" borderRadius={8} padding={2} style={styles.fiveCrownsBadge}>
+                  <Ionicons name="flash" size={10} color="#FFD700" />
+                  <Text style={styles.wildText}>Wilds: {FIVE_CROWNS_WILDS[Math.min(session.currentRound - 1, 10)]}</Text>
                 </NeuTrench>
               ) : (
-                <Text style={[styles.headerRound, { color: "rgba(26,5,51,0.5)" }]}>Round {session.currentRound}</Text>
+                <Text style={styles.headerRound}>Round {session.currentRound}</Text>
               )}
             </View>
 
@@ -307,28 +312,28 @@ export default function GameScreen() {
           {/* Info strip */}
           <View style={styles.infoStrip}>
             <Pressable onPress={toggleDirection} style={{ flex: 1 }}>
-              <NeuTrench color="rgba(0,0,0,0.06)" borderRadius={12} padding={8} style={styles.infoChip}>
-                <Text style={[styles.infoChipText, { color: "#1A0533" }]}>DIR: <Text style={{ fontFamily: "Bungee_400Regular", fontSize: 10 }}>{session.direction}</Text></Text>
+              <NeuTrench color="rgba(0,0,0,0.35)" borderRadius={12} padding={8} style={styles.infoChip}>
+                <Text style={styles.infoChipText}>DIR: <Text style={{ fontFamily: "Bungee_400Regular", fontSize: 10, color: session.gameColor }}>{session.direction}</Text></Text>
               </NeuTrench>
             </Pressable>
 
             <View style={{ flex: 1.5 }}>
-              <NeuTrench color="rgba(0,0,0,0.06)" borderRadius={12} padding={8} style={styles.infoChip}>
-                <Text style={[styles.infoChipText, { color: "#1A0533" }]} numberOfLines={1}>
-                  DEALER: <Text style={{ fontFamily: "Bungee_400Regular", fontSize: 10 }}>{dealer?.name ?? "—"}</Text>
+              <NeuTrench color="rgba(0,0,0,0.35)" borderRadius={12} padding={8} style={styles.infoChip}>
+                <Text style={styles.infoChipText} numberOfLines={1}>
+                  DEALER: <Text style={{ fontFamily: "Bungee_400Regular", fontSize: 10, color: session.gameColor }}>{dealer?.name ?? "—"}</Text>
                 </Text>
               </NeuTrench>
             </View>
 
             {hasTargetScore && activeTargetScore !== undefined && (
               <Pressable onPress={handleEditTarget} style={{ flex: 1.5 }}>
-                <NeuTrench color="rgba(0,0,0,0.06)" borderRadius={12} padding={8} style={styles.infoChip}>
-                  <Text style={[styles.infoChipText, { color: "#1A0533" }]}>TGT: <Text style={{ fontFamily: "Bungee_400Regular", fontSize: 10 }}>{activeTargetScore.toLocaleString()}</Text></Text>
+                <NeuTrench color="rgba(0,0,0,0.35)" borderRadius={12} padding={8} style={styles.infoChip}>
+                  <Text style={styles.infoChipText}>TGT: <Text style={{ fontFamily: "Bungee_400Regular", fontSize: 10, color: session.gameColor }}>{activeTargetScore.toLocaleString()}</Text></Text>
                 </NeuTrench>
               </Pressable>
             )}
           </View>
-        </PolymerCard>
+        </NeuTrench>
       </View>
 
       <ScrollView

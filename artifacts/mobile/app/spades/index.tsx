@@ -47,10 +47,8 @@ export default function SpadesVariantPicker() {
               key={v.id}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push({ 
-                  pathname: "/spades/[variantId]", 
-                  params: { variantId: v.id.replace("spades_", "") } 
-                });
+                const session = createSession(v as any, ["Player 1", "Player 2"], v.houseRules || []);
+                router.replace({ pathname: "/game/[id]", params: { id: session.id } });
               }}
               style={styles.cardWrapper}
             >

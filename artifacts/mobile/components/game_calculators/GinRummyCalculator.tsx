@@ -58,15 +58,6 @@ export function GinRummyCalculator({
   }, [totalScore, mode, myDeadwood, oppDeadwood, manualLogs, dynamicQuickAdds, onUpdate]);
 
   const handleModeChange = (newMode: GinMode) => {
-    if (alreadyDeclaredPlayerName) {
-      Alert.alert(
-        "Round Already Ended",
-        `${alreadyDeclaredPlayerName} has already declared a win/score for this round. In Gin Rummy, only one player scores per round.`,
-        [{ text: "OK" }]
-      );
-      return;
-    }
-    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setMode(newMode);
     if (newMode === "gin" || newMode === "big_gin") setMyDeadwood("0");

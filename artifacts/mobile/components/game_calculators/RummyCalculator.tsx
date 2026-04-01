@@ -67,15 +67,6 @@ export function RummyCalculator({
   };
 
   const handleShow = () => {
-    if (!(score === 0 && firstLife && secondLife && thirdLife) && alreadyDeclaredPlayerName) {
-      Alert.alert(
-        "Rummy Already Declared",
-        `${alreadyDeclaredPlayerName} has already declared Rummy/Show! Only one player can win the round.`,
-        [{ text: "OK" }]
-      );
-      return;
-    }
-    
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setDrop("none");
     setFirstLife(true);

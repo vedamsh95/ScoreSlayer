@@ -10,7 +10,8 @@ import {
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import Animated, { 
   useSharedValue, 
@@ -148,6 +149,9 @@ export function ScoreInputModal({
   const [resetCounters, setResetCounters] = useState<Record<string, number>>({});
   const [showResetAlert, setShowResetAlert] = useState(false);
 
+  const [showNoWinnerConfirm, setShowNoWinnerConfirm] = useState(false);
+  const [showConflictAlert, setShowConflictAlert] = useState<{ name: string } | null>(null);
+
   // Initialize state when initial values change or modal opens
   useEffect(() => {
     if (visible) {
@@ -176,49 +180,54 @@ export function ScoreInputModal({
   const activePlayer = players[activePlayerIndex];
 
   const alreadyDeclaredPlayerName = useMemo(() => {
-    const isWinnerGame = game.parentId === "rummy" || game.parentId === "uno" || game.id.startsWith("phase10") || game.id === "uno" || game.id.includes("rummy");
+    // Phase 10 allows multiple players to complete phases in one round
+    const isPhase10 = game.id.startsWith("phase10") || game.parentId === "phase10";
+    if (isPhase10) return null;
+
+    const isWinnerGame = game.parentId === "rummy" || game.parentId === "uno" || game.id === "uno" || game.id.includes("rummy");
     if (!isWinnerGame) return null;
     const otherWinner = players.find(p => p.id !== activePlayer.id && allCleared[p.id]);
     return otherWinner ? otherWinner.name : null;
-  }, [game, players, activePlayer.id, allCleared]);
+  }, [game.id, game.parentId, players, activePlayer.id, allCleared]);
 
   const handleUpdate = useCallback((score: number, logs: any[], extra?: any) => {
     setAllScores(prev => ({ ...prev, [activePlayer.id]: score }));
     setAllLogs(prev => ({ ...prev, [activePlayer.id]: logs }));
     
     if (extra) {
-      if (extra.cleared !== undefined) setAllCleared(prev => ({ ...prev, [activePlayer.id]: extra.cleared }));
+      if (extra.cleared !== undefined) {
+        // If trying to declare but someone else already did, show conflict
+        if (extra.cleared && alreadyDeclaredPlayerName) {
+          setShowConflictAlert({ name: alreadyDeclaredPlayerName });
+          return;
+        }
+        setAllCleared(prev => ({ ...prev, [activePlayer.id]: extra.cleared }));
+      }
       if (extra.bid !== undefined) setAllBids(prev => ({ ...prev, [activePlayer.id]: extra.bid }));
       if (extra.won !== undefined) setAllTricksWon(prev => ({ ...prev, [activePlayer.id]: extra.won }));
       setAllMetadata(prev => ({ ...prev, [activePlayer.id]: extra }));
     }
-  }, [activePlayer.id]);
+  }, [activePlayer.id, alreadyDeclaredPlayerName]);
 
   const handleSubmit = useCallback(() => {
     const isWinnerGame = game.parentId === "rummy" || game.parentId === "uno" || game.id.startsWith("phase10") || game.id === "uno" || game.id.includes("rummy");
     const hasWinner = Object.values(allCleared).some(v => v === true);
 
     if (isWinnerGame && !hasWinner) {
-      Alert.alert(
-        "No Winner Declared",
-        "It looks like no one has declared a win in this round. Did someone win (e.g., Uno or Rummy)?",
-        [
-          { text: "Yes, I Forgot", style: "cancel" },
-          { 
-            text: "No, Continue", 
-            onPress: () => {
-              onSubmit(allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata);
-              handleDismiss();
-            }
-          }
-        ]
-      );
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setShowNoWinnerConfirm(true);
       return;
     }
 
     onSubmit(allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata);
     handleDismiss();
-  }, [allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata, onSubmit, handleDismiss, game, allCleared]);
+  }, [allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata, onSubmit, handleDismiss, game]);
+
+  const confirmSubmit = () => {
+    setShowNoWinnerConfirm(false);
+    onSubmit(allScores, allLogs, allCleared, allBids, allTricksWon, allMetadata);
+    handleDismiss();
+  };
 
   const handleReset = useCallback(() => {
     setShowResetAlert(true);
@@ -480,6 +489,65 @@ export function ScoreInputModal({
         </Animated.View>
       </View>
 
+      {/* Styled Alert: No Winner Declared */}
+      <Modal visible={showNoWinnerConfirm} transparent animationType="fade">
+        <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill}>
+          <View style={styles.alertOverlay}>
+            <PolymerCard color="#150428" borderRadius={32} padding={24} style={styles.alertCard}>
+              <View style={styles.alertIconWell}>
+                <Ionicons name="trophy-outline" size={32} color="#FFB800" />
+              </View>
+              <Text style={styles.alertTitle}>NO WINNER DECLARED</Text>
+              <Text style={styles.alertMessage}>
+                It looks like no one has declared a win. In {game.name}, usually one person must declare per round.
+              </Text>
+              
+              <View style={styles.alertActions}>
+                <NeuButton 
+                  onPress={() => setShowNoWinnerConfirm(false)} 
+                  color="#150428" 
+                  style={{ flex: 1, height: 50 }}
+                >
+                  <Text style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter_700Bold", fontSize: 14 }}>I FORGOT</Text>
+                </NeuButton>
+                <BrandButton 
+                  onPress={confirmSubmit} 
+                  style={{ flex: 1.2, height: 50 }}
+                >
+                  <Text style={styles.alertBtnText}>CONTINUE</Text>
+                </BrandButton>
+              </View>
+            </PolymerCard>
+          </View>
+        </BlurView>
+      </Modal>
+
+      {/* Styled Alert: Winner Conflict */}
+      <Modal visible={!!showConflictAlert} transparent animationType="fade">
+        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill}>
+          <View style={styles.alertOverlay}>
+            <PolymerCard color="#150428" borderRadius={32} padding={24} style={styles.alertCard}>
+              <View style={[styles.alertIconWell, { backgroundColor: "rgba(255,92,92,0.1)" }]}>
+                <MaterialCommunityIcons name="alert-octagon" size={32} color="#FF5C5C" />
+              </View>
+              <Text style={styles.alertTitle}>ALREADY DECLARED</Text>
+              <Text style={styles.alertMessage}>
+                <Text style={{ color: "#FFF", fontWeight: "900" }}>{showConflictAlert?.name}</Text> has already declared a win for this round. Only one person can be the winner.
+              </Text>
+              
+              <View style={styles.alertActions}>
+                <BrandButton 
+                  onPress={() => setShowConflictAlert(null)} 
+                  style={{ flex: 1, height: 50 }}
+                >
+                  <Text style={styles.alertBtnText}>GOT IT</Text>
+                </BrandButton>
+              </View>
+            </PolymerCard>
+          </View>
+        </BlurView>
+      </Modal>
+
       <PolymerAlert
         visible={showResetAlert}
         title="Reset Scores?"
@@ -621,4 +689,54 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
+  // Alert Styles
+  alertOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+    backgroundColor: "rgba(0,0,0,0.4)"
+  },
+  alertCard: {
+    width: "100%",
+    maxWidth: 340,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)"
+  },
+  alertIconWell: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,184,0,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20
+  },
+  alertTitle: {
+    fontFamily: "Bungee_400Regular",
+    fontSize: 20,
+    color: "#FFF",
+    textAlign: "center",
+    marginBottom: 12
+  },
+  alertMessage: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
+    color: "rgba(255,255,255,0.5)",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24
+  },
+  alertActions: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%"
+  },
+  alertBtnText: {
+    fontFamily: "Bungee_400Regular",
+    fontSize: 14,
+    color: "#FFF",
+    paddingTop: 2
+  }
 });

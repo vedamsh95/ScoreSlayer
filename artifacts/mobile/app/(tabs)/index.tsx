@@ -59,7 +59,17 @@ function GameCard({ game, onPress }: { game: GameDefinition; onPress: () => void
           padding={12} 
           style={styles.gameCard}
         >
-          <Text style={styles.gameName} numberOfLines={2}>{game.name}</Text>
+          <Text 
+            style={[
+              styles.gameName, 
+              game.name.length > 10 && { fontSize: 11 }
+            ]} 
+            numberOfLines={game.name.includes(' ') && game.name.length >= 10 ? 2 : 1}
+            adjustsFontSizeToFit={game.name.length > 10 && !game.name.includes(' ')}
+            minimumFontScale={0.8}
+          >
+            {game.name}
+          </Text>
           
           <View style={styles.gameCardFooter}>
             {game.hasVariants ? (
@@ -91,7 +101,7 @@ function CollapsibleSection({
   isExpanded: boolean; 
   onToggle: () => void;
 }) {
-  const { createSession } = useGame();
+  const { state, createSession } = useGame();
   return (
     <View style={styles.categoryContainer}>
       <Pressable 
@@ -124,10 +134,14 @@ function CollapsibleSection({
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 if (game.id === "game_tools") {
                   router.push("/tools" as any);
-                } else if (game.hasVariants) {
+                  return;
+                }
+
+                // Handle New Start (Tapping from library ALWAYS starts fresh)
+                if (game.hasVariants) {
                   router.push(`/${game.id}` as any);
                 } else {
-                  // Direct session start with 2 players
+                  // Direct session start with 2 players for games without variants
                   const session = createSession(game, ["Player 1", "Player 2"], game.houseRules ?? []);
                   router.push({ pathname: "/game/[id]", params: { id: session.id } });
                 }
