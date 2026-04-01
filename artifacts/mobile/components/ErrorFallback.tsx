@@ -1,17 +1,32 @@
 import { Feather } from "@expo/vector-icons";
 import { reloadAppAsync } from "expo";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  ScrollView,
   useColorScheme,
+  Dimensions,
+  Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  withTiming,
+  runOnJS,
+  interpolate,
+  useAnimatedScrollHandler,
+} from "react-native-reanimated";
+import { GestureHandlerRootView, Gesture, GestureDetector, NativeViewGestureHandler } from "react-native-gesture-handler";
+import * as Haptics from "expo-haptics";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -33,6 +48,69 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   };
 
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  // Animation State
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+  const scrollY = useSharedValue(0);
+  const scrollRef = React.useRef<any>(null);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const handleDismiss = React.useCallback(() => {
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+      runOnJS(() => setIsModalVisible(false))();
+    });
+  }, []);
+
+  const panGesture = useMemo(() => Gesture.Pan()
+    .simultaneousWithExternalGesture(scrollRef)
+    .activeOffsetY([-10, 10])
+    .onUpdate((event) => {
+      'worklet';
+      if (scrollY.value <= 1 && event.translationY > 0) {
+        translateY.value = event.translationY;
+      } else if (translateY.value > 0) {
+        translateY.value = Math.max(0, event.translationY);
+      }
+      backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
+    })
+    .onEnd((event) => {
+      'worklet';
+      if (event.translationY > 150 || event.velocityY > 500) {
+        backdropOpacity.value = withTiming(0, { duration: 250 });
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+          'worklet';
+          runOnJS(setIsModalVisible)(false);
+        });
+      } else {
+        translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    }), [SCREEN_HEIGHT]);
+
+  React.useEffect(() => {
+    if (isModalVisible) {
+      translateY.value = withSpring(0, { damping: 25, stiffness: 120 });
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+    } else {
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
+    }
+  }, [isModalVisible]);
 
   const handleRestart = async () => {
     try {
@@ -106,73 +184,96 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
       {__DEV__ ? (
         <Modal
           visible={isModalVisible}
-          animationType="slide"
+          animationType="none"
           transparent={true}
-          onRequestClose={() => setIsModalVisible(false)}
+          onRequestClose={handleDismiss}
         >
-          <View style={styles.modalOverlay}>
-            <View
-              style={[
-                styles.modalContainer,
-                { backgroundColor: theme.background },
-              ]}
-            >
-              <View
-                style={[
-                  styles.modalHeader,
-                  {
-                    borderBottomColor: isDark
-                      ? "rgba(255, 255, 255, 0.1)"
-                      : "rgba(0, 0, 0, 0.1)",
-                  },
-                ]}
-              >
-                <Text style={[styles.modalTitle, { color: theme.text }]}>
-                  Error Details
-                </Text>
-                <Pressable
-                  onPress={() => setIsModalVisible(false)}
-                  accessibilityLabel="Close error details"
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.closeButton,
-                    { opacity: pressed ? 0.6 : 1 },
-                  ]}
-                >
-                  <Feather name="x" size={24} color={theme.text} />
-                </Pressable>
-              </View>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <View style={styles.modalOverlay}>
+            <Animated.View style={[styles.backdrop, backdropStyle]}>
+              <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
+            </Animated.View>
 
-              <ScrollView
-                style={styles.modalScrollView}
-                contentContainerStyle={[
-                  styles.modalScrollContent,
-                  { paddingBottom: insets.bottom + 16 },
-                ]}
-                showsVerticalScrollIndicator
+            <GestureDetector gesture={panGesture}>
+              <Animated.View 
+                style={[styles.sheetWrap, { paddingBottom: Math.max(insets.bottom, 16) }, animatedStyle]}
               >
                 <View
                   style={[
-                    styles.errorContainer,
-                    { backgroundColor: theme.backgroundSecondary },
+                    styles.modalContainer,
+                    { backgroundColor: theme.background },
                   ]}
                 >
-                  <Text
+                  <View style={styles.gestureHeader}>
+                    <View style={styles.grabBarContainer}>
+                      <View style={styles.grabBar} />
+                    </View>
+                    
+                    <View
+                      style={[
+                        styles.modalHeader,
+                        {
+                          borderBottomColor: isDark
+                            ? "rgba(255, 255, 255, 0.1)"
+                            : "rgba(0, 0, 0, 0.1)",
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.modalTitle, { color: theme.text }]}>
+                        Error Details
+                      </Text>
+                      <Pressable
+                        onPress={handleDismiss}
+                        accessibilityLabel="Close error details"
+                        accessibilityRole="button"
+                        style={({ pressed }) => [
+                          styles.closeButton,
+                          { opacity: pressed ? 0.6 : 1 },
+                        ]}
+                      >
+                        <Feather name="x" size={24} color={theme.text} />
+                      </Pressable>
+                    </View>
+                  </View>
+
+                <NativeViewGestureHandler ref={scrollRef}>
+                  <Animated.ScrollView
+                    onScroll={scrollHandler}
+                    scrollEventThrottle={16}
+                  bounces={false}
+                  style={styles.modalScrollView}
+                  contentContainerStyle={[
+                    styles.modalScrollContent,
+                    { paddingBottom: insets.bottom + 16 },
+                  ]}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View
                     style={[
-                      styles.errorText,
-                      {
-                        color: theme.text,
-                        fontFamily: monoFont,
-                      },
+                      styles.errorContainer,
+                      { backgroundColor: theme.backgroundSecondary },
                     ]}
-                    selectable
                   >
-                    {formatErrorDetails()}
-                  </Text>
-                </View>
-              </ScrollView>
-            </View>
+                    <Text
+                      style={[
+                        styles.errorText,
+                        {
+                          color: theme.text,
+                          fontFamily: monoFont,
+                        },
+                      ]}
+                      selectable
+                    >
+                      {formatErrorDetails()}
+                    </Text>
+                  </View>
+                </Animated.ScrollView>
+              </NativeViewGestureHandler>
+              </View>
+            </Animated.View>
+          </GestureDetector>
           </View>
+          </GestureHandlerRootView>
         </Modal>
       ) : null}
     </View>
@@ -238,21 +339,45 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.85)",
+  },
+  sheetWrap: {
+    width: "100%",
+    paddingHorizontal: 16,
   },
   modalContainer: {
     width: "100%",
     height: "90%",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    overflow: "hidden",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  gestureHeader: {
+    paddingTop: 8,
+  },
+  grabBarContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  grabBar: {
+    width: 38,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 4,
     paddingBottom: 12,
     borderBottomWidth: 1,
   },

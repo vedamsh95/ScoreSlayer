@@ -1,7 +1,19 @@
-import React from "react";
-import { StyleSheet, View, ViewStyle, Pressable, Text, Modal } from "react-native";
+import React, { useEffect, useCallback, useMemo } from "react";
+import { StyleSheet, View, ViewStyle, Pressable, Text, Modal, Dimensions, Keyboard } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  withTiming,
+  runOnJS,
+  interpolate,
+} from "react-native-reanimated";
+import { GestureHandlerRootView, Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as Haptics from "expo-haptics";
 import { COLORS } from "../constants/DesignTokens";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface Props {
   children?: React.ReactNode;
@@ -214,53 +226,126 @@ export const PolymerAlert = ({
   };
 
   const theme = getColors();
+  const insets = useSafeAreaInsets();
+
+  // Animation State
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const handleDismiss = useCallback(() => {
+    Keyboard.dismiss();
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+      runOnJS(onCancel)();
+    });
+  }, [onCancel]);
+
+  const gesture = useMemo(() => Gesture.Pan()
+    .onUpdate((event) => {
+      'worklet';
+      translateY.value = Math.max(0, event.translationY);
+      backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
+    })
+    .onEnd((event) => {
+      'worklet';
+      if (event.translationY > 150 || event.velocityY > 500) {
+        backdropOpacity.value = withTiming(0, { duration: 250 });
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+          'worklet';
+          runOnJS(onCancel)();
+        });
+      } else {
+        translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    }), [onCancel, SCREEN_HEIGHT]);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.value = withSpring(0, { damping: 25, stiffness: 120 });
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+    } else {
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
+    }
+  }, [visible]);
 
   return (
     <Modal
       transparent
       visible={visible}
-      animationType="fade"
-      onRequestClose={onCancel}
+      animationType="none"
+      onRequestClose={handleDismiss}
     >
-      <View style={styles.modalOverlay}>
-        <PolymerCard 
-          color="#1A0533" 
-          borderRadius={32} 
-          padding={24} 
-          style={styles.alertCard}
-        >
-          <Text style={styles.alertTitle}>{title}</Text>
-          <Text style={styles.alertMessage}>{message}</Text>
-          
-          <View style={styles.alertActions}>
-            <BrandButton
-              onPress={onCancel}
-              color="#2D1B4D"
-              highlight="rgba(255,255,255,0.05)"
-              shadow="rgba(0,0,0,0.3)"
-              glowColor="rgba(0,0,0,0.2)"
-              borderRadius={18}
-              style={{ flex: 1, height: 50 }}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.modalOverlay}>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
+        </Animated.View>
+
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[styles.sheetWrap, { paddingBottom: Math.max(insets.bottom, 16) }, animatedStyle]}>
+            <PolymerCard 
+              color="#1A0533" 
+              borderRadius={32} 
+              padding={0} 
+              style={styles.alertCard}
             >
-              <Text style={styles.cancelText}>{cancelText}</Text>
-            </BrandButton>
-            
-            <View style={{ width: 12 }} />
-            
-            <BrandButton
-              onPress={onConfirm}
-              color={theme.color}
-              highlight={theme.highlight}
-              shadow={theme.shadow}
-              glowColor={theme.glow}
-              borderRadius={18}
-              style={{ flex: 1, height: 50 }}
-            >
-              <Text style={styles.confirmText}>{confirmText}</Text>
-            </BrandButton>
-          </View>
-        </PolymerCard>
+              <View style={styles.gestureHeader}>
+                <View style={styles.grabBarContainer}>
+                  <View style={styles.grabBar} />
+                </View>
+                
+                <View style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
+                  <Text style={styles.alertTitle}>{title}</Text>
+                  <Text style={styles.alertMessage}>{message}</Text>
+                </View>
+              </View>
+            <View style={{ padding: 24, paddingTop: 0 }}>
+              <View style={styles.alertActions}>
+                <BrandButton
+                  onPress={handleDismiss}
+                  color="#2D1B4D"
+                  highlight="rgba(255,255,255,0.05)"
+                  shadow="rgba(0,0,0,0.3)"
+                  glowColor="rgba(0,0,0,0.2)"
+                  borderRadius={18}
+                  style={{ flex: 1, height: 50 }}
+                >
+                  <Text style={styles.cancelText}>{cancelText}</Text>
+                </BrandButton>
+                
+                <View style={{ width: 12 }} />
+                
+                <BrandButton
+                  onPress={() => {
+                    onConfirm();
+                    handleDismiss();
+                  }}
+                  color={theme.color}
+                  highlight={theme.highlight}
+                  shadow={theme.shadow}
+                  glowColor={theme.glow}
+                  borderRadius={18}
+                  style={{ flex: 1, height: 50 }}
+                >
+                  <Text style={styles.confirmText}>{confirmText}</Text>
+                </BrandButton>
+              </View>
+            </View>
+          </PolymerCard>
+        </Animated.View>
+      </GestureDetector>
       </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 };
@@ -377,14 +462,35 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center",
-    padding: 24,
+    justifyContent: "flex-end",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.85)",
+  },
+  sheetWrap: {
+    paddingHorizontal: 16,
   },
   alertCard: {
-    maxWidth: 400,
-    alignSelf: "center",
     width: "100%",
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  gestureHeader: {
+    paddingTop: 8,
+  },
+  grabBarContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  grabBar: {
+    width: 38,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
   alertTitle: {
     fontFamily: "Inter_800ExtraBold",

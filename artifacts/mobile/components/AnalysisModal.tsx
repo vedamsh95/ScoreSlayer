@@ -1,13 +1,13 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
   Pressable,
-  ScrollView,
   Dimensions,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,8 +19,9 @@ import Animated, {
   withTiming,
   runOnJS,
   interpolate,
+  useAnimatedScrollHandler,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, Gesture, GestureDetector, NativeViewGestureHandler } from "react-native-gesture-handler";
 import * as Haptics from 'expo-haptics';
 import { GameSession } from '@/context/GameContext';
 import { useSessionAnalysis } from '@/hooks/useSessionAnalysis';
@@ -41,6 +42,14 @@ export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps)
   // Animation State
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
+  const scrollY = useSharedValue(0);
+  const scrollRef = useRef<any>(null);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -57,19 +66,31 @@ export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps)
     });
   }, [onClose]);
 
-  const gesture = Gesture.Pan()
+  const panGesture = useMemo(() => Gesture.Pan()
+    .simultaneousWithExternalGesture(scrollRef)
+    .activeOffsetY([-10, 10])
     .onUpdate((event) => {
-      translateY.value = Math.max(0, event.translationY);
+      'worklet';
+      if (scrollY.value <= 1 && event.translationY > 0) {
+        translateY.value = event.translationY;
+      } else if (translateY.value > 0) {
+        translateY.value = Math.max(0, event.translationY);
+      }
       backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
     })
     .onEnd((event) => {
+      'worklet';
       if (event.translationY > 150 || event.velocityY > 500) {
-        handleDismiss();
+        backdropOpacity.value = withTiming(0, { duration: 250 });
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+          'worklet';
+          runOnJS(onClose)();
+        });
       } else {
         translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
         backdropOpacity.value = withTiming(1, { duration: 200 });
       }
-    });
+    }), [onClose, SCREEN_HEIGHT]);
 
   // Entrance Animation
   useEffect(() => {
@@ -151,44 +172,46 @@ export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps)
       animationType="none"
       onRequestClose={handleDismiss}
     >
-      <View style={styles.overlay}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.overlay}>
           <Animated.View style={[styles.backdrop, backdropStyle]}>
             <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
           </Animated.View>
 
-          <Animated.View 
-            style={[styles.modalContent, animatedStyle]}
-          >
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }, animatedStyle]}>
             <PolymerCard 
               color="#1A0533" 
               borderRadius={32} 
               padding={0} 
               style={styles.sheetContent}
             >
-              <GestureDetector gesture={gesture}>
-                <View style={styles.gestureHeader}>
-                  <View style={styles.grabBarContainer}>
-                    <View style={styles.grabBar} />
-                  </View>
-                  
-                  <View style={styles.header}>
-                    <View>
-                      <Text style={styles.headerTitle}>ROAST ROOM</Text>
-                      <Text style={styles.headerSub}>Real-time metrics & emotional damage</Text>
-                    </View>
-                    <NeuButton 
-                      size={40} 
-                      borderRadius={12} 
-                      color="#150428" 
-                      onPress={handleDismiss}
-                    >
-                      <Ionicons name="close" size={20} color="#FFF" />
-                    </NeuButton>
-                  </View>
+              <View style={styles.gestureHeader}>
+                <View style={styles.grabBarContainer}>
+                  <View style={styles.grabBar} />
                 </View>
-              </GestureDetector>
+                
+                <View style={styles.header}>
+                  <View>
+                    <Text style={styles.headerTitle}>ROAST ROOM</Text>
+                    <Text style={styles.headerSub}>Real-time metrics & emotional damage</Text>
+                  </View>
+                  <NeuButton 
+                    size={40} 
+                    borderRadius={12} 
+                    color="#150428" 
+                    onPress={handleDismiss}
+                  >
+                    <Ionicons name="close" size={20} color="#FFF" />
+                  </NeuButton>
+                </View>
+              </View>
 
-              <ScrollView 
+              <NativeViewGestureHandler ref={scrollRef}>
+              <Animated.ScrollView 
+                onScroll={scrollHandler}
+                scrollEventThrottle={16}
+                bounces={false}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
               >
@@ -245,10 +268,13 @@ export function AnalysisModal({ visible, onClose, session }: AnalysisModalProps)
                 );
               })}
             </View>
-              </ScrollView>
+              </Animated.ScrollView>
+              </NativeViewGestureHandler>
             </PolymerCard>
           </Animated.View>
+        </GestureDetector>
       </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -262,21 +288,23 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.85)",
   },
-  modalContent: {
-    height: "94%",
+  sheet: {
+    width: "100%",
     backgroundColor: "transparent",
+    paddingHorizontal: 16,
+    height: "94%",
   },
   sheetContent: {
     flex: 1,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.1)",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 24,
     paddingBottom: 20
   },

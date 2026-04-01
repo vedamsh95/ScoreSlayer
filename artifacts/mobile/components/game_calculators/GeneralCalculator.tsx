@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   manualInput: { flex: 1, color: "#FFF", fontFamily: "Inter_600SemiBold", fontSize: 15, paddingHorizontal: 12 },
   manualAddBtn: { height: 44 },
   scroll: { flex: 1 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between", marginBottom: 20 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "space-between", marginBottom: 20 },
   key: { width: "18%", height: 54 },
   keyText: { fontFamily: "Bungee_400Regular", fontSize: 20, color: "#1A0533" },
   sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1.5 },

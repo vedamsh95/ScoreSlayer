@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Modal,
   View,
@@ -15,7 +15,7 @@ import Animated, {
   runOnJS,
   interpolate,
 } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { GestureHandlerRootView, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -55,19 +55,25 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
     });
   }, [onClose]);
 
-  const gesture = Gesture.Pan()
+  const gesture = useMemo(() => Gesture.Pan()
     .onUpdate((event) => {
+      'worklet';
       translateY.value = Math.max(0, event.translationY);
       backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
     })
     .onEnd((event) => {
+      'worklet';
       if (event.translationY > 150 || event.velocityY > 500) {
-        handleDismiss();
+        backdropOpacity.value = withTiming(0, { duration: 250 });
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+          'worklet';
+          runOnJS(onClose)();
+        });
       } else {
         translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
         backdropOpacity.value = withTiming(1, { duration: 200 });
       }
-    });
+    }), [onClose, SCREEN_HEIGHT]);
 
   // Entrance Animation
   useEffect(() => {
@@ -82,21 +88,20 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
 
   return (
     <Modal visible={visible} animationType="none" transparent onRequestClose={handleDismiss}>
-      <View style={styles.overlay}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.overlay}>
           <Animated.View style={[styles.backdrop, backdropStyle]}>
             <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
           </Animated.View>
 
-          <Animated.View 
-            style={[styles.modalContent, animatedStyle]}
-          >
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }, animatedStyle]}>
             <PolymerCard 
               color="#1A0533" 
               borderRadius={32} 
               padding={0} 
               style={styles.sheetContent}
             >
-              <GestureDetector gesture={gesture}>
                 <View style={styles.gestureHeader}>
                   <View style={styles.grabBarContainer}>
                     <View style={styles.grabBar} />
@@ -114,7 +119,6 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
                     </Pressable>
                   </View>
                 </View>
-              </GestureDetector>
 
               <View style={styles.content}>
                 <UnifiedToolsCore 
@@ -124,7 +128,9 @@ export function GameToolsModal({ visible, players, onShuffle, onClose }: GameToo
               </View>
             </PolymerCard>
           </Animated.View>
+        </GestureDetector>
       </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -138,19 +144,20 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.85)",
   },
-  modalContent: {
-    height: "94%",
+  sheet: {
+    width: "100%",
     backgroundColor: "transparent",
+    paddingHorizontal: 16,
+    height: "94%",
   },
   sheetContent: {
     flex: 1,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.1)",
   },
   gestureHeader: {
-    backgroundColor: "transparent",
     paddingTop: 8,
   },
   grabBarContainer: {

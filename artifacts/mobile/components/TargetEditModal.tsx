@@ -1,9 +1,31 @@
-import React, { useState, useEffect } from "react";
-import { Modal, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { 
+  Modal, 
+  StyleSheet, 
+  Text, 
+  TextInput, 
+  View, 
+  Platform, 
+  Pressable,
+  Dimensions,
+  Keyboard,
+} from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  withTiming,
+  runOnJS,
+  interpolate,
+} from "react-native-reanimated";
+import { GestureHandlerRootView, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { PolymerCard, NeuTrench, BrandButton, NeuIconWell } from "./PolymerCard";
-import { COLORS } from "@/constants/DesignTokens";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface TargetEditModalProps {
   visible: boolean;
@@ -18,11 +40,63 @@ export const TargetEditModal = ({
   onClose,
   onUpdate,
 }: TargetEditModalProps) => {
+  const insets = useSafeAreaInsets();
   const [value, setValue] = useState(initialValue.toString());
+  const inputRef = useRef<TextInput>(null);
+
+  // Animation State
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const handleDismiss = useCallback(() => {
+    Keyboard.dismiss();
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+      runOnJS(onClose)();
+    });
+  }, [onClose]);
+
+  const gesture = useMemo(() => Gesture.Pan()
+    .onUpdate((event) => {
+      'worklet';
+      translateY.value = Math.max(0, event.translationY);
+      backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
+    })
+    .onEnd((event) => {
+      'worklet';
+      if (event.translationY > 150 || event.velocityY > 500) {
+        backdropOpacity.value = withTiming(0, { duration: 250 });
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+          'worklet';
+          runOnJS(onClose)();
+        });
+      } else {
+        translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    }), [onClose, SCREEN_HEIGHT]);
 
   useEffect(() => {
     if (visible) {
       setValue(initialValue.toString());
+      translateY.value = withSpring(0, { damping: 25, stiffness: 120 });
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
     }
   }, [visible, initialValue]);
 
@@ -30,104 +104,117 @@ export const TargetEditModal = ({
     const num = parseInt(value);
     if (!isNaN(num) && num > 0) {
       onUpdate(num);
-      onClose();
+      handleDismiss();
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
   return (
-    <Modal
-      transparent
-      visible={visible}
-      animationType="fade"
-      onRequestClose={onClose}
+    <Modal 
+      visible={visible} 
+      animationType="none" 
+      transparent 
+      onRequestClose={handleDismiss}
     >
-      <View style={styles.overlay}>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.container}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior="padding"
+          keyboardVerticalOffset={12}
         >
-          <PolymerCard color="#1A0533" borderRadius={32} padding={24} style={styles.card}>
-            <View style={styles.header}>
-              <NeuIconWell color="rgba(255,45,120,0.15)" size={48} borderRadius={14}>
-                <Ionicons name="flag-outline" size={24} color="#FF2D78" />
-              </NeuIconWell>
-              <Text style={styles.title}>Target Score</Text>
-              <Text style={styles.subtitle}>Enter the new target for this session</Text>
-            </View>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
+        </Animated.View>
 
-            <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={20} padding={4} style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={value}
-                onChangeText={setValue}
-                keyboardType="numeric"
-                selectTextOnFocus
-                autoFocus={visible}
-                placeholder="0"
-                placeholderTextColor="rgba(255,255,255,0.2)"
-              />
-            </NeuTrench>
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }, animatedStyle]}>
+            <PolymerCard color="#1A0533" borderRadius={32} padding={0} style={styles.card}>
+              <View style={styles.gestureHeader}>
+                <View style={styles.grabBarContainer}>
+                  <View style={styles.grabBar} />
+                </View>
 
-            <View style={styles.actions}>
-              <BrandButton
-                onPress={onClose}
-                color="#2D1B4D"
-                highlight="rgba(255,255,255,0.05)"
-                shadow="rgba(0,0,0,0.3)"
-                glowColor="rgba(0,0,0,0.2)"
-                borderRadius={18}
-                style={styles.actionBtn}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </BrandButton>
+                <View style={styles.header}>
+                  <NeuIconWell color="rgba(255,45,120,0.15)" size={48} borderRadius={14}>
+                    <Ionicons name="flag-outline" size={24} color="#FF2D78" />
+                  </NeuIconWell>
+                  <View style={{ alignItems: "center", marginTop: 12 }}>
+                    <Text style={styles.title}>Target Score</Text>
+                    <Text style={styles.subtitle}>Enter the new target for this session</Text>
+                  </View>
+                </View>
+              </View>
 
-              <View style={{ width: 12 }} />
+              <View style={{ padding: 24, paddingTop: 0 }}>
+              <NeuTrench color="rgba(0,0,0,0.3)" borderRadius={20} padding={4} style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  value={value}
+                  onChangeText={setValue}
+                  ref={inputRef}
+                  keyboardType="numeric"
+                  selectTextOnFocus
+                  autoFocus={visible}
+                  placeholder="0"
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                />
+              </NeuTrench>
 
-              <BrandButton
-                onPress={handleUpdate}
-                color="#00F5A0"
-                highlight="#54FFC9"
-                shadow="#00D289"
-                glowColor="rgba(0, 245, 160, 0.4)"
-                borderRadius={18}
-                style={styles.actionBtn}
-              >
-                <Text style={styles.updateText}>Update</Text>
-              </BrandButton>
+              <View style={styles.actions}>
+                <BrandButton
+                  onPress={handleDismiss}
+                  color="#2D1B4D"
+                  highlight="rgba(255,255,255,0.05)"
+                  shadow="rgba(0,0,0,0.3)"
+                  glowColor="rgba(0,0,0,0.2)"
+                  borderRadius={18}
+                  style={styles.actionBtn}
+                >
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </BrandButton>
+
+                <View style={{ width: 12 }} />
+
+                <BrandButton
+                  onPress={handleUpdate}
+                  color="#00F5A0"
+                  highlight="#54FFC9"
+                  shadow="#00D289"
+                  glowColor="rgba(0, 245, 160, 0.4)"
+                  borderRadius={18}
+                  style={styles.actionBtn}
+                >
+                  <Text style={styles.updateText}>Update</Text>
+                </BrandButton>
+              </View>
             </View>
           </PolymerCard>
-        </KeyboardAvoidingView>
-      </View>
+          </Animated.View>
+        </GestureDetector>
+      </KeyboardAvoidingView>
+      </GestureHandlerRootView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    justifyContent: "center",
-    padding: 24,
+  overlay: { flex: 1, justifyContent: "flex-end" },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.85)",
   },
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  card: {
-    width: "100%",
-    maxWidth: 360,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
+  sheet: { width: "100%", backgroundColor: "transparent", paddingHorizontal: 16 },
+  card: { borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  gestureHeader: { paddingTop: 8 },
+  grabBarContainer: { width: "100%", alignItems: "center", paddingVertical: 12 },
+  grabBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.2)" },
+  header: { alignItems: "center", marginBottom: 24 },
   title: {
     fontFamily: "Bungee_400Regular",
     fontSize: 20,
     color: "#FFFFFF",
-    marginTop: 16,
+    marginTop: 8,
     letterSpacing: 1,
   },
   subtitle: {
@@ -152,6 +239,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 16,
   },
   actionBtn: {
     flex: 1,

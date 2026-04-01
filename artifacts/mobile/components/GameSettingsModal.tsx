@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Modal,
   StyleSheet,
@@ -9,11 +9,23 @@ import {
   Pressable,
   Dimensions,
   Platform,
+  Keyboard,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { router } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { PolymerCard, NeuTrench, NeuButton, BrandButton, NeuIconWell } from "./PolymerCard";
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  withTiming,
+  runOnJS,
+  interpolate,
+  useAnimatedScrollHandler,
+} from "react-native-reanimated";
+import { GestureHandlerRootView, Gesture, GestureDetector, NativeViewGestureHandler } from "react-native-gesture-handler";
+import { PolymerCard, NeuTrench, NeuButton, BrandButton } from "./PolymerCard";
 import { GameSession, Player } from "@/context/GameContext";
 import { GameDefinition, HouseRuleOverride, ScoreRule } from "@/constants/games";
 
@@ -43,6 +55,70 @@ export function GameSettingsModal({
     session.customScoreRules || game.scoreRules || []
   );
 
+  // Animation State
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+  const scrollY = useSharedValue(0);
+  const scrollRef = useRef<any>(null);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const handleDismiss = useCallback(() => {
+    Keyboard.dismiss();
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+      runOnJS(onClose)();
+    });
+  }, [onClose]);
+
+  const panGesture = useMemo(() => Gesture.Pan()
+    .simultaneousWithExternalGesture(scrollRef)
+    .activeOffsetY([-10, 10])
+    .onUpdate((event) => {
+      'worklet';
+      if (scrollY.value <= 1 && event.translationY > 0) {
+        translateY.value = event.translationY;
+      } else if (translateY.value > 0) {
+        translateY.value = Math.max(0, event.translationY);
+      }
+      backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
+    })
+    .onEnd((event) => {
+      'worklet';
+      if (event.translationY > 150 || event.velocityY > 500) {
+        backdropOpacity.value = withTiming(0, { duration: 250 });
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+          'worklet';
+          runOnJS(onClose)();
+        });
+      } else {
+        translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    }), [onClose, SCREEN_HEIGHT]);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.value = withSpring(0, { damping: 25, stiffness: 120 });
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+    } else {
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
+    }
+  }, [visible]);
+
   const handleUpdateRule = (ruleId: string, val: string) => {
     const num = parseFloat(val) || 0;
     setHouseRules(prev => prev.map(r => r.ruleId === ruleId ? { ...r, currentValue: num } : r));
@@ -62,42 +138,61 @@ export function GameSettingsModal({
       dealerIndex,
       customScoreRules: scoreRules,
     });
-    onClose();
+    handleDismiss();
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <PolymerCard color="#1A0533" borderRadius={32} padding={0} style={styles.sheetContent}>
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.title}>GAME SETTINGS</Text>
-                <Text style={styles.subtitle}>{game.name} • Rules & Mechanics</Text>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <NeuButton 
-                  size={44} 
-                  color="#150428" 
-                  borderRadius={14} 
-                  onPress={() => {
-                    const path = game.parentId 
-                      ? `/${game.parentId}/${game.id}` 
-                      : `/${game.id}`;
-                    onClose();
-                    router.push(path as any);
-                  }}
-                >
-                  <Ionicons name="book-outline" size={20} color="#00F5A0" />
-                </NeuButton>
-                <NeuButton size={44} color="#150428" borderRadius={14} onPress={onClose}>
-                  <Ionicons name="close" size={24} color="rgba(255,255,255,0.6)" />
-                </NeuButton>
-              </View>
-            </View>
+    <Modal visible={visible} animationType="none" transparent onRequestClose={handleDismiss}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardAvoidingView style={styles.overlay} behavior="padding" keyboardVerticalOffset={12}>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
+        </Animated.View>
 
-            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-              {/* Target Score Section */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.sheet, animatedStyle]}>
+            <PolymerCard color="#1A0533" borderRadius={32} padding={0} style={styles.sheetContent}>
+              <View style={styles.gestureHeader}>
+                <View style={styles.grabBarContainer}>
+                  <View style={styles.grabBar} />
+                </View>
+
+                <View style={styles.header}>
+                  <View>
+                    <Text style={styles.title}>GAME SETTINGS</Text>
+                    <Text style={styles.subtitle}>{game.name} • Rules & Mechanics</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <NeuButton 
+                      size={44} 
+                      color="#150428" 
+                      borderRadius={14} 
+                      onPress={() => {
+                        const path = game.parentId 
+                          ? `/${game.parentId}/${game.id}` 
+                          : `/${game.id}`;
+                        handleDismiss();
+                        router.push(path as any);
+                      }}
+                    >
+                      <Ionicons name="book-outline" size={20} color="#00F5A0" />
+                    </NeuButton>
+                    <NeuButton size={44} color="#150428" borderRadius={14} onPress={handleDismiss}>
+                      <Ionicons name="close" size={24} color="rgba(255,255,255,0.6)" />
+                    </NeuButton>
+                  </View>
+                </View>
+              </View>
+
+            <NativeViewGestureHandler ref={scrollRef}>
+              <Animated.ScrollView 
+                onScroll={scrollHandler} 
+                scrollEventThrottle={16} 
+                bounces={false} 
+                style={styles.scroll} 
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Target Score Section */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Win Condition</Text>
                 <NeuTrench color="rgba(0,0,0,0.2)" borderRadius={20} padding={16}>
@@ -205,7 +300,8 @@ export function GameSettingsModal({
               )}
               
               <View style={{ height: 40 }} />
-            </ScrollView>
+              </Animated.ScrollView>
+            </NativeViewGestureHandler>
 
             <View style={styles.footer}>
               <BrandButton onPress={handleSave} style={{ height: 60, width: "100%" }}>
@@ -213,21 +309,52 @@ export function GameSettingsModal({
               </BrandButton>
             </View>
           </PolymerCard>
-        </View>
-      </View>
+          </Animated.View>
+        </GestureDetector>
+        </KeyboardAvoidingView>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" },
-  sheet: { height: "85%", width: "100%" },
-  sheetContent: { flex: 1, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  overlay: { flex: 1, justifyContent: "flex-end" },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.85)",
+  },
+  sheet: { 
+    height: "85%", 
+    width: "100%", 
+    backgroundColor: "transparent",
+    paddingHorizontal: 16,
+  },
+  sheetContent: { 
+    flex: 1, 
+    borderBottomLeftRadius: 0, 
+    borderBottomRightRadius: 0, 
+    borderWidth: 1.5, 
+    borderColor: "rgba(255,255,255,0.1)" 
+  },
+  gestureHeader: {
+    paddingTop: 8,
+  },
+  grabBarContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  grabBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
   header: { 
     flexDirection: "row", 
     justifyContent: "space-between", 
     alignItems: "center", 
-    padding: 24,
+    paddingHorizontal: 24,
     paddingBottom: 20
   },
   title: { fontFamily: "Bungee_400Regular", fontSize: 24, color: "#FFFFFF" },

@@ -2,17 +2,19 @@ import React, { useCallback, useState, useMemo, useEffect } from "react";
 import {
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
   Alert,
   Dimensions,
+  Keyboard,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
+import { GestureHandlerRootView, Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -21,7 +23,6 @@ import Animated, {
   runOnJS,
   interpolate,
 } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Player } from "@/context/GameContext";
 import { GameDefinition } from "@/constants/games";
 import { PolymerCard, NeuTrench, NeuButton, BrandButton, NeuIconWell, PolymerAlert } from "./PolymerCard";
@@ -108,25 +109,33 @@ export function ScoreInputModal({
   }));
 
   const handleDismiss = useCallback(() => {
+    Keyboard.dismiss();
     backdropOpacity.value = withTiming(0, { duration: 250 });
     translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
       runOnJS(onClose)();
     });
   }, [onClose]);
 
-  const gesture = Gesture.Pan()
+  const gesture = useMemo(() => Gesture.Pan()
+    .activeOffsetY([-10, 10])
     .onUpdate((event) => {
+      'worklet';
       translateY.value = Math.max(0, event.translationY);
       backdropOpacity.value = interpolate(translateY.value, [0, 400], [1, 0], 'clamp');
     })
     .onEnd((event) => {
+      'worklet';
       if (event.translationY > 150 || event.velocityY > 500) {
-        handleDismiss();
+        backdropOpacity.value = withTiming(0, { duration: 250 });
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+          'worklet';
+          runOnJS(onClose)();
+        });
       } else {
         translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
         backdropOpacity.value = withTiming(1, { duration: 200 });
       }
-    });
+    }), [onClose, SCREEN_HEIGHT]);
 
   // Entrance Animation
   useEffect(() => {
@@ -372,21 +381,20 @@ export function ScoreInputModal({
       transparent
       onRequestClose={handleDismiss}
     >
-      <View style={styles.overlay}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardAvoidingView style={styles.overlay} behavior="padding">
           <Animated.View style={[styles.backdrop, backdropStyle]}>
             <Pressable style={{ flex: 1 }} onPress={handleDismiss} />
           </Animated.View>
 
-          <Animated.View 
-            style={[styles.sheet, animatedStyle]}
-          >
-          <PolymerCard 
-            color="#1A0533" 
-            borderRadius={32} 
-            padding={0} 
-            style={styles.sheetContent}
-          >
-            <GestureDetector gesture={gesture}>
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }, animatedStyle]}>
+            <PolymerCard 
+              color="#1A0533" 
+              borderRadius={32} 
+              padding={0} 
+              style={styles.sheetContent}
+            >
               <View style={styles.gestureHeader}>
                 <View style={styles.grabBarContainer}>
                   <View style={styles.grabBar} />
@@ -419,7 +427,6 @@ export function ScoreInputModal({
                   </View>
                 </View>
               </View>
-            </GestureDetector>
 
               <ScrollView 
                 horizontal 
@@ -485,9 +492,10 @@ export function ScoreInputModal({
                   </View>
                 </BrandButton>
             </View>
-          </PolymerCard>
-        </Animated.View>
-      </View>
+            </PolymerCard>
+          </Animated.View>
+        </GestureDetector>
+        </KeyboardAvoidingView>
 
       {/* Styled Alert: No Winner Declared */}
       <Modal visible={showNoWinnerConfirm} transparent animationType="fade">
@@ -557,6 +565,7 @@ export function ScoreInputModal({
         onConfirm={confirmReset}
         onCancel={() => setShowResetAlert(false)}
       />
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -571,14 +580,16 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.85)",
   },
   sheet: { 
-    height: "94%",
+    width: "100%",
     backgroundColor: "transparent",
+    paddingHorizontal: 16,
+    height: "94%",
   },
   sheetContent: {
     flex: 1,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.1)",
   },
   grabBarContainer: { 

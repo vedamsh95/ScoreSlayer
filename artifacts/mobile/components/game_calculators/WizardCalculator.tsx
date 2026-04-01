@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   tipContent: { flex: 1 },
   tipTitle: { fontFamily: "Inter_900Black", fontSize: 12, color: "#FFB800", letterSpacing: 0.5 },
   tipSub: { fontFamily: "Inter_800ExtraBold", fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" },
-  key: { width: "23%", height: 50 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "space-between" },
+  key: { width: "18%", height: 50 },
   keyText: { fontFamily: "Inter_900Black", fontSize: 20 },
 });

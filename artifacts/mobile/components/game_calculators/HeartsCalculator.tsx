@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   iconWell: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 6 },
   actionLabel: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: 0.5 },
   actionValue: { fontFamily: "Inter_900Black", fontSize: 18, color: "#FFF" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "space-between", marginBottom: 12 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "space-between", marginBottom: 12 },
   key: { width: "18%", height: 48 },
   keyText: { fontFamily: "Inter_900Black", fontSize: 20, color: "#1A0533" },
   keySubtext: { fontFamily: "Inter_800ExtraBold", fontSize: 8, color: "rgba(26,5,51,0.5)", textTransform: "uppercase" },
